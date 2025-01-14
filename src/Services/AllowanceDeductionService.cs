@@ -12,25 +12,25 @@ using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.Services
 {
-    public class CompanyService: IServiceAsync<Company>
+    public class AllowanceDeductionService: IServiceAsync<AllowanceDeduction>
     {
         private readonly EFContext _context;
-        public CompanyService(EFContext context)
+        public AllowanceDeductionService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<ListResponse<Company>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<AllowanceDeduction>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Companies where a.IsDeleted == false select a;
+                var query = from a in _context.AllowanceDeduction where a.IsDeleted == false select a;
 
                 // Searching
-                if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.Name.Contains(search)
-                        );
+                //if (!string.IsNullOrEmpty(search))
+                //    query = query.Where(x => x.Name.Contains(search)
+                //        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -45,7 +45,7 @@ namespace sopra_hris_api.Services
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "name" => query.Where(x => x.Name.Contains(value)),
+                                //"name" => query.Where(x => x.Name.Contains(value)),
                                 _ => query
                             };
                         }
@@ -64,7 +64,7 @@ namespace sopra_hris_api.Services
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderByDescending(x => x.Name),
+                            //"name" => query.OrderByDescending(x => x.Name),
                             _ => query
                         };
                     }
@@ -72,14 +72,14 @@ namespace sopra_hris_api.Services
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderBy(x => x.Name),
+                            //"name" => query.OrderBy(x => x.Name),
                             _ => query
                         };
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.CompanyID);
+                    query = query.OrderByDescending(x => x.AllowanceDeductionID);
                 }
 
                 // Get Total Before Limit and Page
@@ -96,7 +96,7 @@ namespace sopra_hris_api.Services
                     page = 0;
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
-                return new ListResponse<Company>(data, total, page);
+                return new ListResponse<AllowanceDeduction>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -108,12 +108,12 @@ namespace sopra_hris_api.Services
             }
         }
 
-        public async Task<Company> CreateAsync(Company data)
+        public async Task<AllowanceDeduction> CreateAsync(AllowanceDeduction data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.Companies.AddAsync(data);
+                await _context.AllowanceDeduction.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -137,7 +137,7 @@ namespace sopra_hris_api.Services
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Companies.FirstOrDefaultAsync(x => x.CompanyID == id && x.IsDeleted == false);
+                var obj = await _context.AllowanceDeduction.FirstOrDefaultAsync(x => x.AllowanceDeductionID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
@@ -162,14 +162,16 @@ namespace sopra_hris_api.Services
             }
         }
 
-        public async Task<Company> EditAsync(Company data)
+        public async Task<AllowanceDeduction> EditAsync(AllowanceDeduction data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Companies.FirstOrDefaultAsync(x => x.CompanyID == data.CompanyID && x.IsDeleted == false);
+                var obj = await _context.AllowanceDeduction.FirstOrDefaultAsync(x => x.AllowanceDeductionID == data.AllowanceDeductionID && x.IsDeleted == false);
                 if (obj == null) return null;
 
+                obj.Type = data.Type;
+                obj.AmountType = data.AmountType;
                 obj.Name = data.Name;
 
                 obj.UserUp = data.UserUp;
@@ -194,11 +196,11 @@ namespace sopra_hris_api.Services
         }
 
 
-        public async Task<Company> GetByIdAsync(long id)
+        public async Task<AllowanceDeduction> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == id && x.IsDeleted == false);
+                return await _context.AllowanceDeduction.AsNoTracking().FirstOrDefaultAsync(x => x.AllowanceDeductionID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {

@@ -9,11 +9,11 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CompanyController : ControllerBase
+public class AllowanceDeductionController : ControllerBase
 {
-    private readonly IServiceAsync<Company> _service;
+    private readonly IServiceAsync<AllowanceDeduction> _service;
 
-    public CompanyController(IServiceAsync<Company> service)
+    public AllowanceDeductionController(IServiceAsync<AllowanceDeduction> service)
     {
         _service = service;
     }
@@ -48,7 +48,7 @@ public class CompanyController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Company>(result);
+            var response = new Response<AllowanceDeduction>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -60,20 +60,20 @@ public class CompanyController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CompanyController");
+            Trace.WriteLine(message, "AllowanceDeductionController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Company obj)
+    public async Task<IActionResult> Create([FromBody] AllowanceDeduction obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(1);
 
             var result = await _service.CreateAsync(obj);
-            var response = new Response<Company>(result);
+            var response = new Response<AllowanceDeduction>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -85,21 +85,21 @@ public class CompanyController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CompanyController");
+            Trace.WriteLine(message, "AllowanceDeductionController");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Company obj)
+    public async Task<IActionResult> Edit([FromBody] AllowanceDeduction obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj);
-            var response = new Response<Company>(result);
+            var response = new Response<AllowanceDeduction>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -111,7 +111,7 @@ public class CompanyController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CompanyController");
+            Trace.WriteLine(message, "AllowanceDeductionController");
             return BadRequest(new { message });
         }
     }
@@ -135,7 +135,7 @@ public class CompanyController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CompanyController");
+            Trace.WriteLine(message, "AllowanceDeductionController");
             return BadRequest(new { message });
         }
     }

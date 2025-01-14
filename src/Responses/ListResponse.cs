@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using sopra_hris_api.src.Entities;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace sopra_hris_api.Responses
@@ -17,8 +18,28 @@ namespace sopra_hris_api.Responses
 			Page = page;
 		}
 	}
+    public class ListResponseTemplate<T>
+    {
+        public IEnumerable<T> Data { get; set; }
 
-	public class ListResponseProduct<T>
+        public ListResponseTemplate(IEnumerable<T> data)
+        {
+            Data = data;
+        }
+    }
+	public class ListResponseResult<T>
+    {
+        public IEnumerable<T> DataPayroll { get; set; }
+        public IEnumerable<SalaryResultBankDTO> DataBank { get; set; }
+
+        public ListResponseResult(IEnumerable<T> dataPayroll, IEnumerable<SalaryResultBankDTO> dataBank)
+        {
+            DataPayroll = dataPayroll;
+            DataBank = dataBank;
+        }
+    }
+
+    public class ListResponseProduct<T>
 	{
 		public IEnumerable<T> Data { get; set; }
 		public int Total { get; set; }

@@ -11,6 +11,7 @@ namespace sopra_hris_api.Entities
 {
     public class Entity
     {
+        [JsonIgnore]
         public DateTime? DateIn { get; set; }
         [JsonIgnore]
         public DateTime? DateUp { get; set; }
