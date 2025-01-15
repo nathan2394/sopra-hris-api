@@ -174,15 +174,21 @@ namespace sopra_hris_api
             app.UseAuthentication();
             app.UseAuthorization();
             
-            if (env.IsDevelopment())
-            {
+            //if (env.IsDevelopment())
+            //{
                 // Enable middleware to serve generated Swagger as a JSON endpoint.
                 app.UseSwagger();
 
                 // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
                 // specifying the Swagger JSON endpoint.
-                app.UseSwaggerUI();
-            }
+                //app.UseSwaggerUI();
+            //}
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", $"SOPRA HRIS API V1.0201");
+                c.RoutePrefix = string.Empty;
+            });
             app.UseMiddleware<JwtMiddleware>();
 
             app.UseEndpoints(x => x.MapControllers());
