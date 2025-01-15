@@ -17,7 +17,9 @@ namespace sopra_hris_api.Entities
         public long? HKS { get; set; }
         public long? HKA { get; set; }
         public long? ATT { get; set; }
-        public long? OVT { get; set; }
+        public long? MEAL { get; set; }
+        public long? ABSENT { get; set; }
+        public decimal? OVT { get; set; }
         public long? Late { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }

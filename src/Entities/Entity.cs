@@ -18,7 +18,7 @@ namespace sopra_hris_api.Entities
         [JsonIgnore]
         public long UserIn { get; set; }
         [JsonIgnore]
-        public long UserUp { get; set; }
+        public long? UserUp { get; set; }
         [JsonIgnore]
         public bool? IsDeleted { get; set; }
         public Entity()

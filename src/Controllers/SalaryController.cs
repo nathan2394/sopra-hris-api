@@ -191,25 +191,37 @@ public class SalaryController : ControllerBase
                 {
                     var worksheet = package.Workbook.Worksheets[0]; // Assume the first worksheet contains the data
                     var rowCount = worksheet.Dimension.Rows;
+                    var colCount = worksheet.Dimension.Columns;
+                    var headerRow = worksheet.Cells[1, 1, 1, colCount];
+                    var headerDict = new Dictionary<string, int>();
+
+                    // Map header names to their respective column indexes
+                    for (int col = 1; col <= colCount; col++)
+                    {
+                        string headerText = headerRow[1, col].Text.Trim().ToLower();
+                        headerDict[headerText] = col;
+                    }
 
                     for (int row = 2; row <= rowCount; row++) // Starting from row 2 to skip header
                     {
-                        if (!string.IsNullOrEmpty(worksheet.Cells[row, 2].Text))
+                        if (!string.IsNullOrEmpty(worksheet.Cells[row, headerDict["nik"]].Text))
                         {
                             var template = new SalaryTemplateDTO
                             {
-                                EmployeeID = Convert.ToInt64(worksheet.Cells[row, 1].Text),
-                                Nik = worksheet.Cells[row, 2].Text,
-                                Name = worksheet.Cells[row, 3].Text,
-                                HKS = string.IsNullOrEmpty(worksheet.Cells[row, 4].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, 4].Text),
-                                HKA = string.IsNullOrEmpty(worksheet.Cells[row, 5].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, 5].Text),
-                                ATT = string.IsNullOrEmpty(worksheet.Cells[row, 6].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, 6].Text),
-                                Late = string.IsNullOrEmpty(worksheet.Cells[row, 7].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, 7].Text),
-                                OVT = string.IsNullOrEmpty(worksheet.Cells[row, 8].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, 8].Text),
-                                OtherAllowances = string.IsNullOrEmpty(worksheet.Cells[row, 9].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, 9].Text),
-                                OtherDeductions = string.IsNullOrEmpty(worksheet.Cells[row, 10].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, 10].Text),
-                                Month = Convert.ToInt32(worksheet.Cells[row, 11].Text),
-                                Year = Convert.ToInt32(worksheet.Cells[row, 12].Text)
+                                EmployeeID = Convert.ToInt64(worksheet.Cells[row, headerDict["employeeid"]].Text),
+                                Nik = worksheet.Cells[row, headerDict["nik"]].Text,
+                                Name = worksheet.Cells[row, headerDict["name"]].Text,
+                                HKS = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["hks"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["hks"]].Text),
+                                HKA = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["hka"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["hka"]].Text),
+                                ATT = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["att"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["att"]].Text),
+                                Late = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["late"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["late"]].Text),
+                                OVT = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["ovt"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["ovt"]].Text),
+                                OtherAllowances = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["otherallowances"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["otherallowances"]].Text),
+                                OtherDeductions = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["otherdeductions"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["otherdeductions"]].Text),
+                                Month = Convert.ToInt32(worksheet.Cells[row, headerDict["month"]].Text),
+                                Year = Convert.ToInt32(worksheet.Cells[row, headerDict["year"]].Text),
+                                MEAL = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["meal"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["meal"]].Text),
+                                ABSENT= string.IsNullOrEmpty(worksheet.Cells[row, headerDict["absent"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["absent"]].Text),
                             };
                             salaryTemplates.Add(template);
                         }
@@ -220,9 +232,8 @@ public class SalaryController : ControllerBase
             // Pass the parsed List<SalaryTemplateDTO> to the service method
             var result = await _service.GetSalaryResultPayrollAsync(salaryTemplates);
             if (System.IO.File.Exists(filePath))
-            {
                 System.IO.File.Delete(filePath);
-            }
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -244,6 +255,28 @@ public class SalaryController : ControllerBase
         try
         {
             var result = await _service.GetSalaryTemplateAsync(search, sort, filter);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "SalaryController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("generatedata")]
+    public async Task<IActionResult> GetGenerateData(string search = "", string sort = "", string filter = "")
+    {
+        try
+        {
+            var result = await _service.GetGenerateDataAsync(search, sort, filter);
 
             return Ok(result);
         }

@@ -22,6 +22,8 @@ namespace sopra_hris_api.src.Services
         Task<bool> DeleteAsync(long id, long userID);
         Task<ListResponseTemplate<SalaryTemplateDTO>> GetSalaryTemplateAsync(string search, string sort,
         string filter);
-        Task<ListResponseResult<SalaryResultPayrollDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template);
+        Task<ListResponseTemplate<SalaryResultPayrollDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template);
+        Task<ListResponseTemplate<object>> GetGenerateDataAsync(string search, string sort,
+        string filter);
     }
 }

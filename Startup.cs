@@ -19,11 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 using sopra_hris_api.src.Services;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Serialization;
-using System.Text.Json;
 
 namespace sopra_hris_api
 {

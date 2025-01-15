@@ -27,33 +27,6 @@ namespace sopra_hris_api.Responses
             Data = data;
         }
     }
-	public class ListResponseResult<T>
-    {
-        public IEnumerable<T> DataPayroll { get; set; }
-        public IEnumerable<SalaryResultBankDTO> DataBank { get; set; }
-
-        public ListResponseResult(IEnumerable<T> dataPayroll, IEnumerable<SalaryResultBankDTO> dataBank)
-        {
-            DataPayroll = dataPayroll;
-            DataBank = dataBank;
-        }
-    }
-
-    public class ListResponseProduct<T>
-	{
-		public IEnumerable<T> Data { get; set; }
-		public int Total { get; set; }
-		public int Page { get; set; }
-		public IEnumerable<FilterGroup> Filters { get; set; }
-
-		public ListResponseProduct(IEnumerable<T> data, int total, int page, IEnumerable<FilterGroup> filters)
-		{
-			Data = data;
-			Total = total;
-			Page = page;
-			Filters = filters;
-		}
-	}
 
 	public class ListResponseFilter<T>
 	{

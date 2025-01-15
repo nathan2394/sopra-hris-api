@@ -7,15 +7,17 @@ namespace sopra_hris_api.src.Entities
         public long EmployeeID { get; set; }
         public string Nik { get; set; }
         public string Name { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
         public int? HKS { get; set; }
         public int? HKA { get; set; }
         public int? ATT { get; set; }
+        public int? MEAL { get; set; }
+        public long? ABSENT { get; set; }
         public int? Late { get; set; }
-        public int? OVT { get; set; }
+        public decimal? OVT { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }
-        public int Month { get; set; }
-        public int Year { get; set; }
         public SalaryTemplateDTO()
         {
             Month = DateTime.Now.Month;
@@ -42,21 +44,13 @@ namespace sopra_hris_api.src.Entities
         public long? HKS { get; set; }
         public long? HKA { get; set; }
         public long? ATT { get; set; }
-        public long? OVT { get; set; }
+        public long? MEAL { get; set; }
+        public long? ABSENT { get; set; }
+        public decimal? OVT { get; set; }
         public long? Late { get; set; }
-        public decimal? OtherAllowances { get; set; }
-        public decimal? OtherDeductions { get; set; }
+        public decimal? TotalAllowances { get; set; }
+        public decimal? TotalDeductions { get; set; }
         public decimal? THP { get; set; }
         public string PayrollType { get; set; }
-    }
-    public class SalaryResultBankDTO
-    {
-        public long SalaryID { get; set; }
-        public long EmployeeID { get; set; }
-        public string Nik { get; set; }
-        public string Name { get; set; }
-        public string AccountNo { get; set; }
-        public string Bank { get; set; }
-        public decimal? THP { get; set; }
     }
 }
