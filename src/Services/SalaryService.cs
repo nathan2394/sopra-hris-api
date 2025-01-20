@@ -119,12 +119,45 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Salary where a.IsDeleted == false select a;
-
+                var query = (from salary in _context.Salary
+                         join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
+                         join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID
+                         join groups in _context.Groups on employee.GroupID equals groups.GroupID
+                         join function in _context.Functions on employee.FunctionID equals function.FunctionID
+                         join division in _context.Divisions on function.DivisionID equals division.DivisionID
+                         where salary.IsDeleted == false
+                         select new Salary
+                         {
+                             SalaryID = salary.SalaryID,
+                             EmployeeID = salary.EmployeeID,
+                             Nik = employee.Nik,
+                             Name = employee.EmployeeName,
+                             EmployeeTypeID = employee.EmployeeTypeID,
+                             EmployeeTypeName = employeeType.Name,
+                             GroupID = groups.GroupID,
+                             GroupName = groups.Name,
+                             FunctionID = function.FunctionID,
+                             FunctionName = function.Name,
+                             DivisionID = division.DivisionID,
+                             DivisionName = division.Name,
+                             Month = salary.Month,
+                             Year = salary.Year,
+                             HKS = salary.HKS,
+                             HKA = salary.HKA,
+                             ATT = salary.ATT,
+                             OVT = salary.OVT,
+                             Late = salary.Late,
+                             MEAL = salary.MEAL,
+                             ABSENT = salary.ABSENT,
+                             AllowanceTotal = salary.AllowanceTotal,
+                             DeductionTotal = salary.DeductionTotal,
+                             Netto = salary.Netto,
+                             PayrollType = salary.PayrollType
+                         });
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.Name.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -158,7 +191,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "name" => query.OrderByDescending(x => x.Name),
                             _ => query
                         };
                     }
@@ -166,7 +199,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "name" => query.OrderBy(x => x.Name),
                             _ => query
                         };
                     }
@@ -365,6 +398,7 @@ namespace sopra_hris_api.src.Services.API
                         MEAL = t.MEAL ?? 0,
                         OVT = t.OVT ?? 0,
                         Late = t.Late ?? 0,
+                        ABSENT = t.ABSENT ?? 0,
                         TotalAllowances = totalAllowance ?? 0,
                         TotalDeductions = totalDeduction ?? 0,
                         THP = salaryNetto,
@@ -614,7 +648,9 @@ namespace sopra_hris_api.src.Services.API
                                 HKS = null,
                                 HKA = null,
                                 ATT = null,
+                                MEAL = null,
                                 Late = null,
+                                ABSENT = null,
                                 OVT = null,
                                 OtherAllowances = null,
                                 OtherDeductions = null
@@ -811,6 +847,8 @@ namespace sopra_hris_api.src.Services.API
                                  ATT = salary.ATT,
                                  OVT = salary.OVT,
                                  Late = salary.Late,
+                                 MEAL = salary.MEAL,
+                                 ABSENT = salary.ABSENT,
                                  AllowanceTotal = salary.AllowanceTotal,
                                  DeductionTotal = salary.DeductionTotal,
                                  Netto = salary.Netto,

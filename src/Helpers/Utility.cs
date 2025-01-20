@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 
 namespace sopra_hris_api.Helpers
 {
@@ -64,6 +65,38 @@ namespace sopra_hris_api.Helpers
                     Trace.WriteLine(ex.StackTrace);
 
                 return null;
+            }
+        }
+        public static string HashPassword(string password)
+        {
+            // Generate a random salt
+            //byte[] saltBytes = GenerateRandomSalt();
+            string salt = BCrypt.Net.BCrypt.GenerateSalt();
+            // Hash the password using PHP's password_hash equivalent
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password, salt);
+
+            return hashedPassword;
+        }
+
+        private static byte[] GenerateRandomSalt()
+        {
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                byte[] salt = new byte[16];
+                rng.GetBytes(salt);
+                return salt;
+            }
+        }
+        public static bool VerifyHashedPassword(string hashedPassword, string password)
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                // Handle the case where the salt format is not valid
+                return false;
             }
         }
     }

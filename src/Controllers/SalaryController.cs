@@ -163,8 +163,11 @@ public class SalaryController : ControllerBase
                 return BadRequest("Only CSV or Excel files are allowed.");
             }
 
-            // Example: Save the file to a folder
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles", file.FileName);
+            // Save the file to a folder
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+            var filePath = Path.Combine(folderPath, file.FileName);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
@@ -229,6 +232,11 @@ public class SalaryController : ControllerBase
                 }
             }
 
+            var validationErrors = ValidateSalaryTemplates(salaryTemplates);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { message = "Data validation failed.", errors = validationErrors });
+            }
             // Pass the parsed List<SalaryTemplateDTO> to the service method
             var result = await _service.GetSalaryResultPayrollAsync(salaryTemplates);
             if (System.IO.File.Exists(filePath))
@@ -248,6 +256,37 @@ public class SalaryController : ControllerBase
             Trace.WriteLine(message, "SalaryController");
             return BadRequest(new { message });
         }
+    }
+    private List<string> ValidateSalaryTemplates(List<SalaryTemplateDTO> templates)
+    {
+        var errors = new List<string>();
+        var uniqueNiks = new HashSet<string>();
+
+        foreach (var template in templates)
+        {
+            if (string.IsNullOrEmpty(template.Nik))
+                errors.Add($"Missing Nik for EmployeeID: {template.EmployeeID}.");
+            else if (!uniqueNiks.Add(template.Nik))
+                errors.Add($"Duplicate Nik found: {template.Nik}.");
+
+            if (string.IsNullOrEmpty(template.Name))
+                errors.Add($"Missing Name for EmployeeID: {template.EmployeeID}.");            
+
+            if (template.Month < 1 || template.Month > 12)
+                errors.Add($"Invalid Month: {template.Month} for EmployeeID: {template.EmployeeID}. Must be between 1 and 12.");
+
+            if (template.Year < 1900 || template.Year > DateTime.Now.Year)
+                errors.Add($"Invalid Year: {template.Year} for EmployeeID: {template.EmployeeID}. Must be a valid year.");
+
+            if (template.HKS < 0)
+                errors.Add($"Invalid HKS: {template.HKS} for EmployeeID: {template.EmployeeID}. Must be non-negative.");
+
+            if (template.OVT < 0)
+                errors.Add($"Invalid OVT: {template.OVT} for EmployeeID: {template.EmployeeID}. Must be non-negative.");
+
+        }
+
+        return errors;
     }
     [HttpGet("template")]
     public async Task<IActionResult> GetSalaryTemplate(string search = "", string sort = "", string filter = "")

@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.src.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace sopra_hris_api
 {
@@ -50,7 +51,6 @@ namespace sopra_hris_api
             //add memory Caching
             services.AddMemoryCache();
 
-
             //Authhentication / Authorization
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             var jwtKey = Configuration.GetSection("AppSettings:Secret").Value;
@@ -63,7 +63,9 @@ namespace sopra_hris_api
                         x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                         x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                         x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                        x.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     })
+                    .AddCookie()
                     .AddJwtBearer(options =>
                     {
                         options.RequireHttpsMetadata = false;
@@ -135,6 +137,8 @@ namespace sopra_hris_api
                 });
             });
 
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IServiceAsync<Users>, UserService>();
             services.AddScoped<IServiceAsync<Company>, CompanyService>();
             services.AddScoped<IServiceAsync<Division>, DivisionService>();
             services.AddScoped<IServiceAsync<DivisionDetails>, DivisionDetailService>();
