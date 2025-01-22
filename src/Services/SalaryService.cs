@@ -465,7 +465,11 @@ namespace sopra_hris_api.src.Services.API
             List<DivisionDetails> divisionDetails,
             Dictionary<long, decimal> dictAllowanceDeduction)
         {
-            var yearsWorked = DateTime.Now.Year - employee.StartWorkingDate.Year;
+            // Calculate the difference in months
+            int monthsDifference = (DateTime.Now.Year - employee.StartWorkingDate.Year) * 12 + DateTime.Now.Month - employee.StartWorkingDate.Month;
+
+            // Calculate the difference in years (rounded down)
+            int yearsWorked = monthsDifference / 12;
 
             decimal allowance = 0;
             decimal deduction = 0;
@@ -474,7 +478,7 @@ namespace sopra_hris_api.src.Services.API
 
             //tunjangan kinerja          
             var tunjanganKinerja = await _context.TunjanganKinerja
-                .Where(tk => yearsWorked >= tk.Min && yearsWorked <= tk.Max)
+                .Where(tk => yearsWorked >= tk.Min && yearsWorked < tk.Max)
                 .Select(tk => tk.Factor).FirstOrDefaultAsync();
 
             // Process Employee-specific details (EmployeeDetails)
@@ -657,9 +661,9 @@ namespace sopra_hris_api.src.Services.API
                             };
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.Name.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -674,7 +678,7 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "name" => query.Where(x => x.Name.Contains(value)),
                                 _ => query
                             };
                         }
@@ -693,7 +697,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "name" => query.OrderByDescending(x => x.Name),
                             _ => query
                         };
                     }
@@ -701,7 +705,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "name" => query.OrderBy(x => x.Name),
                             _ => query
                         };
                     }
