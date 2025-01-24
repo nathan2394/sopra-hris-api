@@ -26,6 +26,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Salary> Salary { get; set; }
         public DbSet<SalaryDetails> SalaryDetails { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
+        public virtual DbSet<AllowanceDeductionEmployeeDetails> AllowanceDeductionEmployeeDetails { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

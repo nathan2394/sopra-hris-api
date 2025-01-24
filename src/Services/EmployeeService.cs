@@ -8,6 +8,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.ComponentModel.Design;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Data.SqlClient;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -97,6 +99,8 @@ namespace sopra_hris_api.src.Services.API
                 obj.Nik = data.Nik;
                 obj.PhoneNumber = data.PhoneNumber;
                 obj.EndWorkingDate = data.EndWorkingDate;
+                obj.KTP = data.KTP;
+                obj.DepartmentID = data.DepartmentID;
                 obj.GroupID = data.GroupID;
                 obj.FunctionID = data.FunctionID;
                 obj.CompanyID = data.CompanyID;
@@ -128,9 +132,56 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Employees where a.IsDeleted == false select a;
+                var query = from a in _context.Employees
+                            join employeeType in _context.EmployeeTypes
+                                on a.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
+                            from employeeType in employeeTypeGroup.DefaultIfEmpty()
 
+                            join groups in _context.Groups
+                                on a.GroupID equals groups.GroupID into groupGroup
+                            from groups in groupGroup.DefaultIfEmpty()
+
+                            join function in _context.Functions
+                                on a.FunctionID equals function.FunctionID into functionGroup
+                            from function in functionGroup.DefaultIfEmpty()
+
+                            join division in _context.Divisions
+                                on function.DivisionID equals division.DivisionID into divisionGroup
+                            from division in divisionGroup.DefaultIfEmpty()
+
+                            where a.IsDeleted == false
+                            select new Employees
+                            {
+                                EmployeeID = a.EmployeeID,
+                                Nik = a.Nik,
+                                EmployeeName = a.EmployeeName,
+                                NickName = a.NickName,
+                                EmployeeTypeID = a.EmployeeTypeID,
+                                EmployeeTypeName = employeeType != null ? employeeType.Name : null,
+                                GroupID = a.GroupID,
+                                GroupName = groups != null ? groups.Name : null,
+                                GroupType = groups != null ? groups.Type : null,
+                                FunctionID = a.FunctionID,
+                                FunctionName = function != null ? function.Name : null,
+                                DivisionID = a.DivisionID,
+                                DivisionName = division != null ? division.Name : null,
+                                Email = a.Email,
+                                PhoneNumber = a.PhoneNumber,
+                                KTP = a.KTP,
+                                AccountNo = a.AccountNo,
+                                Bank = a.Bank,
+                                PlaceOfBirth = a.PlaceOfBirth,
+                                DateOfBirth = a.DateOfBirth,
+                                Gender = a.Gender,
+                                StartWorkingDate = a.StartWorkingDate,
+                                StartJointDate = a.StartJointDate,
+                                EndWorkingDate = a.EndWorkingDate,
+                                CompanyID = a.CompanyID,
+                                Address = a.Address,
+                                BasicSalary = a.BasicSalary
+                            };
                 // Searching
+
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.EmployeeName.Contains(search)
                         );
@@ -149,6 +200,12 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                "nik" => query.Where(x => x.Nik.Contains(value)),
+                                "ktp" => query.Where(x => x.KTP.Contains(value)),
+                                "group" => query.Where(x => x.GroupID.Equals(value)),
+                                "department" => query.Where(x => x.DepartmentID.Equals(value)),
+                                "function" => query.Where(x => x.FunctionID.Equals(value)),
+                                "division" => query.Where(x => x.DivisionID.Equals(value)),
                                 _ => query
                             };
                         }
@@ -216,7 +273,74 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.Employees.AsNoTracking().FirstOrDefaultAsync(x => x.EmployeeID == id && x.IsDeleted == false);
+                var query = from a in _context.Employees
+                            join employeeType in _context.EmployeeTypes
+                                on a.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
+                            from employeeType in employeeTypeGroup.DefaultIfEmpty()
+
+                            join groups in _context.Groups
+                                on a.GroupID equals groups.GroupID into groupGroup
+                            from groups in groupGroup.DefaultIfEmpty()
+
+                            join function in _context.Functions
+                                on a.FunctionID equals function.FunctionID into functionGroup
+                            from function in functionGroup.DefaultIfEmpty()
+
+                            join division in _context.Divisions
+                                on function.DivisionID equals division.DivisionID into divisionGroup
+                            from division in divisionGroup.DefaultIfEmpty()
+
+                            where a.IsDeleted == false && a.EmployeeID == id
+                            select new Employees
+                            {
+                                EmployeeID = a.EmployeeID,
+                                Nik = a.Nik,
+                                EmployeeName = a.EmployeeName,
+                                NickName = a.NickName,
+                                EmployeeTypeID = a.EmployeeTypeID,
+                                EmployeeTypeName = employeeType != null ? employeeType.Name : null,
+                                GroupID = a.GroupID,
+                                GroupName = groups != null ? groups.Name : null,
+                                GroupType = groups != null ? groups.Type : null,
+                                FunctionID = a.FunctionID,
+                                FunctionName = function != null ? function.Name : null,
+                                DivisionID = a.DivisionID,
+                                DivisionName = division != null ? division.Name : null,
+                                Email = a.Email,
+                                PhoneNumber = a.PhoneNumber,
+                                KTP = a.KTP,
+                                AccountNo = a.AccountNo,
+                                Bank = a.Bank,
+                                PlaceOfBirth = a.PlaceOfBirth,
+                                DateOfBirth = a.DateOfBirth,
+                                Gender = a.Gender,
+                                StartWorkingDate = a.StartWorkingDate,
+                                StartJointDate = a.StartJointDate,
+                                EndWorkingDate = a.EndWorkingDate,
+                                CompanyID = a.CompanyID,
+                                Address = a.Address,
+                                BasicSalary = a.BasicSalary
+                            };
+                var data = await query.AsNoTracking().FirstOrDefaultAsync();
+
+                var details = await _context.AllowanceDeductionEmployeeDetails.FromSqlRaw($@"select a.AllowanceDeductionID,b.Name,b.Type,a.Amount 
+from EmployeeDetails a
+inner join AllowanceDeduction b on a.AllowanceDeductionID=b.AllowanceDeductionID
+where EmployeeID={id}
+union all
+select a.AllowanceDeductionID,b.Name,b.Type,a.Amount 
+from GroupDetails a
+inner join AllowanceDeduction b on a.AllowanceDeductionID=b.AllowanceDeductionID
+where GroupID={data.GroupID}
+union all
+select a.AllowanceDeductionID,b.Name,b.Type,a.Amount 
+from FunctionDetails a
+inner join AllowanceDeduction b on a.AllowanceDeductionID=b.AllowanceDeductionID
+where FunctionID={data.FunctionID}").ToListAsync();
+                data.allowancedeductionDetails = details;
+
+                if (data == null) return null;
+                return data;
             }
             catch (Exception ex)
             {
