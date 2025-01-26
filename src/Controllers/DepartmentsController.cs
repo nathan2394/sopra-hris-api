@@ -4,17 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Services;
-using sopra_hris_api.src.Services.API;
 
 namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class TunjanganKinerjaController : ControllerBase
+public class DepartmentsController : ControllerBase
 {
-    private readonly IServiceAsync<TunjanganKinerja> _service;
+    private readonly IServiceAsync<Departments> _service;
 
-    public TunjanganKinerjaController(IServiceAsync<TunjanganKinerja> service)
+    public DepartmentsController(IServiceAsync<Departments> service)
     {
         _service = service;
     }
@@ -50,7 +49,7 @@ public class TunjanganKinerjaController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<TunjanganKinerja>(result);
+            var response = new Response<Departments>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -62,20 +61,20 @@ public class TunjanganKinerjaController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "TunjanganKinerjaController");
+            Trace.WriteLine(message, "DepartmentsController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] TunjanganKinerja obj)
+    public async Task<IActionResult> Create([FromBody] Departments obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(1);
 
             var result = await _service.CreateAsync(obj);
-            var response = new Response<TunjanganKinerja>(result);
+            var response = new Response<Departments>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -87,21 +86,21 @@ public class TunjanganKinerjaController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "TunjanganKinerjaController");
+            Trace.WriteLine(message, "DepartmentsController");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] TunjanganKinerja obj)
+    public async Task<IActionResult> Edit([FromBody] Departments obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj);
-            var response = new Response<TunjanganKinerja>(result);
+            var response = new Response<Departments>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -113,7 +112,7 @@ public class TunjanganKinerjaController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "TunjanganKinerjaController");
+            Trace.WriteLine(message, "DepartmentsController");
             return BadRequest(new { message });
         }
     }
@@ -137,7 +136,7 @@ public class TunjanganKinerjaController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "TunjanganKinerjaController");
+            Trace.WriteLine(message, "DepartmentsController");
             return BadRequest(new { message });
         }
     }

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
 using sopra_hris_api.Entities;
+using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Services;
@@ -214,17 +215,17 @@ public class SalaryController : ControllerBase
                                 EmployeeID = Convert.ToInt64(worksheet.Cells[row, headerDict["employeeid"]].Text),
                                 Nik = worksheet.Cells[row, headerDict["nik"]].Text,
                                 Name = worksheet.Cells[row, headerDict["name"]].Text,
-                                HKS = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["hks"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["hks"]].Text),
-                                HKA = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["hka"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["hka"]].Text),
-                                ATT = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["att"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["att"]].Text),
-                                Late = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["late"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["late"]].Text),
-                                OVT = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["ovt"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["ovt"]].Text),
-                                OtherAllowances = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["otherallowances"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["otherallowances"]].Text),
-                                OtherDeductions = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["otherdeductions"]].Text) ? (decimal?)null : Convert.ToDecimal(worksheet.Cells[row, headerDict["otherdeductions"]].Text),
+                                HKS = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["hks"]].Text),
+                                HKA =  Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["hka"]].Text),
+                                ATT = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["att"]].Text),
+                                Late = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["late"]].Text),
+                                OVT = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["ovt"]].Text),
+                                OtherAllowances = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["otherallowances"]].Text),
+                                OtherDeductions = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["otherdeductions"]].Text),
                                 Month = Convert.ToInt32(worksheet.Cells[row, headerDict["month"]].Text),
                                 Year = Convert.ToInt32(worksheet.Cells[row, headerDict["year"]].Text),
-                                MEAL = string.IsNullOrEmpty(worksheet.Cells[row, headerDict["meal"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["meal"]].Text),
-                                ABSENT= string.IsNullOrEmpty(worksheet.Cells[row, headerDict["absent"]].Text) ? (int?)null : Convert.ToInt32(worksheet.Cells[row, headerDict["absent"]].Text),
+                                MEAL = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["meal"]].Text),
+                                ABSENT = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["absent"]].Text),
                             };
                             salaryTemplates.Add(template);
                         }

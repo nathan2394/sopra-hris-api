@@ -120,40 +120,43 @@ namespace sopra_hris_api.src.Services.API
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = (from salary in _context.Salary
-                         join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
-                         join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID
-                         join groups in _context.Groups on employee.GroupID equals groups.GroupID
-                         join function in _context.Functions on employee.FunctionID equals function.FunctionID
-                         join division in _context.Divisions on function.DivisionID equals division.DivisionID
-                         where salary.IsDeleted == false
-                         select new Salary
-                         {
-                             SalaryID = salary.SalaryID,
-                             EmployeeID = salary.EmployeeID,
-                             Nik = employee.Nik,
-                             Name = employee.EmployeeName,
-                             EmployeeTypeID = employee.EmployeeTypeID,
-                             EmployeeTypeName = employeeType.Name,
-                             GroupID = groups.GroupID,
-                             GroupName = groups.Name,
-                             FunctionID = function.FunctionID,
-                             FunctionName = function.Name,
-                             DivisionID = division.DivisionID,
-                             DivisionName = division.Name,
-                             Month = salary.Month,
-                             Year = salary.Year,
-                             HKS = salary.HKS,
-                             HKA = salary.HKA,
-                             ATT = salary.ATT,
-                             OVT = salary.OVT,
-                             Late = salary.Late,
-                             MEAL = salary.MEAL,
-                             ABSENT = salary.ABSENT,
-                             AllowanceTotal = salary.AllowanceTotal,
-                             DeductionTotal = salary.DeductionTotal,
-                             Netto = salary.Netto,
-                             PayrollType = salary.PayrollType
-                         });
+                             join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
+                             join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID
+                             join groups in _context.Groups on employee.GroupID equals groups.GroupID
+                             join function in _context.Functions on employee.FunctionID equals function.FunctionID
+                             join department in _context.Departments on employee.DepartmentID equals department.DepartmentID
+                             join division in _context.Divisions on employee.DivisionID equals division.DivisionID
+                             where salary.IsDeleted == false
+                             select new Salary
+                             {
+                                 SalaryID = salary.SalaryID,
+                                 EmployeeID = salary.EmployeeID,
+                                 Nik = employee.Nik,
+                                 Name = employee.EmployeeName,
+                                 EmployeeTypeID = employee.EmployeeTypeID,
+                                 EmployeeTypeName = employeeType.Name,
+                                 GroupID = groups.GroupID,
+                                 GroupName = groups.Name,
+                                 FunctionID = function.FunctionID,
+                                 FunctionName = function.Name,
+                                 DivisionID = division.DivisionID,
+                                 DivisionName = division.Name,
+                                 DepartmentID = department.DepartmentID,
+                                 DepartmentName = department.Name,
+                                 Month = salary.Month,
+                                 Year = salary.Year,
+                                 HKS = salary.HKS,
+                                 HKA = salary.HKA,
+                                 ATT = salary.ATT,
+                                 OVT = salary.OVT,
+                                 Late = salary.Late,
+                                 MEAL = salary.MEAL,
+                                 ABSENT = salary.ABSENT,
+                                 AllowanceTotal = salary.AllowanceTotal,
+                                 DeductionTotal = salary.DeductionTotal,
+                                 Netto = salary.Netto,
+                                 PayrollType = salary.PayrollType
+                             });
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.Name.Contains(search)
@@ -299,15 +302,14 @@ namespace sopra_hris_api.src.Services.API
 
                     if (employee == null) continue;
 
-                    var divisionID = await _context.Functions.Where(fd => fd.FunctionID == employee.FunctionID).Select(x => x.DivisionID).FirstOrDefaultAsync();
-
+                    
                     //basic salary based on attendance
                     var thp = employee.BasicSalary * t.HKA / t.HKS; 
 
                     var employeeDetails = await _context.EmployeeDetails.Where(x => x.EmployeeID == employee.EmployeeID).ToListAsync();
                     var groupDetails = await _context.GroupDetails.Where(x => x.GroupID == employee.GroupID).ToListAsync();
                     var functionDetails = await _context.FunctionDetails.Where(x => x.FunctionID == employee.FunctionID).ToListAsync();
-                    var divisionDetails = await _context.DivisionDetails.Where(x => x.DivisionID == divisionID).ToListAsync();
+                    var divisionDetails = await _context.DivisionDetails.Where(x => x.DivisionID == employee.DivisionID).ToListAsync();
 
                     var yearsWorked = DateTime.Now.Year - employee.StartWorkingDate.Year;
                     // Process allowances and deductions using reusable method
@@ -327,46 +329,27 @@ namespace sopra_hris_api.src.Services.API
                     var salaryNetto = thp + totalAllowance - totalDeduction;
                     //var salaryNetto = employee.BasicSalary + totalAllowance - totalDeduction;
 
-                    // Check if there's an existing salary for this employee
-                    var existingSalary = await _context.Salary
-                        .FirstOrDefaultAsync(s => s.IsDeleted == false && s.EmployeeID == t.EmployeeID && s.Month == t.Month && s.Year == t.Year);
-                        
                     long salaryId = 0;
-                    if (existingSalary != null)
+                    var salary = new Salary
                     {
-                        salaryId = existingSalary.SalaryID;
-                        existingSalary.HKA = t.HKA;
-                        existingSalary.HKS = t.HKS;
-                        existingSalary.ATT = t.ATT;
-                        existingSalary.OVT = t.OVT;
-                        existingSalary.Late = t.Late;
-                        existingSalary.Netto = salaryNetto;
-                        existingSalary.BasicSalary = employee.BasicSalary;
-                        existingSalary.AllowanceTotal = totalAllowance;
-                        existingSalary.DeductionTotal = totalDeduction;
-                        await _context.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        var salary = new Salary
-                        {
-                            EmployeeID = t.EmployeeID,
-                            Month = t.Month,
-                            Year = t.Year,
-                            HKA = t.HKA,
-                            HKS = t.HKS,
-                            ATT = t.ATT,
-                            OVT = t.OVT,
-                            Late = t.Late,
-                            Netto = salaryNetto,
-                            BasicSalary = employee.BasicSalary,
-                            AllowanceTotal = totalAllowance,
-                            DeductionTotal = totalDeduction
-                        };
-                        await _context.Salary.AddAsync(salary);
-                        await _context.SaveChangesAsync();
-                        salaryId = salary.SalaryID;
-                    }
+                        EmployeeID = t.EmployeeID,
+                        Month = t.Month,
+                        Year = t.Year,
+                        HKA = t.HKA,
+                        HKS = t.HKS,
+                        ATT = t.ATT,
+                        OVT = t.OVT,
+                        Late = t.Late,
+                        MEAL = t.MEAL,
+                        ABSENT = t.ABSENT,
+                        Netto = salaryNetto,
+                        BasicSalary = employee.BasicSalary,
+                        AllowanceTotal = totalAllowance,
+                        DeductionTotal = totalDeduction
+                    };
+                    await _context.Salary.AddAsync(salary);
+                    await _context.SaveChangesAsync();
+                    salaryId = salary.SalaryID;
 
                     if (salaryId > 0)
                         await ProcessSalaryDetails(salaryId, dictAllowanceDeduction);
@@ -374,9 +357,13 @@ namespace sopra_hris_api.src.Services.API
                     var employeeTypeName = await _context.EmployeeTypes.Where(x => x.EmployeeTypeID == employee.EmployeeTypeID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
                     var employeeGroupName = await _context.Groups.Where(x => x.GroupID == employee.GroupID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
                     var employeeFunctionName = await _context.Functions.Where(x => x.FunctionID == employee.FunctionID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
-                    var employeeDivisionName = await _context.Divisions.Where(x => x.DivisionID == divisionID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
-
+                    var employeeDepartmentName = await _context.Departments.Where(x => x.DepartmentID == employee.DepartmentID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
+                    var employeeDivisionName = await _context.Divisions.Where(x => x.DivisionID == employee.DivisionID && x.IsDeleted == false).Select(x => x.Name).FirstOrDefaultAsync();
                     // Prepare the DTO for payroll result
+
+                    //bpjs amount
+                    dictAllowanceDeduction.TryGetValue(7L, out var bpjs);
+
                     salaryDataList.Add(new SalaryResultPayrollDTO
                     {
                         EmployeeID = employee.EmployeeID,
@@ -386,10 +373,12 @@ namespace sopra_hris_api.src.Services.API
                         EmployeeTypeName = employeeTypeName ?? "",
                         GroupID = employee.GroupID,
                         GroupName = employeeGroupName ?? "",
-                        FunctionID = employee.FunctionID,
+                        FunctionID = employee.FunctionID ?? 0L,
                         FunctionName = employeeFunctionName ?? "",
-                        DivisionID = divisionID,
+                        DivisionID = employee.DivisionID ?? 0L,
                         DivisionName = employeeDivisionName ?? "",
+                        DepartmentID = employee.DepartmentID ?? 0L,
+                        DepartmentName = employeeDepartmentName ?? "",
                         Month = t.Month,
                         Year = t.Year,
                         HKS = t.HKS ?? 0,
@@ -402,9 +391,9 @@ namespace sopra_hris_api.src.Services.API
                         TotalAllowances = totalAllowance ?? 0,
                         TotalDeductions = totalDeduction ?? 0,
                         THP = salaryNetto,
-                        //PayrollType = t.PayrollType ?? ""
+                        BPJS = bpjs,
+                        TransferAmount = salaryNetto - bpjs
                     });
-
                 }
 
                 await dbTrans.CommitAsync();
@@ -426,32 +415,14 @@ namespace sopra_hris_api.src.Services.API
         {
             foreach (var detail in allowanceDeductionDetails)
             {
-                var existingDetail = await _context.SalaryDetails
-                    .FirstOrDefaultAsync(sd => sd.IsDeleted == false && sd.SalaryID == salaryID && sd.AllowanceDeductionID == detail.Key);
-
-                if (existingDetail != null)  // If record exists, update it
+                var salaryDetail = new SalaryDetails
                 {
-                    // Ensure the mapping exists in AllowanceDeduction
-                    var allowanceDeduction = await _context.AllowanceDeduction
-                        .FirstOrDefaultAsync(ad => ad.AllowanceDeductionID == detail.Key && ad.IsDeleted == false);
+                    AllowanceDeductionID = detail.Key,
+                    Amount = detail.Value,
+                    SalaryID = salaryID
+                };
 
-                    if (allowanceDeduction != null)
-                        existingDetail.Amount = detail.Value;
-                    else
-                        // If no valid mapping, delete the record
-                        _context.SalaryDetails.Remove(existingDetail);
-                }
-                else  // If the record does not exist, create a new one
-                {
-                    var salaryDetail = new SalaryDetails
-                    {
-                        AllowanceDeductionID = detail.Key,
-                        Amount = detail.Value,
-                        SalaryID = salaryID
-                    };
-
-                    await _context.SalaryDetails.AddAsync(salaryDetail);
-                }
+                await _context.SalaryDetails.AddAsync(salaryDetail);
                 await _context.SaveChangesAsync();
             }
         }
@@ -476,8 +447,8 @@ namespace sopra_hris_api.src.Services.API
 
             var allowanceDeductions = await _context.AllowanceDeduction.ToListAsync();
 
-            //tunjangan kinerja          
-            var tunjanganKinerja = await _context.TunjanganKinerja
+            //tunjangan Masa Kerja
+            var tunjanganMasaKerja = await _context.TunjanganMasaKerja
                 .Where(tk => yearsWorked >= tk.Min && yearsWorked < tk.Max)
                 .Select(tk => tk.Factor).FirstOrDefaultAsync();
 
@@ -496,12 +467,13 @@ namespace sopra_hris_api.src.Services.API
                         amount = template.ATT.Value * item.Amount;  // Based on attendance
                     else if (allowanceDeduction.AmountType == "FIX" && item.Amount > 0)
                         amount = item.Amount;  // Fixed amount
-                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganKinerja > 0)
-                        amount = (employee.BasicSalary * tunjanganKinerja / 100).Value;
+                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganMasaKerja > 0)
+                        amount = (employee.BasicSalary * tunjanganMasaKerja / 100).Value;
                     else if (allowanceDeduction.AmountType == "OVT" && item.Amount > 0 && template.OVT.HasValue && template.OVT.Value > 0)
                         amount = template.OVT.Value * (employee.BasicSalary / 173).Value;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     allowance += amount;
                 }
                 else if (allowanceDeduction.Type == "Deduction")
@@ -514,7 +486,8 @@ namespace sopra_hris_api.src.Services.API
                     else if (allowanceDeduction.AmountType == "LATE" && item.Amount > 0 && template.Late.HasValue && template.Late.Value > 0)
                         amount = template.Late.Value * item.Amount;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     deduction += amount;
                 }
             }
@@ -534,12 +507,13 @@ namespace sopra_hris_api.src.Services.API
                         amount = template.ATT.Value * item.Amount;  // Based on attendance
                     else if (allowanceDeduction.AmountType == "FIX" && item.Amount > 0)
                         amount = item.Amount;  // Fixed amount
-                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganKinerja > 0)
-                        amount = (tunjanganKinerja / 100 * employee.BasicSalary).Value;
+                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganMasaKerja > 0)
+                        amount = (tunjanganMasaKerja / 100 * employee.BasicSalary).Value;
                     else if (allowanceDeduction.AmountType == "OVT" && item.Amount > 0 && template.OVT.HasValue && template.OVT.Value > 0)
                         amount = template.OVT.Value * (employee.BasicSalary / 173).Value;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     allowance += amount;
                 }
                 else if (allowanceDeduction.Type == "Deduction")
@@ -552,7 +526,8 @@ namespace sopra_hris_api.src.Services.API
                     else if (allowanceDeduction.AmountType == "LATE" && item.Amount > 0 && template.Late.HasValue && template.Late.Value > 0)
                         amount = template.Late.Value * item.Amount;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     deduction += amount;
                 }
             }
@@ -572,12 +547,13 @@ namespace sopra_hris_api.src.Services.API
                         amount = template.ATT.Value * item.Amount;  // Based on attendance
                     else if (allowanceDeduction.AmountType == "FIX" && item.Amount > 0)
                         amount = item.Amount;  // Fixed amount
-                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganKinerja > 0)
-                        amount = (tunjanganKinerja / 100 * employee.BasicSalary).Value;
+                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganMasaKerja > 0)
+                        amount = (tunjanganMasaKerja / 100 * employee.BasicSalary).Value;
                     else if (allowanceDeduction.AmountType == "OVT" && item.Amount > 0 && template.OVT.HasValue && template.OVT.Value > 0)
                         amount = template.OVT.Value * (employee.BasicSalary / 173).Value;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     allowance += amount;
                 }
                 else if (allowanceDeduction.Type == "Deduction")
@@ -590,7 +566,8 @@ namespace sopra_hris_api.src.Services.API
                     else if (allowanceDeduction.AmountType == "LATE" && item.Amount > 0 && template.Late.HasValue && template.Late.Value > 0)
                         amount = template.Late.Value * item.Amount;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     deduction += amount;
                 }
             }
@@ -610,12 +587,13 @@ namespace sopra_hris_api.src.Services.API
                         amount = template.ATT.Value * item.Amount;  // Based on attendance
                     else if (allowanceDeduction.AmountType == "FIX" && item.Amount > 0)
                         amount = item.Amount;  // Fixed amount
-                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganKinerja > 0)
-                        amount = (tunjanganKinerja / 100 * employee.BasicSalary).Value;
+                    else if (allowanceDeduction.AmountType == "CUSTOM" && tunjanganMasaKerja > 0)
+                        amount = (tunjanganMasaKerja / 100 * employee.BasicSalary).Value;
                     else if (allowanceDeduction.AmountType == "OVT" && item.Amount > 0 && template.OVT.HasValue && template.OVT.Value > 0)
                         amount = template.OVT.Value * (employee.BasicSalary / 173).Value;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     allowance += amount;
                 }
                 else if (allowanceDeduction.Type == "Deduction")
@@ -628,7 +606,8 @@ namespace sopra_hris_api.src.Services.API
                     else if (allowanceDeduction.AmountType == "LATE" && item.Amount > 0 && template.Late.HasValue && template.Late.Value > 0)
                         amount = template.Late.Value * item.Amount;
 
-                    dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
+                    if (!dictAllowanceDeduction.ContainsKey(item.AllowanceDeductionID))
+                        dictAllowanceDeduction[item.AllowanceDeductionID] = amount;
                     deduction += amount;
                 }
             }
@@ -823,41 +802,57 @@ namespace sopra_hris_api.src.Services.API
                 }
                 else if (!string.IsNullOrEmpty(type) && type.ToLower() == "payroll")
                 {
-                    query = (from salary in _context.Salary
-                             join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
-                             join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID
-                             join groups in _context.Groups on employee.GroupID equals groups.GroupID
-                             join function in _context.Functions on employee.FunctionID equals function.FunctionID
-                             join division in _context.Divisions on function.DivisionID equals division.DivisionID
-                             where salary.IsDeleted == false
-                             select new Salary
-                             {
-                                 SalaryID = salary.SalaryID,
-                                 EmployeeID = salary.EmployeeID,
-                                 Nik = employee.Nik,
-                                 Name = employee.EmployeeName,
-                                 EmployeeTypeID = employee.EmployeeTypeID,
-                                 EmployeeTypeName = employeeType.Name,
-                                 GroupID = groups.GroupID,
-                                 GroupName = groups.Name,
-                                 FunctionID = function.FunctionID,
-                                 FunctionName = function.Name,
-                                 DivisionID = division.DivisionID,
-                                 DivisionName = division.Name,
-                                 Month = salary.Month,
-                                 Year = salary.Year,
-                                 HKS = salary.HKS,
-                                 HKA = salary.HKA,
-                                 ATT = salary.ATT,
-                                 OVT = salary.OVT,
-                                 Late = salary.Late,
-                                 MEAL = salary.MEAL,
-                                 ABSENT = salary.ABSENT,
-                                 AllowanceTotal = salary.AllowanceTotal,
-                                 DeductionTotal = salary.DeductionTotal,
-                                 Netto = salary.Netto,
-                                 PayrollType = salary.PayrollType
-                             });
+                    query = from salary in _context.Salary
+                            join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID into employeeGroup
+                            from employee in employeeGroup.DefaultIfEmpty()
+                            join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
+                            from employeeType in employeeTypeGroup.DefaultIfEmpty()
+                            join groups in _context.Groups on employee.GroupID equals groups.GroupID into groupsGroup
+                            from groups in groupsGroup.DefaultIfEmpty()
+                            join function in _context.Functions on employee.FunctionID equals function.FunctionID into functionGroup
+                            from function in functionGroup.DefaultIfEmpty()
+                            join department in _context.Departments on employee.DepartmentID equals department.DepartmentID into departmentGroup
+                            from department in departmentGroup.DefaultIfEmpty()
+                            join division in _context.Divisions on employee.DivisionID equals division.DivisionID into divisionGroup
+                            from division in divisionGroup.DefaultIfEmpty()
+                            where salary.IsDeleted == false
+
+                            let bpjsAmount = _context.SalaryDetails
+                                                  .Where(sd => sd.SalaryID == salary.SalaryID && sd.AllowanceDeductionID == 7)
+                                                  .Sum(sd => sd.Amount)
+                            select new Salary
+                            {
+                                SalaryID = salary.SalaryID,
+                                EmployeeID = salary.EmployeeID,
+                                Nik = employee != null ? employee.Nik : null,
+                                Name = employee != null ? employee.EmployeeName : null,
+                                EmployeeTypeID = employee != null ? employee.EmployeeTypeID : 0L,
+                                EmployeeTypeName = employeeType != null ? employeeType.Name : null,
+                                GroupID = groups != null ? groups.GroupID : 0L,
+                                GroupType = groups != null ? groups.Type : null,
+                                GroupName = groups != null ? groups.Name : null,
+                                FunctionID = function != null ? function.FunctionID : 0L,
+                                FunctionName = function != null ? function.Name : null,
+                                DivisionID = division != null ? division.DivisionID : 0L,
+                                DivisionName = division != null ? division.Name : null,
+                                DepartmentID = department != null ? department.DepartmentID : 0L,
+                                DepartmentName = department != null ? department.Name : null,
+                                Month = salary.Month,
+                                Year = salary.Year,
+                                HKS = salary.HKS,
+                                HKA = salary.HKA,
+                                ATT = salary.ATT,
+                                OVT = salary.OVT,
+                                Late = salary.Late,
+                                MEAL = salary.MEAL,
+                                ABSENT = salary.ABSENT,
+                                AllowanceTotal = salary.AllowanceTotal,
+                                DeductionTotal = salary.DeductionTotal,
+                                Netto = salary.Netto,
+                                PayrollType = salary.PayrollType,
+                                BPJS = bpjsAmount,
+                                TransferAmount = salary.Netto - bpjsAmount
+                            };
                 }
 
                 var resultList = await query.ToListAsync();

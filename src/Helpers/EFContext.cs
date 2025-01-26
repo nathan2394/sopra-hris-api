@@ -10,9 +10,12 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Company> Companies { get; set; }
         public DbSet<DivisionDetails> DivisionDetails { get; set; }
         public DbSet<Division> Divisions { get; set; }
+        public DbSet<DepartmentDetails> DepartmentDetails { get; set; }
+        public DbSet<Departments> Departments { get; set; }
         public DbSet<EmployeeDetails> EmployeeDetails { get; set; }
         public DbSet<Employees> Employees { get; set; }
         public DbSet<EmployeeTypes> EmployeeTypes { get; set; }
+        public DbSet<EmployeeJobTitles> EmployeeJobTitles { get; set; }
         public DbSet<FunctionDetails> FunctionDetails { get; set; }
         public DbSet<Functions> Functions { get; set; }
         public DbSet<GroupDetails> GroupDetails { get; set; }
@@ -20,7 +23,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Modules> Modules { get; set; }
         public DbSet<RoleDetails> RoleDetails { get; set; }
         public DbSet<Roles> Roles { get; set; }
-        public DbSet<TunjanganKinerja> TunjanganKinerja { get; set; }
+        public DbSet<TunjanganMasaKerja> TunjanganMasaKerja { get; set; }
         public DbSet<UserLogs> UserLogs { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<Salary> Salary { get; set; }

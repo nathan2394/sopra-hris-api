@@ -142,6 +142,8 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Company>, CompanyService>();
             services.AddScoped<IServiceAsync<Division>, DivisionService>();
             services.AddScoped<IServiceAsync<DivisionDetails>, DivisionDetailService>();
+            services.AddScoped<IServiceAsync<Departments>, DepartmentService>();
+            services.AddScoped<IServiceAsync<DepartmentDetails>, DepartmentDetailService>();
             services.AddScoped<IServiceAsync<Employees>, EmployeeService>();
             services.AddScoped<IServiceAsync<EmployeeTypes>, EmployeeTypeService>();
             services.AddScoped<IServiceAsync<EmployeeDetails>, EmployeeDetailService>();
@@ -150,7 +152,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Groups>, GroupService>();
             services.AddScoped<IServiceAsync<GroupDetails>, GroupDetailService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();
-            services.AddScoped<IServiceAsync<TunjanganKinerja>, TunjanganKinerjaService>();
+            services.AddScoped<IServiceAsync<TunjanganMasaKerja>, TunjanganMasaKerjaService>();
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();
             services.AddScoped<IServiceAsync<SalaryDetails>, SalaryDetailService>();
 

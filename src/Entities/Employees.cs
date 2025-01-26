@@ -25,9 +25,19 @@ namespace sopra_hris_api.Entities
         public long EmployeeTypeID { get; set; }
         public long GroupID { get; set; }
         public long? DepartmentID { get; set; }
-        public long FunctionID { get; set; }
+        public long? DivisionID { get; set; }
+        public long? FunctionID { get; set; }
+        public long? JobTitleID { get; set; }
+        public string? Religion { get; set; }
+        public string? BPJSTK { get; set; }
+        public string? BPJSKES { get; set; }
+        public string? Education { get; set; }
+        public string? TaxStatus { get; set; }
+        public string? MotherMaidenName { get; set; }
+        public string? TKStatus { get; set; }
         public long CompanyID { get; set; }
-        public string? Address { get; set; }
+        public string? AddressKTP { get; set; }
+        public string? AddressDomisili { get; set; }
         public decimal? BasicSalary { get; set; }
         public string? AccountNo { get; set; }
         public string? Bank { get; set; }
@@ -41,11 +51,11 @@ namespace sopra_hris_api.Entities
         [NotMapped]
         public string FunctionName { get; set; }
         [NotMapped]
-        public long DivisionID { get; set; }
-        [NotMapped]
         public string DivisionName { get; set; }
         [NotMapped]
         public string EmployeeTypeName { get; set; }
+        [NotMapped]
+        public string EmployeeJobTitleName { get; set; }
         [NotMapped]
         public List<AllowanceDeductionEmployeeDetails> allowancedeductionDetails { get; set; }
     }

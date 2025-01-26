@@ -37,6 +37,8 @@ namespace sopra_hris_api.src.Entities
         public string GroupName { get; set; }
         public long FunctionID { get; set; }
         public string FunctionName { get; set; }
+        public long DepartmentID { get; set; }
+        public string DepartmentName { get; set; }
         public long DivisionID { get; set; }
         public string DivisionName { get; set; }
         public long Month { get; set; }
@@ -52,5 +54,7 @@ namespace sopra_hris_api.src.Entities
         public decimal? TotalDeductions { get; set; }
         public decimal? THP { get; set; }
         public string PayrollType { get; set; }
+        public decimal? BPJS { get; set; }
+        public decimal? TransferAmount { get; set; }
     }
 }

@@ -28,7 +28,26 @@ namespace sopra_hris_api.Helpers
                 return config;
             }
         }
+        public static int? TryParseNullableInt(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value == "-")
+                return null;
 
+            if (int.TryParse(value, out int parsedValue))
+                return parsedValue;
+
+            return null;
+        }
+        public static decimal? TryParseNullableDecimal(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value == "-")
+                return null;
+
+            if (decimal.TryParse(value, out decimal parsedValue))
+                return parsedValue;
+
+            return null;
+        }
         public static string Secret { get { return Configuration.GetSection("AppSettings:Secret").Value; } }
         public static DateTime getCurrentTimestamps()
         {

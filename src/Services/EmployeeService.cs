@@ -10,6 +10,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Data.SqlClient;
+using System.Threading.Tasks;
+using System.Net.NetworkInformation;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -85,24 +87,38 @@ namespace sopra_hris_api.src.Services.API
                 if (obj == null) return null;
 
                 obj.EmployeeName = data.EmployeeName;
-                obj.AccountNo = data.AccountNo;
-                obj.Bank = data.Bank;
-                obj.Email = data.Email;
-                obj.StartWorkingDate = data.StartWorkingDate;
-                obj.Address = data.Address;
-                obj.PlaceOfBirth = data.PlaceOfBirth;
-                obj.DateOfBirth = data.DateOfBirth;
-                obj.BasicSalary = data.BasicSalary;
-                obj.EmployeeTypeID = data.EmployeeTypeID;
-                obj.Gender = data.Gender;
                 obj.NickName = data.NickName;
                 obj.Nik = data.Nik;
+                obj.PlaceOfBirth = data.PlaceOfBirth;
+                obj.DateOfBirth = data.DateOfBirth;
+                obj.Gender = data.Gender;
+                obj.Email = data.Email;
                 obj.PhoneNumber = data.PhoneNumber;
-                obj.EndWorkingDate = data.EndWorkingDate;
                 obj.KTP = data.KTP;
-                obj.DepartmentID = data.DepartmentID;
+                obj.StartWorkingDate = data.StartWorkingDate;
+                obj.StartJointDate = data.StartJointDate;
+                obj.EndWorkingDate = data.EndWorkingDate;
+                obj.EmployeeTypeID = data.EmployeeTypeID;
                 obj.GroupID = data.GroupID;
+                obj.DepartmentID = data.DepartmentID;
+                obj.DivisionID = data.DivisionID;
                 obj.FunctionID = data.FunctionID;
+                obj.JobTitleID = data.JobTitleID;
+                obj.Religion = data.Religion;
+                obj.BPJSTK = data.BPJSTK;
+                obj.BPJSKES = data.BPJSKES;
+                obj.Education = data.Education;
+                obj.TaxStatus = data.TaxStatus;
+                obj.MotherMaidenName = data.MotherMaidenName;
+                obj.TKStatus = data.TKStatus;
+                obj.BPJSKES = data.BPJSKES;
+                obj.BPJSKES = data.BPJSKES;
+                obj.Bank = data.Bank;
+                obj.AccountNo = data.AccountNo;
+                obj.Bank = data.Bank;
+                obj.AddressKTP = data.AddressKTP;
+                obj.AddressDomisili = data.AddressDomisili;
+                obj.BasicSalary = data.BasicSalary;
                 obj.CompanyID = data.CompanyID;
 
                 obj.UserUp = data.UserUp;
@@ -146,8 +162,16 @@ namespace sopra_hris_api.src.Services.API
                             from function in functionGroup.DefaultIfEmpty()
 
                             join division in _context.Divisions
-                                on function.DivisionID equals division.DivisionID into divisionGroup
+                                on a.DivisionID equals division.DivisionID into divisionGroup
                             from division in divisionGroup.DefaultIfEmpty()
+
+                            join department in _context.Departments
+                                on a.DepartmentID equals department.DepartmentID into departmentGroup
+                            from department in departmentGroup.DefaultIfEmpty()
+
+                            join jobtitle in _context.EmployeeJobTitles
+                                on a.JobTitleID equals jobtitle.EmployeeJobTitleID into jobTitleGroup
+                            from jobtitle in jobTitleGroup.DefaultIfEmpty()
 
                             where a.IsDeleted == false
                             select new Employees
@@ -156,6 +180,15 @@ namespace sopra_hris_api.src.Services.API
                                 Nik = a.Nik,
                                 EmployeeName = a.EmployeeName,
                                 NickName = a.NickName,
+                                PlaceOfBirth = a.PlaceOfBirth,
+                                DateOfBirth = a.DateOfBirth,
+                                Gender = a.Gender,
+                                Email = a.Email,
+                                PhoneNumber = a.PhoneNumber,
+                                KTP = a.KTP,
+                                StartWorkingDate = a.StartWorkingDate,
+                                StartJointDate = a.StartJointDate,
+                                EndWorkingDate = a.EndWorkingDate,
                                 EmployeeTypeID = a.EmployeeTypeID,
                                 EmployeeTypeName = employeeType != null ? employeeType.Name : null,
                                 GroupID = a.GroupID,
@@ -165,20 +198,23 @@ namespace sopra_hris_api.src.Services.API
                                 FunctionName = function != null ? function.Name : null,
                                 DivisionID = a.DivisionID,
                                 DivisionName = division != null ? division.Name : null,
-                                Email = a.Email,
-                                PhoneNumber = a.PhoneNumber,
-                                KTP = a.KTP,
+                                DepartmentID = a.DepartmentID,
+                                DepartmentName = department != null ? department.Name : null,
+                                JobTitleID = a.EmployeeTypeID,
+                                EmployeeJobTitleName = jobtitle != null ? jobtitle.Name : null,
                                 AccountNo = a.AccountNo,
                                 Bank = a.Bank,
-                                PlaceOfBirth = a.PlaceOfBirth,
-                                DateOfBirth = a.DateOfBirth,
-                                Gender = a.Gender,
-                                StartWorkingDate = a.StartWorkingDate,
-                                StartJointDate = a.StartJointDate,
-                                EndWorkingDate = a.EndWorkingDate,
                                 CompanyID = a.CompanyID,
-                                Address = a.Address,
-                                BasicSalary = a.BasicSalary
+                                AddressKTP = a.AddressKTP,
+                                AddressDomisili = a.AddressDomisili,
+                                BasicSalary = a.BasicSalary,
+                                Religion = a.Religion,
+                                BPJSTK = a.BPJSTK,
+                                BPJSKES = a.BPJSKES,
+                                Education = a.Education,
+                                TaxStatus = a.TaxStatus,
+                                MotherMaidenName = a.MotherMaidenName,
+                                TKStatus = a.TKStatus
                             };
                 // Searching
 
@@ -202,10 +238,10 @@ namespace sopra_hris_api.src.Services.API
                                 "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                 "nik" => query.Where(x => x.Nik.Contains(value)),
                                 "ktp" => query.Where(x => x.KTP.Contains(value)),
-                                "group" => query.Where(x => x.GroupID.Equals(value)),
-                                "department" => query.Where(x => x.DepartmentID.Equals(value)),
-                                "function" => query.Where(x => x.FunctionID.Equals(value)),
-                                "division" => query.Where(x => x.DivisionID.Equals(value)),
+                                "group" => query.Where(x => x.GroupID.ToString().Equals(value)),
+                                "department" => query.Where(x => x.DepartmentID.ToString().Equals(value)),
+                                "function" => query.Where(x => x.FunctionID.ToString().Equals(value)),
+                                "division" => query.Where(x => x.DivisionID.ToString().Equals(value)),
                                 _ => query
                             };
                         }
@@ -287,8 +323,16 @@ namespace sopra_hris_api.src.Services.API
                             from function in functionGroup.DefaultIfEmpty()
 
                             join division in _context.Divisions
-                                on function.DivisionID equals division.DivisionID into divisionGroup
+                                on a.DivisionID equals division.DivisionID into divisionGroup
                             from division in divisionGroup.DefaultIfEmpty()
+
+                            join department in _context.Departments
+                                on a.DepartmentID equals department.DepartmentID into departmentGroup
+                            from department in departmentGroup.DefaultIfEmpty()
+
+                            join jobtitle in _context.EmployeeJobTitles
+                                on a.JobTitleID equals jobtitle.EmployeeJobTitleID into jobTitleGroup
+                            from jobtitle in jobTitleGroup.DefaultIfEmpty()
 
                             where a.IsDeleted == false && a.EmployeeID == id
                             select new Employees
@@ -297,6 +341,15 @@ namespace sopra_hris_api.src.Services.API
                                 Nik = a.Nik,
                                 EmployeeName = a.EmployeeName,
                                 NickName = a.NickName,
+                                PlaceOfBirth = a.PlaceOfBirth,
+                                DateOfBirth = a.DateOfBirth,
+                                Gender = a.Gender,
+                                Email = a.Email,
+                                PhoneNumber = a.PhoneNumber,
+                                KTP = a.KTP,
+                                StartWorkingDate = a.StartWorkingDate,
+                                StartJointDate = a.StartJointDate,
+                                EndWorkingDate = a.EndWorkingDate,
                                 EmployeeTypeID = a.EmployeeTypeID,
                                 EmployeeTypeName = employeeType != null ? employeeType.Name : null,
                                 GroupID = a.GroupID,
@@ -306,20 +359,23 @@ namespace sopra_hris_api.src.Services.API
                                 FunctionName = function != null ? function.Name : null,
                                 DivisionID = a.DivisionID,
                                 DivisionName = division != null ? division.Name : null,
-                                Email = a.Email,
-                                PhoneNumber = a.PhoneNumber,
-                                KTP = a.KTP,
+                                DepartmentID = a.DepartmentID,
+                                DepartmentName = department != null ? department.Name : null,
+                                JobTitleID = a.EmployeeTypeID,
+                                EmployeeJobTitleName = jobtitle != null ? jobtitle.Name : null,
                                 AccountNo = a.AccountNo,
                                 Bank = a.Bank,
-                                PlaceOfBirth = a.PlaceOfBirth,
-                                DateOfBirth = a.DateOfBirth,
-                                Gender = a.Gender,
-                                StartWorkingDate = a.StartWorkingDate,
-                                StartJointDate = a.StartJointDate,
-                                EndWorkingDate = a.EndWorkingDate,
                                 CompanyID = a.CompanyID,
-                                Address = a.Address,
-                                BasicSalary = a.BasicSalary
+                                AddressKTP = a.AddressKTP,
+                                AddressDomisili = a.AddressDomisili,
+                                BasicSalary = a.BasicSalary,
+                                Religion = a.Religion,
+                                BPJSTK = a.BPJSTK,
+                                BPJSKES = a.BPJSKES,
+                                Education = a.Education,
+                                TaxStatus = a.TaxStatus,
+                                MotherMaidenName = a.MotherMaidenName,
+                                TKStatus = a.TKStatus
                             };
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 

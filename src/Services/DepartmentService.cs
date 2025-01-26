@@ -7,21 +7,21 @@ using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class TunjanganKinerjaService : IServiceAsync<TunjanganKinerja>
+    public class DepartmentService : IServiceAsync<Departments>
     {
         private readonly EFContext _context;
 
-        public TunjanganKinerjaService(EFContext context)
+        public DepartmentService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<TunjanganKinerja> CreateAsync(TunjanganKinerja data)
+        public async Task<Departments> CreateAsync(Departments data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.TunjanganKinerja.AddAsync(data);
+                await _context.Departments.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -45,7 +45,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.TunjanganKinerja.FirstOrDefaultAsync(x => x.TunjanganKinerjaID == id && x.IsDeleted == false);
+                var obj = await _context.Departments.FirstOrDefaultAsync(x => x.DepartmentID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
@@ -70,17 +70,15 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<TunjanganKinerja> EditAsync(TunjanganKinerja data)
+        public async Task<Departments> EditAsync(Departments data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.TunjanganKinerja.FirstOrDefaultAsync(x => x.TunjanganKinerjaID == data.TunjanganKinerjaID && x.IsDeleted == false);
+                var obj = await _context.Departments.FirstOrDefaultAsync(x => x.DepartmentID == data.DepartmentID && x.IsDeleted == false);
                 if (obj == null) return null;
 
-                obj.Min = data.Min;
-                obj.Max = data.Max;
-                obj.Factor = data.Factor;
+                obj.Name = data.Name;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -104,17 +102,17 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<TunjanganKinerja>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<Departments>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.TunjanganKinerja where a.IsDeleted == false select a;
+                var query = from a in _context.Departments where a.IsDeleted == false select a;
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.Name.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -129,7 +127,7 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "name" => query.Where(x => x.Name.Contains(value)),
                                 _ => query
                             };
                         }
@@ -148,7 +146,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "name" => query.OrderByDescending(x => x.Name),
                             _ => query
                         };
                     }
@@ -156,14 +154,14 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "name" => query.OrderBy(x => x.Name),
                             _ => query
                         };
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.TunjanganKinerjaID);
+                    query = query.OrderByDescending(x => x.DepartmentID);
                 }
 
                 // Get Total Before Limit and Page
@@ -181,7 +179,7 @@ namespace sopra_hris_api.src.Services.API
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
-                return new ListResponse<TunjanganKinerja>(data, total, page);
+                return new ListResponse<Departments>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -193,11 +191,11 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<TunjanganKinerja> GetByIdAsync(long id)
+        public async Task<Departments> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.TunjanganKinerja.AsNoTracking().FirstOrDefaultAsync(x => x.TunjanganKinerjaID == id && x.IsDeleted == false);
+                return await _context.Departments.AsNoTracking().FirstOrDefaultAsync(x => x.DepartmentID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {
