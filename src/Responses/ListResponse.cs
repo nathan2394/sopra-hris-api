@@ -28,7 +28,21 @@ namespace sopra_hris_api.Responses
         }
     }
 
-	public class ListResponseFilter<T>
+    public class ListResponseUploadTemplate<T>
+    {
+        public IEnumerable<T> Data { get; set; }
+        public IEnumerable<SalaryPayrollSummaryDTO> DataSummary { get; set; }
+        public IEnumerable<SalaryPayrollSummaryTotalDTO> DataSummaryTotal { get; set; }
+
+        public ListResponseUploadTemplate(IEnumerable<T> data, IEnumerable<SalaryPayrollSummaryDTO> dataSummary, IEnumerable<SalaryPayrollSummaryTotalDTO> dataSummaryTotal)
+        {
+            Data = data;
+            DataSummary = dataSummary;
+            DataSummaryTotal = dataSummaryTotal;
+        }
+    }
+
+    public class ListResponseFilter<T>
 	{
 		public IEnumerable<FilterGroup> Filters { get; set; }
 

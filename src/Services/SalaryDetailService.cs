@@ -4,10 +4,15 @@ using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using sopra_hris_api.src.Entities;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Generic;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class SalaryDetailService : IServiceAsync<SalaryDetails>
+    public class SalaryDetailService : IServiceSalaryDetailsAsync<SalaryDetails>
     {
         private readonly EFContext _context;
 
@@ -15,93 +20,6 @@ namespace sopra_hris_api.src.Services.API
         {
             _context = context;
         }
-
-        public async Task<SalaryDetails> CreateAsync(SalaryDetails data)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                await _context.SalaryDetails.AddAsync(data);
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return data;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
-        public async Task<bool> DeleteAsync(long id, long UserID)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var obj = await _context.SalaryDetails.FirstOrDefaultAsync(x => x.SalaryDetailID == id && x.IsDeleted == false);
-                if (obj == null) return false;
-
-                obj.IsDeleted = true;
-                obj.UserUp = UserID;
-                obj.DateUp = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
-        public async Task<SalaryDetails> EditAsync(SalaryDetails data)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var obj = await _context.SalaryDetails.FirstOrDefaultAsync(x => x.SalaryDetailID == data.SalaryDetailID && x.IsDeleted == false);
-                if (obj == null) return null;
-
-                obj.AllowanceDeductionID = data.AllowanceDeductionID;
-                obj.Amount = data.Amount;
-
-                obj.UserUp = data.UserUp;
-                obj.DateUp = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return obj;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
 
         public async Task<ListResponse<SalaryDetails>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
@@ -197,6 +115,86 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 return await _context.SalaryDetails.AsNoTracking().FirstOrDefaultAsync(x => x.SalaryDetailID == id && x.IsDeleted == false);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<ListResponseTemplate<SalaryDetailsDTO>> GetSalaryDetails(string filter)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                // Prepare the SQL stored procedure call
+                var parameters = new List<SqlParameter>();
+                int month = DateTime.Now.Month;
+                int year = DateTime.Now.Year;
+                // Filtering
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var f in filterList)
+                    {
+                        var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                        if (searchList.Length == 2)
+                        {
+                            var fieldName = searchList[0].Trim().ToLower();
+                            var value = searchList[1].Trim();
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                if (fieldName == "month")
+                                    Int32.TryParse(value, out month);
+                                else if (fieldName == "year")
+                                    Int32.TryParse(value, out year);
+                            }
+                        }
+                    }
+                }
+                parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = month });
+                parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
+
+                // Get Data
+
+                var data = await _context.SalaryDetailsDTO.FromSqlRaw(
+                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  .ToListAsync();                
+
+                var result = data.Select(s => new SalaryDetailsDTO
+                {
+                    SalaryID = s.SalaryID,
+                    Month = s.Month,
+                    Year = s.Year,
+                    Nik = s.Nik,
+                    EmployeeName = s.EmployeeName,
+                    AccountNo = s.AccountNo,
+                    GroupName = s.GroupName,
+                    Department = s.Department,
+                    Division = s.Division,
+                    EmployeeType = s.EmployeeType,
+                    EmployeeJobTitle = s.EmployeeJobTitle,
+                    StartWorkingDate = s.StartWorkingDate,
+                    StartJointDate = s.StartJointDate,
+                    BasicSalary = s.BasicSalary,
+                    UMakan = s.UMakan,
+                    UTransport = s.UTransport,
+                    UJabatan = s.UJabatan,
+                    UFunctional = s.UFunctional,
+                    UTKhusus = s.UTKhusus,
+                    UTOperational = s.UTOperational,
+                    ULembur = s.ULembur,
+                    BPJS = s.BPJS,
+                    AllowanceTotal = s.AllowanceTotal,
+                    DeductionTotal = s.DeductionTotal,
+                    Netto = s.Netto
+                }).ToList();
+                return new ListResponseTemplate<SalaryDetailsDTO>(data);
             }
             catch (Exception ex)
             {

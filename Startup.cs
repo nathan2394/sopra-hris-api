@@ -154,7 +154,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();
             services.AddScoped<IServiceAsync<TunjanganMasaKerja>, TunjanganMasaKerjaService>();
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();
-            services.AddScoped<IServiceAsync<SalaryDetails>, SalaryDetailService>();
+            services.AddScoped<IServiceSalaryDetailsAsync<SalaryDetails>, SalaryDetailService>();
 
         }
 
