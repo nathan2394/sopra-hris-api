@@ -43,28 +43,50 @@ namespace sopra_hris_api.Entities
         public string? Bank { get; set; }
 
         [NotMapped]
-        public string DepartmentName { get; set; }
+        public string? DepartmentName { get; set; }
         [NotMapped]
-        public string GroupType { get; set; }
+        public string? GroupType { get; set; }
         [NotMapped]
-        public string GroupName { get; set; }
+        public string? GroupName { get; set; }
         [NotMapped]
-        public string FunctionName { get; set; }
+        public string? FunctionName { get; set; }
         [NotMapped]
-        public string DivisionName { get; set; }
+        public string? DivisionName { get; set; }
         [NotMapped]
-        public string EmployeeTypeName { get; set; }
+        public string? EmployeeTypeName { get; set; }
         [NotMapped]
-        public string EmployeeJobTitleName { get; set; }
+        public string? EmployeeJobTitleName { get; set; }
         [NotMapped]
-        public List<AllowanceDeductionEmployeeDetails> allowancedeductionDetails { get; set; }
+        public List<AllowanceDeductionEmployeeDetails>? AllowanceDeductionDetails { get; set; }
+        [NotMapped]
+        public List<MasterEmployeePayroll>? MasterEmployeePayroll { get; set; }
     }
     [Keyless]
     public class AllowanceDeductionEmployeeDetails
     {
+        public long ID { get; set; }
         public long AllowanceDeductionID { get; set; }
+        public string AllowanceDeductionGroupType { get; set; }
         public string Name { get; set; }
         public string Type { get; set; }
         public decimal Amount { get; set; }
+    }
+    [Keyless]
+    public class MasterEmployeePayroll
+    {
+        public long Year { get; set; }
+        public long EmployeeID { get; set; }
+        public string EmployeeName { get; set; }
+        public decimal BasicSalary { get; set; }
+        public decimal? UMakan { get; set; }
+        public decimal? UTransport { get; set; }
+        public decimal? UJabatan { get; set; }
+        public decimal? UFunctional { get; set; }
+        public decimal? UTKhusus { get; set; }
+        public decimal? UTOperational { get; set; }
+        public decimal? ULembur { get; set; }
+        public decimal? BPJS { get; set; }
+        public decimal? THP { get; set; }
+        public decimal? Netto { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using sopra_hris_api.Responses;
+﻿using sopra_hris_api.Entities;
+using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 
 namespace sopra_hris_api.src.Services
@@ -10,6 +11,15 @@ namespace sopra_hris_api.src.Services
         Task<T> GetByIdAsync(long id);
         Task<T> CreateAsync(T data);
         Task<T> EditAsync(T data);
+        Task<bool> DeleteAsync(long id, long userID);
+    }
+    public interface IServiceEmployeeAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data, List<EmployeeDetails> details, long userID);
+        Task<T> EditAsync(T data, List<EmployeeDetails> details, long userID);
         Task<bool> DeleteAsync(long id, long userID);
     }
     public interface IServiceSalaryAsync<T>
@@ -31,6 +41,7 @@ namespace sopra_hris_api.src.Services
        string filter, string date);
         Task<T> GetByIdAsync(long id);
         Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetSalaryDetailReports(string filter);
-        
+        Task<SalaryDetailReportsDTO> GetSalaryDetails(long id);
+
     }
 }

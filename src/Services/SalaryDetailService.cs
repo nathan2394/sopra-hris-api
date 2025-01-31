@@ -177,5 +177,32 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<SalaryDetailReportsDTO> GetSalaryDetails(long id)
+        {
+            try
+            {
+                //_context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                var parameters = new List<SqlParameter>();
+                
+                parameters.Add(new SqlParameter("@SalaryID", SqlDbType.BigInt) { Value = id });
+
+                // Get Data
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
+                  "EXEC usp_GetSalaryDetailsByID @SalaryID", parameters.ToArray())
+                    .ToListAsync();
+
+                if (data == null) return null;
+                return data.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
     }
 }

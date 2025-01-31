@@ -44,16 +44,16 @@ public class SalaryDetailsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(long id)
     {
         try
         {
-            //var result = await _service.SalaryDetailsDTO(id);
-            //if (result == null)
+            var result = await _service.GetSalaryDetails(id);
+            if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            //var response = new Response<SalaryDetailsDTO>(result);
-            //return Ok(response);
+            var response = new Response<SalaryDetailReportsDTO>(result);
+            return Ok(response);
         }
         catch (Exception ex)
         {

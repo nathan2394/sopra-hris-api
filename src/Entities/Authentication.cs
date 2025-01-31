@@ -10,6 +10,8 @@ namespace sopra_hris_api.Entities
     }
     public class AuthenticationRequest
     {
+        public string PhoneNumber { get; set; }
+       
         public string Email { get; set; }
 
         [DataType(DataType.Password)]

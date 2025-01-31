@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = _service.Authenticate(request.Email, request.Password);
+            var user = _service.Authenticate(request);
             if (user == null)
                 return BadRequest(new { message = "Email or password is incorrect" });
 

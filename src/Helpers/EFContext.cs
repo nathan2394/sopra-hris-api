@@ -31,6 +31,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<SalaryDetails> SalaryDetails { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
         public virtual DbSet<AllowanceDeductionEmployeeDetails> AllowanceDeductionEmployeeDetails { get; set; }
+        public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
         public virtual DbSet<SalaryPayrollBankDTO> SalaryPayrollBankDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }

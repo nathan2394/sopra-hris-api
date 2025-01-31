@@ -12,9 +12,9 @@ namespace sopra_hris_api.Controllers;
 [Route("[controller]")]
 public class EmployeesController : ControllerBase
 {
-    private readonly IServiceAsync<Employees> _service;
+    private readonly IServiceEmployeeAsync<Employees> _service;
 
-    public EmployeesController(IServiceAsync<Employees> service)
+    public EmployeesController(IServiceEmployeeAsync<Employees> service)
     {
         _service = service;
     }
@@ -68,13 +68,12 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Employees obj)
+    public async Task<IActionResult> Create([FromBody] EmployeesDTO obj)
     {
         try
         {
-            obj.UserIn = Convert.ToInt64(1);
-
-            var result = await _service.CreateAsync(obj);
+            var userID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.CreateAsync(obj.Employee, obj.Details, userID);
             var response = new Response<Employees>(result);
             return Ok(response);
         }
@@ -94,13 +93,12 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Employees obj)
+    public async Task<IActionResult> Edit([FromBody] EmployeesDTO obj)
     {
         try
         {
-            obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
-
-            var result = await _service.EditAsync(obj);
+            var userID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.EditAsync(obj.Employee, obj.Details, userID);
             var response = new Response<Employees>(result);
             return Ok(response);
         }

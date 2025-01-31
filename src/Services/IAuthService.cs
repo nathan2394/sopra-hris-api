@@ -6,7 +6,7 @@ namespace sopra_hris_api.src.Services
 {
     public interface IAuthService
     {
-        Users Authenticate(string email, string password);
+        Users Authenticate(AuthenticationRequest request);
         Users AuthenticateGoogle(string email);
         string GenerateToken(Users user);
     }
