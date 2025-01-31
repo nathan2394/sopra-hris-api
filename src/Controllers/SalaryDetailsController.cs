@@ -27,7 +27,7 @@ public class SalaryDetailsController : ControllerBase
     {
         try
         {
-            var result = await _service.GetSalaryDetails(filter);
+            var result = await _service.GetSalaryDetailReports(filter);
             return Ok(result);
         }
         catch (Exception ex)
@@ -48,12 +48,12 @@ public class SalaryDetailsController : ControllerBase
     {
         try
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null)
+            //var result = await _service.SalaryDetailsDTO(id);
+            //if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<SalaryDetails>(result);
-            return Ok(response);
+            //var response = new Response<SalaryDetailsDTO>(result);
+            //return Ok(response);
         }
         catch (Exception ex)
         {

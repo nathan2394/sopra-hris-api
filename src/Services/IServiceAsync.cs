@@ -20,17 +20,17 @@ namespace sopra_hris_api.src.Services
         Task<T> CreateAsync(T data);
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
-        Task<ListResponseTemplate<SalaryTemplateDTO>> GetSalaryTemplateAsync(string search, string sort,
-        string filter);
-        Task<ListResponseUploadTemplate<SalaryResultPayrollDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template);
-        Task<ListResponseTemplate<object>> GetGenerateDataAsync(string search, string sort,
-        string filter);
+        Task<ListResponseTemplate<SalaryTemplateDTO>> GetSalaryTemplateAsync(string search, string sort, string filter);
+        Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template, long userID);
+        Task<ListResponseTemplate<SalaryPayrollBankDTO>> GetGenerateBankAsync(string filter, string date);
+        Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, string date);
     }
     public interface IServiceSalaryDetailsAsync<T>
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
        string filter, string date);
         Task<T> GetByIdAsync(long id);
-        Task<ListResponseTemplate<SalaryDetailsDTO>> GetSalaryDetails(string filter);
+        Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetSalaryDetailReports(string filter);
+        
     }
 }

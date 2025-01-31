@@ -233,18 +233,35 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            query = fieldName switch
+
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "function" || fieldName == "employeetype" || fieldName == "division")
                             {
-                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
-                                "nik" => query.Where(x => x.Nik.Contains(value)),
-                                "ktp" => query.Where(x => x.KTP.Contains(value)),
-                                "group" => query.Where(x => x.GroupID.ToString().Equals(value)),
-                                "department" => query.Where(x => x.DepartmentID.ToString().Equals(value)),
-                                "function" => query.Where(x => x.FunctionID.ToString().Equals(value)),
-                                "division" => query.Where(x => x.DivisionID.ToString().Equals(value)),
-                                "employeetype" => query.Where(x => x.EmployeeTypeID.ToString().Equals(value)),
-                                _ => query
-                            };
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "group")
+                                    query = query.Where(x => Ids.Contains(x.GroupID));
+                                else if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "function")
+                                    query = query.Where(x => Ids.Contains(x.FunctionID ?? 0));
+                                else if (fieldName == "employeetype")
+                                    query = query.Where(x => Ids.Contains(x.EmployeeTypeID));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
+                            }
+                            else
+                            {
+                                query = fieldName switch
+                                {
+                                    "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    "nik" => query.Where(x => x.Nik.Contains(value)),
+                                    "ktp" => query.Where(x => x.KTP.Contains(value)),
+                                    "department" => query.Where(x => x.DepartmentID.ToString().Equals(value)),
+                                    "function" => query.Where(x => x.FunctionID.ToString().Equals(value)),
+                                    "division" => query.Where(x => x.DivisionID.ToString().Equals(value)),
+                                    "employeetype" => query.Where(x => x.EmployeeTypeID.ToString().Equals(value)),
+                                    _ => query
+                                };
+                            }
                         }
                     }
                 }

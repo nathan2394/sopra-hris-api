@@ -9,6 +9,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -126,7 +127,7 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<ListResponseTemplate<SalaryDetailsDTO>> GetSalaryDetails(string filter)
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetSalaryDetailReports(string filter)
         {
             try
             {
@@ -161,40 +162,11 @@ namespace sopra_hris_api.src.Services.API
                 parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
 
                 // Get Data
-
-                var data = await _context.SalaryDetailsDTO.FromSqlRaw(
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
                   "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
-                  .ToListAsync();                
+                  .ToListAsync();
 
-                var result = data.Select(s => new SalaryDetailsDTO
-                {
-                    SalaryID = s.SalaryID,
-                    Month = s.Month,
-                    Year = s.Year,
-                    Nik = s.Nik,
-                    EmployeeName = s.EmployeeName,
-                    AccountNo = s.AccountNo,
-                    GroupName = s.GroupName,
-                    Department = s.Department,
-                    Division = s.Division,
-                    EmployeeType = s.EmployeeType,
-                    EmployeeJobTitle = s.EmployeeJobTitle,
-                    StartWorkingDate = s.StartWorkingDate,
-                    StartJointDate = s.StartJointDate,
-                    BasicSalary = s.BasicSalary,
-                    UMakan = s.UMakan,
-                    UTransport = s.UTransport,
-                    UJabatan = s.UJabatan,
-                    UFunctional = s.UFunctional,
-                    UTKhusus = s.UTKhusus,
-                    UTOperational = s.UTOperational,
-                    ULembur = s.ULembur,
-                    BPJS = s.BPJS,
-                    AllowanceTotal = s.AllowanceTotal,
-                    DeductionTotal = s.DeductionTotal,
-                    Netto = s.Netto
-                }).ToList();
-                return new ListResponseTemplate<SalaryDetailsDTO>(data);
+                return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
             catch (Exception ex)
             {

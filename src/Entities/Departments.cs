@@ -10,6 +10,7 @@ namespace sopra_hris_api.Entities
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long DepartmentID { get; set; }
         public string Name { get; set; }
+        public string Code { get; set; }
 
     }
 }

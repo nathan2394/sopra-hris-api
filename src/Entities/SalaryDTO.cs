@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 
 namespace sopra_hris_api.src.Entities
 {
@@ -26,40 +28,6 @@ namespace sopra_hris_api.src.Entities
         }
     }
     [Keyless]
-    public class SalaryResultPayrollDTO
-    {
-        public long SalaryID { get; set; }
-        public long EmployeeID { get; set; }
-        public string Nik { get; set; }
-        public string Name { get; set; }
-        public long? EmployeeTypeID { get; set; }
-        public string? EmployeeTypeName { get; set; }
-        public long? GroupID { get; set; }
-        public string? GroupType { get; set; }
-        public string? GroupName { get; set; }
-        public long? FunctionID { get; set; }
-        public string? FunctionName { get; set; }
-        public long? DepartmentID { get; set; }
-        public string? DepartmentName { get; set; }
-        public long? DivisionID { get; set; }
-        public string? DivisionName { get; set; }
-        public long Month { get; set; }
-        public long Year { get; set; }
-        public long? HKS { get; set; }
-        public long? HKA { get; set; }
-        public long? ATT { get; set; }
-        public long? MEAL { get; set; }
-        public long? ABSENT { get; set; }
-        public decimal? OVT { get; set; }
-        public long? Late { get; set; }
-        public decimal? TotalAllowances { get; set; }
-        public decimal? TotalDeductions { get; set; }
-        public decimal? THP { get; set; }
-        public string? PayrollType { get; set; }
-        public decimal? BPJS { get; set; }
-        public decimal? TransferAmount { get; set; }
-    }
-    [Keyless]
     public class SalaryPayrollSummaryDTO
     {
         public string DepartmentName { get; set; }
@@ -69,13 +37,25 @@ namespace sopra_hris_api.src.Entities
     }
     [Keyless]
     public class SalaryPayrollSummaryTotalDTO
-    {        
+    {
         public decimal AmountTransfer { get; set; }
         public int CountEmployee { get; set; }
         public decimal? AVGAmountEmployee { get; set; }
     }
+    public class SalaryPayrollBankDTO
+    {
+        [Key]
+        public long SalaryID { get; set; }
+        public long EmployeeID { get; set; }
+        public string Nik { get; set; }
+        public string Name { get; set; }
+        public string AccountNo { get; set; }
+        public decimal? Netto { get; set; }
+        public string? DepartmentCode { get; set; }
+        public DateTime? TransDate { get; set; }
+    }
     [Keyless]
-    public class SalaryDetailsDTO
+    public class SalaryDetailReportsDTO
     {
         public long SalaryID { get; set; }
         public long Month { get; set; }
@@ -90,6 +70,13 @@ namespace sopra_hris_api.src.Entities
         public string? EmployeeJobTitle { get; set; }
         public DateTime? StartWorkingDate { get; set; }
         public DateTime? StartJointDate { get; set; }
+        public long? HKS { get; set; }
+        public long? HKA { get; set; }
+        public long? ATT { get; set; }
+        public long? MEAL { get; set; }
+        public long? ABSENT { get; set; }
+        public decimal? OVT { get; set; }
+        public long? Late { get; set; }
         public decimal BasicSalary { get; set; }
         public decimal? UMakan { get; set; }
         public decimal? UTransport { get; set; }
@@ -99,8 +86,11 @@ namespace sopra_hris_api.src.Entities
         public decimal? UTOperational { get; set; }
         public decimal? ULembur { get; set; }
         public decimal? BPJS { get; set; }
+        public decimal? OtherAllowances { get; set; }
+        public decimal? OtherDeductions { get; set; }
         public decimal? AllowanceTotal { get; set; }
         public decimal? DeductionTotal { get; set; }
+        public decimal? THP { get; set; }
         public decimal? Netto { get; set; }
     }
 }

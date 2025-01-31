@@ -24,6 +24,8 @@ namespace sopra_hris_api.Entities
         public decimal? AllowanceTotal { get; set; }
         public decimal? DeductionTotal { get; set; }
         public decimal? Netto { get; set; }
+        public decimal? OtherAllowances { get; set; }
+        public decimal? OtherDeductions { get; set; }
         public string? PayrollType { get; set; }
         [NotMapped]
         public string Nik { get; set; }
@@ -55,6 +57,8 @@ namespace sopra_hris_api.Entities
         public long DepartmentID { get; set; }
         [NotMapped]
         public string DepartmentName { get; set; }
+        [NotMapped]
+        public string DepartmentCode { get; set; }
         [NotMapped]
         public DateTime? TransDate { get; set; }
         [NotMapped]

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -296,7 +295,7 @@ namespace sopra_hris_api.src.Services.API
 
             return table;
         }
-        public async Task<ListResponseUploadTemplate<SalaryResultPayrollDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template)
+        public async Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> GetSalaryResultPayrollAsync(List<SalaryTemplateDTO> template, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
@@ -307,39 +306,19 @@ namespace sopra_hris_api.src.Services.API
                     TypeName = "dbo.SalaryTemplateType",
                     Value = templateTable
                 };
-
                 await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_GetSalaryResultPayroll @Month = {0}, @Year = {1}, @Template = @Template",
-                    template.FirstOrDefault()?.Month,
-                    template.FirstOrDefault()?.Year,
+                    $"EXEC usp_GetSalaryResultPayroll @Month = {template.FirstOrDefault()?.Month}, @Year = {template.FirstOrDefault()?.Year}, @Template = @Template, @UserID = {UserID}",
                     templateParameter
                 );
 
-                var salaryDataList = await _context.SalaryResultPayrollDTO.FromSqlRaw($@"
-                    select *,TransferAmount+BPJS THP
-                    from (
-                    select s.SalaryID, s.EmployeeID,e.Nik,e.EmployeeName Name,
-                    e.EmployeeTypeID,et.Name EmployeeTypeName,e.GroupID,g.Name GroupName,g.Type GroupType,
-                    f.FunctionID,f.Name FunctionName,d.DepartmentID,d.Name DepartmentName,
-                    di.DivisionID,di.Name DivisionName,s.Month,s.Year,s.HKS,s.HKA,s.ATT,s.MEAL,s.ABSENT,
-                    s.OVT,s.Late,s.AllowanceTotal TotalAllowances,s.DeductionTotal TotalDeductions, s.Netto TransferAmount,
-                    s.PayrollType,ISNULL((
-                    SELECT Amount
-                    FROM SalaryDetails 
-                    WHERE SalaryID=s.SalaryID
-                    AND AllowanceDeductionID=7
-                    ),0) BPJS
-                    from Salary s
-                    inner join Employees e on e.EmployeeID=s.EmployeeID
-                    left join Departments d on d.DepartmentID=e.DepartmentID
-                    left join Groups g on g.GroupID=e.GroupID
-                    left join Functions f on f.FunctionID=e.FunctionID
-                    left join Divisions di on di.DivisionID=e.DivisionID
-                    left join EmployeeTypes et on et.EmployeeTypeID=e.EmployeeTypeID
-                    where s.IsDeleted=0
-                        and s.Month={template.FirstOrDefault()?.Month}
-                        and s.Year={template.FirstOrDefault()?.Year}
-                    )x").ToListAsync();
+                await dbTrans.CommitAsync();
+
+                var parameters = new List<SqlParameter>();
+                parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = template.FirstOrDefault()?.Month });
+                parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = template.FirstOrDefault()?.Year });
+                var salaryDataList = await _context.SalaryDetailReportsDTO.FromSqlRaw(
+                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  .ToListAsync();
 
                 var salaryPayrollSummary = await _context.SalaryPayrollSummaryDTO.FromSqlRaw($@"select d.Name [DepartmentName]
 	                    , SUM(s.Netto) [AmountTransfer]
@@ -362,9 +341,8 @@ namespace sopra_hris_api.src.Services.API
 	                    and s.Month={template.FirstOrDefault()?.Month}
 	                    and s.Year={template.FirstOrDefault()?.Year}").ToListAsync();
 
-                await dbTrans.CommitAsync();
 
-                return new ListResponseUploadTemplate<SalaryResultPayrollDTO>(salaryDataList, salaryPayrollSummary, salaryPayrollSummaryTotal);
+                return new ListResponseUploadTemplate<SalaryDetailReportsDTO>(salaryDataList, salaryPayrollSummary, salaryPayrollSummaryTotal);
             }
             catch (Exception ex)
             {
@@ -469,21 +447,16 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<object>> GetGenerateDataAsync(string search, string sort, string filter = "type:payroll")
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                
-                var query = _context.Salary.Where(salary => salary.IsDeleted == false).AsQueryable();
-                
+
                 var type = "";
                 var dateBetween = "";
-                // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
-
+                int month = DateTime.Now.Month;
+                int year = DateTime.Now.Year;
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
                 {
@@ -499,11 +472,7 @@ namespace sopra_hris_api.src.Services.API
                             if (fieldName == "type")
                                 type = value;
 
-                            //query = fieldName switch
-                            //{
-                            //    "name" => query.Where(x => x.Name.Contains(value)),
-                            //    _ => query
-                            //};
+                            
                         }
                     }
                 }
@@ -513,117 +482,19 @@ namespace sopra_hris_api.src.Services.API
                     var dateSplit = dateBetween.Split("&", StringSplitOptions.RemoveEmptyEntries);
                     var start = Convert.ToDateTime(dateSplit[0].Trim());
                     var end = Convert.ToDateTime(dateSplit[1].Trim());
-                    query = query.Where(x => x.Month == end.Month && x.Year == end.Year);
-
-                }
-                // Sorting
-                if (!string.IsNullOrEmpty(sort))
-                {
-                    var temp = sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                    var orderBy = sort;
-                    if (temp.Length > 1)
-                        orderBy = temp[0];
-
-                    if (temp.Length > 1)
-                    {
-                        query = orderBy.ToLower() switch
-                        {
-                            //"name" => query.OrderByDescending(x => x.Name),
-                            _ => query
-                        };
-                    }
-                    else
-                    {
-                        query = orderBy.ToLower() switch
-                        {
-                            //"name" => query.OrderBy(x => x.Name),
-                            _ => query
-                        };
-                    }
-                }
-                else
-                {
-                    query = query.OrderByDescending(x => x.SalaryID);
+                    month = end.Month;
+                    year = end.Year;
                 }
 
-                if (!string.IsNullOrEmpty(type) && type.ToLower() == "bank")
-                {
-                    query = (from salary in _context.Salary
-                             join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
-                             where salary.IsDeleted == false
-                             let bpjsAmount = _context.SalaryDetails
-                                                  .Where(sd => sd.SalaryID == salary.SalaryID && sd.AllowanceDeductionID == 7)
-                                                  .Sum(sd => sd.Amount)
-                             select new Salary
-                             {
-                                 SalaryID = salary.SalaryID,
-                                 EmployeeID = salary.EmployeeID,
-                                 Nik = employee.Nik,
-                                 Name = employee.EmployeeName,
-                                 AccountNo = employee.AccountNo,
-                                 Bank = employee.Bank,
-                                 Netto = salary.Netto,
-                                 TransDate = new DateTime(Convert.ToInt32(salary.Year), Convert.ToInt32(salary.Month), 1).AddMonths(1).AddDays(-1)
-                             });
-                }
-                else if (!string.IsNullOrEmpty(type) && type.ToLower() == "payroll")
-                {
-                    query = from salary in _context.Salary
-                            join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID into employeeGroup
-                            from employee in employeeGroup.DefaultIfEmpty()
-                            join employeeType in _context.EmployeeTypes on employee.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
-                            from employeeType in employeeTypeGroup.DefaultIfEmpty()
-                            join groups in _context.Groups on employee.GroupID equals groups.GroupID into groupsGroup
-                            from groups in groupsGroup.DefaultIfEmpty()
-                            join function in _context.Functions on employee.FunctionID equals function.FunctionID into functionGroup
-                            from function in functionGroup.DefaultIfEmpty()
-                            join department in _context.Departments on employee.DepartmentID equals department.DepartmentID into departmentGroup
-                            from department in departmentGroup.DefaultIfEmpty()
-                            join division in _context.Divisions on employee.DivisionID equals division.DivisionID into divisionGroup
-                            from division in divisionGroup.DefaultIfEmpty()
-                            where salary.IsDeleted == false
+                var parameters = new List<SqlParameter>();
+                parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = month });
+                parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
 
-                            let bpjsAmount = _context.SalaryDetails
-                                                  .Where(sd => sd.SalaryID == salary.SalaryID && sd.AllowanceDeductionID == 7)
-                                                  .Sum(sd => sd.Amount)
-                            select new Salary
-                            {
-                                SalaryID = salary.SalaryID,
-                                EmployeeID = salary.EmployeeID,
-                                Nik = employee != null ? employee.Nik : null,
-                                Name = employee != null ? employee.EmployeeName : null,
-                                EmployeeTypeID = employee != null ? employee.EmployeeTypeID : 0L,
-                                EmployeeTypeName = employeeType != null ? employeeType.Name : null,
-                                GroupID = groups != null ? groups.GroupID : 0L,
-                                GroupType = groups != null ? groups.Type : null,
-                                GroupName = groups != null ? groups.Name : null,
-                                FunctionID = function != null ? function.FunctionID : 0L,
-                                FunctionName = function != null ? function.Name : null,
-                                DivisionID = division != null ? division.DivisionID : 0L,
-                                DivisionName = division != null ? division.Name : null,
-                                DepartmentID = department != null ? department.DepartmentID : 0L,
-                                DepartmentName = department != null ? department.Name : null,
-                                Month = salary.Month,
-                                Year = salary.Year,
-                                HKS = salary.HKS,
-                                HKA = salary.HKA,
-                                ATT = salary.ATT,
-                                OVT = salary.OVT,
-                                Late = salary.Late,
-                                MEAL = salary.MEAL,
-                                ABSENT = salary.ABSENT,
-                                AllowanceTotal = salary.AllowanceTotal,
-                                DeductionTotal = salary.DeductionTotal,
-                                Netto = salary.Netto + bpjsAmount,
-                                PayrollType = salary.PayrollType,
-                                BPJS = bpjsAmount,
-                                TransferAmount = salary.Netto
-                            };
-                }
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
+                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  .ToListAsync();
 
-                var resultList = await query.ToListAsync();
-
-                return new ListResponseTemplate<object>(resultList);
+                return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
             catch (Exception ex)
             {
@@ -634,5 +505,76 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<ListResponseTemplate<SalaryPayrollBankDTO>> GetGenerateBankAsync(string filter, string date)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
+                var type = "";
+                var dateBetween = "";
+                int month = DateTime.Now.Month;
+                int year = DateTime.Now.Year;
+                // Filtering
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var f in filterList)
+                    {
+                        var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                        if (searchList.Length == 2)
+                        {
+                            var fieldName = searchList[0].Trim().ToLower();
+                            var value = searchList[1].Trim();
+
+                            if (fieldName == "type")
+                                type = value;
+                        }
+                    }
+                }
+
+                if (dateBetween != "")
+                {
+                    var dateSplit = dateBetween.Split("&", StringSplitOptions.RemoveEmptyEntries);
+                    var start = Convert.ToDateTime(dateSplit[0].Trim());
+                    var end = Convert.ToDateTime(dateSplit[1].Trim());
+                    month = end.Month;
+                    year = end.Year;
+                }
+
+                var query = (from salary in _context.Salary
+                             join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
+                             join department in _context.Departments on employee.DepartmentID equals department.DepartmentID into departmentGroup
+                             from department in departmentGroup.DefaultIfEmpty()
+                             where salary.IsDeleted == false && salary.Month == month && salary.Year == year
+                             select new SalaryPayrollBankDTO
+                             {
+                                 SalaryID = salary.SalaryID,
+                                 EmployeeID = salary.EmployeeID,
+                                 Nik = employee.Nik,
+                                 Name = employee.EmployeeName,
+                                 AccountNo = employee.AccountNo ?? "",
+                                 Netto = salary.Netto,
+                                 DepartmentCode = department.Code,
+                                 TransDate = new DateTime(Convert.ToInt32(salary.Year), Convert.ToInt32(salary.Month), 1).AddMonths(1).AddDays(-1)
+                             });
+
+                // Sorting
+                query = query.OrderByDescending(x => x.SalaryID);
+
+                var resultList = await query.ToListAsync();
+
+                return new ListResponseTemplate<SalaryPayrollBankDTO>(resultList);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
     }
 }

@@ -235,11 +235,11 @@ public class SalaryController : ControllerBase
 
             var validationErrors = ValidateSalaryTemplates(salaryTemplates);
             if (validationErrors.Any())
-            {
                 return BadRequest(new { message = "Data validation failed.", errors = validationErrors });
-            }
-            // Pass the parsed List<SalaryTemplateDTO> to the service method
-            var result = await _service.GetSalaryResultPayrollAsync(salaryTemplates);
+
+            var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+
+            var result = await _service.GetSalaryResultPayrollAsync(salaryTemplates, UserID);
             if (System.IO.File.Exists(filePath))
                 System.IO.File.Delete(filePath);
 
@@ -312,13 +312,22 @@ public class SalaryController : ControllerBase
         }
     }
     [HttpGet("generatedata")]
-    public async Task<IActionResult> GetGenerateData(string search = "", string sort = "", string filter = "")
+    public async Task<IActionResult> GetGenerateData(string filter = "type:payroll", string date = "")
     {
         try
         {
-            var result = await _service.GetGenerateDataAsync(search, sort, filter);
+            if (filter.Contains("bank"))
+            {
+                var result = await _service.GetGenerateBankAsync(filter, date);
+                return Ok(result);
+            }
+            else if (filter.Contains("payroll"))
+            {
+                var result = await _service.GetGeneratePayrollResultAsync(filter, date);
+                return Ok(result);
+            }
 
-            return Ok(result);
+            return BadRequest("Invalid Filter Type");
         }
         catch (Exception ex)
         {
