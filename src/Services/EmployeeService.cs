@@ -478,9 +478,18 @@ and ed.AllowanceDeductionID is null").ToListAsync();
                 var masterSalary = await _context.MasterEmployeePayroll.FromSqlRaw($@"exec usp_GetMasterSalaryByEmpID @EmployeeID",
                     new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = id }).ToListAsync();
 
+                var salaryHistories = await _context.Salary.Where(x => x.EmployeeID == id && x.IsDeleted == false
+                && (x.PayrollType == null || !x.PayrollType.StartsWith("Master Data Payroll")))
+                    .Select(x => new EmployeeSalaryHistory
+                    {
+                        SalaryID = x.SalaryID,
+                        Month = x.Month,
+                        Year = x.Year,
+                        Netto = x.Netto
+                    }).ToListAsync();
                 data.AllowanceDeductionDetails = details;
                 data.MasterEmployeePayroll = masterSalary;
-                
+                data.salaryHistories = salaryHistories;
                 if (data == null) return null;
                 return data;
             }

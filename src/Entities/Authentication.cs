@@ -8,13 +8,9 @@ namespace sopra_hris_api.Entities
     {
         public string Token { get; set; }
     }
-    public class AuthenticationRequest
+    public class AuthenticationOTPRequest
     {
         public string PhoneNumber { get; set; }
-       
-        public string Email { get; set; }
-
-        [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string OTP { get; set; }
     }
 }

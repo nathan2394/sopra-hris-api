@@ -31,17 +31,17 @@ namespace sopra_hris_api.Services
             this.config = config;
         }
 
-        public Users Authenticate(AuthenticationRequest request)
+        public Users Authenticate(string PhoneNumber)
         {
             try
             {
-                var user = context.Users.FirstOrDefault(x => (x.Email == request.Email || x.PhoneNumber == request.PhoneNumber) && x.IsDeleted == false);
+                var user = context.Users.FirstOrDefault(x => x.PhoneNumber == PhoneNumber && x.IsDeleted == false);
 
                 if (user == null)
                     return null;
 
-                if (!Helpers.Utility.VerifyHashedPassword(user.Password, request.Password))
-                    return null;
+                //if (!Helpers.Utility.VerifyHashedPassword(user.Password, request.Password))
+                //    return null;
 
                 //return response;
                 DateTime utcNow = DateTime.UtcNow; // Get the current UTC time

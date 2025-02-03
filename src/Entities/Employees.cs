@@ -60,6 +60,8 @@ namespace sopra_hris_api.Entities
         public List<AllowanceDeductionEmployeeDetails>? AllowanceDeductionDetails { get; set; }
         [NotMapped]
         public List<MasterEmployeePayroll>? MasterEmployeePayroll { get; set; }
+        [NotMapped]
+        public List<EmployeeSalaryHistory> salaryHistories { get; set; }
     }
     [Keyless]
     public class AllowanceDeductionEmployeeDetails
@@ -87,6 +89,14 @@ namespace sopra_hris_api.Entities
         public decimal? ULembur { get; set; }
         public decimal? BPJS { get; set; }
         public decimal? THP { get; set; }
+        public decimal? Netto { get; set; }
+    }
+    [Keyless]
+    public class EmployeeSalaryHistory
+    {
+        public long SalaryID { get; set; }
+        public long Month { get; set; }
+        public long Year { get; set; }
         public decimal? Netto { get; set; }
     }
 }
