@@ -1,0 +1,44 @@
+name: 🚀 Deploy website on push
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Setup .NET Core SDK 7.0.x
+    runs-on: self-hosted
+
+    env:
+        DOTNET_INSTALL_DIR: "C:\\Program Files\\dotnet"        
+  
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+    
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'
+    
+    - name: Install dependencies
+      run: dotnet restore
+        
+    - name: Build
+      run: |
+        dotnet build
+
+    - name: Publish
+      run: |
+        dotnet publish
+
+    - name: Deploy IIS (SOPRA-HRIS)
+      if: github.ref == 'refs/heads/sopra'
+      run: |
+        C:\Windows\system32\inetsrv\appcmd stop site /site.name:"SOPRA-HRIS"
+        C:\Windows\\system32\inetsrv\appcmd stop apppool "SOPRA-HRIS"
+        xcopy /s /y .\myapp\* D:\Web\SOPRA-HRIS\public
+        xcopy /s /y D:\Web\SOPRA-HRIS\config\* D:\Web\SOPRA-HRIS\public
+        C:\Windows\\system32\inetsrv\appcmd start site /site.name:"SOPRA-HRIS"        
+        C:\Windows\\system32\inetsrv\appcmd start apppool "SOPRA-HRIS"
