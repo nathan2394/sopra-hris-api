@@ -21,6 +21,8 @@ namespace sopra_hris_api.Entities
         public decimal? OVT { get; set; }
         public long? Late { get; set; }
         public decimal? BasicSalary { get; set; }
+        public decimal? PaidSalary { get; set; }
+        public decimal? Rapel { get; set; }
         public decimal? AllowanceTotal { get; set; }
         public decimal? DeductionTotal { get; set; }
         public decimal? Netto { get; set; }

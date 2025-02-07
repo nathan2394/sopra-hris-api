@@ -56,7 +56,7 @@ namespace sopra_hris_api
             var jwtKey = Configuration.GetSection("AppSettings:Secret").Value;
             if (jwtKey != null)
             {
-                var keyx = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey));
+                var keyx = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
                 services
                     .AddAuthentication(x =>
                     {

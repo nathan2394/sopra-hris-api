@@ -41,7 +41,7 @@ namespace sopra_hris_api.Entities
         public decimal? BasicSalary { get; set; }
         public string? AccountNo { get; set; }
         public string? Bank { get; set; }
-
+        public string? PayrollType { get; set; }
         [NotMapped]
         public string? DepartmentName { get; set; }
         [NotMapped]

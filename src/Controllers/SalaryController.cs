@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
 using sopra_hris_api.Entities;
@@ -13,6 +14,7 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class SalaryController : ControllerBase
 {
     private readonly IServiceSalaryAsync<Salary> _service;
@@ -40,107 +42,6 @@ public class SalaryController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            return BadRequest(new { message });
-        }
-    }
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
-    {
-        try
-        {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null)
-                return BadRequest(new { message = "Invalid ID" });
-
-            var response = new Response<Salary>(result);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "SalaryController");
-            return BadRequest(new { message });
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Salary obj)
-    {
-        try
-        {
-            obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
-
-            var result = await _service.CreateAsync(obj);
-            var response = new Response<Salary>(result);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "SalaryController");
-            return BadRequest(new { message });
-        }
-
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Salary obj)
-    {
-        try
-        {
-            obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
-
-            var result = await _service.EditAsync(obj);
-            var response = new Response<Salary>(result);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "SalaryController");
-            return BadRequest(new { message });
-        }
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        try
-        {
-            var result = await _service.DeleteAsync(id, Convert.ToInt64(User.FindFirstValue("id")));
-
-            var response = new Response<object>(result);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "SalaryController");
             return BadRequest(new { message });
         }
     }
@@ -220,6 +121,7 @@ public class SalaryController : ControllerBase
                                 ATT = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["att"]].Text),
                                 Late = Utility.TryParseNullableInt(worksheet.Cells[row, headerDict["late"]].Text),
                                 OVT = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["ovt"]].Text),
+                                Rapel = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["rapel"]].Text),
                                 OtherAllowances = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["otherallowances"]].Text),
                                 OtherDeductions = Utility.TryParseNullableDecimal(worksheet.Cells[row, headerDict["otherdeductions"]].Text),
                                 Month = Convert.ToInt32(worksheet.Cells[row, headerDict["month"]].Text),
@@ -282,8 +184,8 @@ public class SalaryController : ControllerBase
             if (template.HKS < 0)
                 errors.Add($"Invalid HKS: {template.HKS} for EmployeeID: {template.EmployeeID}. Must be non-negative.");
 
-            if (template.OVT < 0)
-                errors.Add($"Invalid OVT: {template.OVT} for EmployeeID: {template.EmployeeID}. Must be non-negative.");
+            if (template.HKA < 0)
+                errors.Add($"Invalid HKA: {template.HKA} for EmployeeID: {template.EmployeeID}. Must be non-negative.");
 
         }
 
@@ -312,18 +214,18 @@ public class SalaryController : ControllerBase
         }
     }
     [HttpGet("generatedata")]
-    public async Task<IActionResult> GetGenerateData(string filter = "type:payroll", string date = "")
+    public async Task<IActionResult> GetGenerateData(string filter = "type:payroll")
     {
         try
         {
             if (filter.Contains("bank"))
             {
-                var result = await _service.GetGenerateBankAsync(filter, date);
+                var result = await _service.GetGenerateBankAsync(filter);
                 return Ok(result);
             }
             else if (filter.Contains("payroll"))
             {
-                var result = await _service.GetGeneratePayrollResultAsync(filter, date);
+                var result = await _service.GetGeneratePayrollResultAsync(filter);
                 return Ok(result);
             }
 
@@ -343,11 +245,11 @@ public class SalaryController : ControllerBase
         }
     }
     [HttpGet("EmployeeSalaryHistory/{EmployeeID}")]
-    public async Task<IActionResult> GetEmployeeSalaryHistory(long EmployeeID)
+    public async Task<IActionResult> GetEmployeeSalaryHistory(long EmployeeID, long Month, long Year)
     {
         try
         {
-            var result = await _service.GetEmployeeSalaryHistoryAsync(EmployeeID);
+            var result = await _service.GetEmployeeSalaryHistoryAsync(EmployeeID, Month, Year);
             return Ok(result);
         }
         catch (Exception ex)

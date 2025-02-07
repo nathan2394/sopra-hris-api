@@ -1,15 +1,16 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Services;
-using sopra_hris_api.src.Services.API;
 
 namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class FunctionDetailsController : ControllerBase
 {
     private readonly IServiceAsync<FunctionDetails> _service;

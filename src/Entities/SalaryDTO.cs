@@ -19,6 +19,7 @@ namespace sopra_hris_api.src.Entities
         public long? ABSENT { get; set; }
         public int? Late { get; set; }
         public decimal? OVT { get; set; }
+        public decimal? Rapel { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }
         public SalaryTemplateDTO()
@@ -70,6 +71,7 @@ namespace sopra_hris_api.src.Entities
         public string? EmployeeJobTitle { get; set; }
         public DateTime? StartWorkingDate { get; set; }
         public DateTime? StartJointDate { get; set; }
+        public string? PayrollType { get; set; }
         public long? HKS { get; set; }
         public long? HKA { get; set; }
         public long? ATT { get; set; }
@@ -78,8 +80,9 @@ namespace sopra_hris_api.src.Entities
         public decimal? OVT { get; set; }
         public long? Late { get; set; }
         public decimal BasicSalary { get; set; }
+        public decimal? PaidSalary { get; set; }
         public decimal? UHMakan { get; set; }
-        public decimal? UHransport { get; set; }
+        public decimal? UHTransport { get; set; }
         public decimal? UMakan { get; set; }
         public decimal? UTransport { get; set; }
         public decimal? UJabatan { get; set; }
@@ -89,19 +92,12 @@ namespace sopra_hris_api.src.Entities
         public decimal? ULembur { get; set; }
         public decimal? UMasaKerja { get; set; }
         public decimal? BPJS { get; set; }
+        public decimal? Rapel { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }
         public decimal? AllowanceTotal { get; set; }
         public decimal? DeductionTotal { get; set; }
         public decimal? THP { get; set; }
-        public decimal? Netto { get; set; }
-    }
-    [Keyless]
-    public class EmployeeSalaryHistory
-    {
-        public long SalaryID { get; set; }
-        public long Month { get; set; }
-        public long Year { get; set; }
         public decimal? Netto { get; set; }
     }
     [Keyless]
@@ -111,6 +107,7 @@ namespace sopra_hris_api.src.Entities
         public long EmployeeID { get; set; }
         public string EmployeeName { get; set; }
         public decimal BasicSalary { get; set; }
+        public string? PayrollType { get; set; }
         public decimal? UMakan { get; set; }
         public decimal? UTransport { get; set; }
         public decimal? UJabatan { get; set; }

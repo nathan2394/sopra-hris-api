@@ -17,6 +17,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Numerics;
+using Microsoft.Extensions.Configuration;
 
 namespace sopra_hris_api.Services
 {
@@ -73,9 +74,6 @@ namespace sopra_hris_api.Services
             try
             {
                 if (user == null)
-                    return null;
-
-                if (user.OtpExpiration.HasValue && (user.OtpExpiration.Value - DateTime.Now).TotalMinutes < 0)
                     return null;
 
                 // Clear password for security reasons
@@ -164,12 +162,12 @@ namespace sopra_hris_api.Services
                 var formattedNumber = FormatPhoneNumber(number);
 
                 // Prepare authentication data
-                var username = "dgtmkt@solusi-pack.com";
-                var password = "Admin123!";
-                var grantType = "password";
-                var clientId = "RRrn6uIxalR_QaHFlcKOqbjHMG63elEdPTair9B9YdY";
-                var clientSecret = "Sa8IGIh_HpVK1ZLAF0iFf7jU760osaUNV659pBIZR00";
-                var tokenUrl = "https://service-chat.qontak.com/api/open/v1/oauth/token";
+                var username = config.GetSection("Whatsapp")["username"];
+                var password = config.GetSection("Whatsapp")["password"];
+                var grantType = config.GetSection("Whatsapp")["grantType"];
+                var clientId = config.GetSection("Whatsapp")["clientId"];
+                var clientSecret = config.GetSection("Whatsapp")["clientSecret"];
+                var tokenUrl = config.GetSection("Whatsapp")["tokenUrl"];
 
                 // Prepare HttpClient instance
                 using (var client = new HttpClient())
@@ -203,9 +201,9 @@ namespace sopra_hris_api.Services
                         var token = JsonSerializer.Deserialize<TokenResponse>(tokenContent);
 
                         // Prepare OTP message data
-                        var templateId = "7bc159f1-349d-4ede-859c-a4b61ed6cb73";
-                        var channelId = "1a354b7e-d46b-470b-a8e7-9e5841e48b1b";
-                        var sendMessageUrl = "https://service-chat.qontak.com/api/open/v1/broadcasts/whatsapp/direct";
+                        var templateId = config.GetSection("Whatsapp")["templateId"];
+                        var channelId = config.GetSection("Whatsapp")["channelId"];
+                        var sendMessageUrl = config.GetSection("Whatsapp")["MessageUrl"];
 
                         var messageBody = new
                         {

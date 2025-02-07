@@ -1,17 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.ComponentModel.Design;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Data.SqlClient;
-using System.Threading.Tasks;
-using System.Net.NetworkInformation;
 using System.Data;
 
 namespace sopra_hris_api.src.Services.API
@@ -121,6 +112,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.AddressDomisili = data.AddressDomisili;
                 obj.BasicSalary = data.BasicSalary;
                 obj.CompanyID = data.CompanyID;
+                obj.PayrollType = data.PayrollType;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -214,7 +206,8 @@ namespace sopra_hris_api.src.Services.API
                                 Education = a.Education,
                                 TaxStatus = a.TaxStatus,
                                 MotherMaidenName = a.MotherMaidenName,
-                                TKStatus = a.TKStatus
+                                TKStatus = a.TKStatus,
+                                PayrollType = a.PayrollType,
                             };
                 // Searching
 
@@ -394,7 +387,8 @@ namespace sopra_hris_api.src.Services.API
                                 Education = a.Education,
                                 TaxStatus = a.TaxStatus,
                                 MotherMaidenName = a.MotherMaidenName,
-                                TKStatus = a.TKStatus
+                                TKStatus = a.TKStatus,
+                                PayrollType = a.PayrollType,
                             };
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 

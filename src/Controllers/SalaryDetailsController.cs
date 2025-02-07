@@ -1,10 +1,7 @@
 using System.Diagnostics;
-using System.Globalization;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OfficeOpenXml;
 using sopra_hris_api.Entities;
-using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Services;
@@ -13,6 +10,7 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class SalaryDetailsController : ControllerBase
 {
     private readonly IServiceSalaryDetailsAsync<SalaryDetails> _service;

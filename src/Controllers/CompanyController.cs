@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
@@ -9,6 +10,7 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class CompanyController : ControllerBase
 {
     private readonly IServiceAsync<Company> _service;

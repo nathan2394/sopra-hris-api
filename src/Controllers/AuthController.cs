@@ -63,7 +63,10 @@ public class AuthController : ControllerBase
 
             var user = _service.AuthenticateVerifyOTP(request.PhoneNumber, request.Code);
             if (user == null)
-                return BadRequest(new { message = "Code OTP is incorrect" });
+                return Unauthorized(new { message = "Code OTP is incorrect" });
+
+            if (user.OtpExpiration.HasValue && (user.OtpExpiration.Value - DateTime.Now).TotalMinutes < 0)
+                return BadRequest(new { message = "OTP is expired" });
 
             // Generate a token for the authenticated user
             var token = _service.GenerateToken(user);

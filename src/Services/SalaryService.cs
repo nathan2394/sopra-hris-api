@@ -8,7 +8,6 @@ using sopra_hris_api.src.Entities;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Globalization;
 
 namespace sopra_hris_api.src.Services.API
@@ -21,102 +20,6 @@ namespace sopra_hris_api.src.Services.API
         {
             _context = context;
         }
-
-        public async Task<Salary> CreateAsync(Salary data)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                await _context.Salary.AddAsync(data);
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return data;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
-        public async Task<bool> DeleteAsync(long id, long UserID)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var obj = await _context.Salary.FirstOrDefaultAsync(x => x.SalaryID == id && x.IsDeleted == false);
-                if (obj == null) return false;
-
-                obj.IsDeleted = true;
-                obj.UserUp = UserID;
-                obj.DateUp = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
-        public async Task<Salary> EditAsync(Salary data)
-        {
-            await using var dbTrans = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var obj = await _context.Salary.FirstOrDefaultAsync(x => x.SalaryID == data.SalaryID && x.IsDeleted == false);
-                if (obj == null) return null;
-
-                obj.EmployeeID = data.EmployeeID;
-                obj.Month = data.Month;
-                obj.Year = data.Year;
-                obj.HKS = data.HKS;
-                obj.HKA = data.HKA;
-                obj.ATT = data.ATT;
-                obj.Late = data.Late;
-                obj.OVT = data.OVT;
-                obj.AllowanceTotal = data.AllowanceTotal;
-                obj.DeductionTotal = data.DeductionTotal;
-
-                obj.UserUp = data.UserUp;
-                obj.DateUp = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                await dbTrans.CommitAsync();
-
-                return obj;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                await dbTrans.RollbackAsync();
-
-                throw;
-            }
-        }
-
-
         public async Task<ListResponse<Salary>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -242,21 +145,6 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<Salary> GetByIdAsync(long id)
-        {
-            try
-            {
-                return await _context.Salary.AsNoTracking().FirstOrDefaultAsync(x => x.SalaryID == id && x.IsDeleted == false);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                throw;
-            }
-        }
         private DataTable ToSalaryTemplateTypeDataTable(List<SalaryTemplateDTO> template)
         {
             var table = new DataTable();
@@ -272,6 +160,7 @@ namespace sopra_hris_api.src.Services.API
             table.Columns.Add("ABSENT", typeof(int));
             table.Columns.Add("Late", typeof(int));
             table.Columns.Add("OVT", typeof(decimal));
+            table.Columns.Add("Rapel", typeof(decimal));
             table.Columns.Add("OtherAllowances", typeof(decimal));
             table.Columns.Add("OtherDeductions", typeof(decimal));
 
@@ -290,6 +179,7 @@ namespace sopra_hris_api.src.Services.API
                     item.ABSENT,
                     item.Late,
                     item.OVT,
+                    item.Rapel,
                     item.OtherAllowances,
                     item.OtherDeductions
                 );
@@ -343,7 +233,6 @@ namespace sopra_hris_api.src.Services.API
 	                    and s.Month={template.FirstOrDefault()?.Month}
 	                    and s.Year={template.FirstOrDefault()?.Year}").ToListAsync();
 
-
                 return new ListResponseUploadTemplate<SalaryDetailReportsDTO>(salaryDataList, salaryPayrollSummary, salaryPayrollSummaryTotal);
             }
             catch (Exception ex)
@@ -378,6 +267,7 @@ namespace sopra_hris_api.src.Services.API
                                 Late = 0,
                                 ABSENT = 0,
                                 OVT = 0,
+                                Rapel = 0,
                                 OtherAllowances = 0,
                                 OtherDeductions = 0
                             };
@@ -427,6 +317,7 @@ namespace sopra_hris_api.src.Services.API
                     Late = x.Late,
                     ABSENT = x.ABSENT,
                     OVT = x.OVT,
+                    Rapel = x.Rapel,
                     OtherAllowances = x.OtherAllowances,
                     OtherDeductions = x.OtherDeductions,
                     Month = month,
@@ -475,7 +366,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, string date)
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter)
         {
             try
             {
@@ -525,7 +416,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<SalaryPayrollBankDTO>> GetGenerateBankAsync(string filter, string date)
+        public async Task<ListResponseTemplate<SalaryPayrollBankDTO>> GetGenerateBankAsync(string filter)
         {
             try
             {
@@ -589,14 +480,16 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetEmployeeSalaryHistoryAsync(long EmployeeID)
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetEmployeeSalaryHistoryAsync(long EmployeeID, long Month, long Year)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID",
-                    new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID }).ToListAsync();
+                    new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID },
+                    new SqlParameter("@Month", SqlDbType.BigInt) { Value = Month },
+                    new SqlParameter("@Year", SqlDbType.BigInt) { Value = Year }).ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
