@@ -8,6 +8,8 @@ using sopra_hris_api.src.Entities;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Globalization;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -380,6 +382,9 @@ namespace sopra_hris_api.src.Services.API
                                 OtherDeductions = 0
                             };
 
+                int month = DateTime.Now.Month;
+                int year = DateTime.Now.Year;
+
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.Name.Contains(search)
@@ -396,6 +401,12 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
+
+                            if (fieldName == "month")
+                                Int32.TryParse(value, out month);
+                            else if (fieldName == "year")
+                                Int32.TryParse(value, out year);
+
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.Name.Contains(value)),
@@ -404,6 +415,23 @@ namespace sopra_hris_api.src.Services.API
                         }
                     }
                 }
+                query = query.Select(x => new SalaryTemplateDTO
+                {
+                    EmployeeID = x.EmployeeID,
+                    Nik = x.Nik,
+                    Name = x.Name,
+                    HKS = x.HKS,
+                    HKA = x.HKA,
+                    ATT = x.ATT,
+                    MEAL = x.MEAL,
+                    Late = x.Late,
+                    ABSENT = x.ABSENT,
+                    OVT = x.OVT,
+                    OtherAllowances = x.OtherAllowances,
+                    OtherDeductions = x.OtherDeductions,
+                    Month = month,
+                    Year = year
+                });
 
                 // Sorting
                 if (!string.IsNullOrEmpty(sort))
@@ -454,7 +482,6 @@ namespace sopra_hris_api.src.Services.API
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
                 var type = "";
-                var dateBetween = "";
                 int month = DateTime.Now.Month;
                 int year = DateTime.Now.Year;
                 // Filtering
@@ -471,19 +498,12 @@ namespace sopra_hris_api.src.Services.API
 
                             if (fieldName == "type")
                                 type = value;
-
-                            
+                            else if (fieldName == "month")
+                                Int32.TryParse(value, out month);
+                            else if (fieldName == "year")
+                                Int32.TryParse(value, out year);
                         }
                     }
-                }
-
-                if (dateBetween != "")
-                {
-                    var dateSplit = dateBetween.Split("&", StringSplitOptions.RemoveEmptyEntries);
-                    var start = Convert.ToDateTime(dateSplit[0].Trim());
-                    var end = Convert.ToDateTime(dateSplit[1].Trim());
-                    month = end.Month;
-                    year = end.Year;
                 }
 
                 var parameters = new List<SqlParameter>();
@@ -512,7 +532,6 @@ namespace sopra_hris_api.src.Services.API
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 
                 var type = "";
-                var dateBetween = "";
                 int month = DateTime.Now.Month;
                 int year = DateTime.Now.Year;
                 // Filtering
@@ -529,17 +548,12 @@ namespace sopra_hris_api.src.Services.API
 
                             if (fieldName == "type")
                                 type = value;
+                            else if (fieldName == "month")
+                                Int32.TryParse(value, out month);
+                            else if (fieldName == "year")
+                                Int32.TryParse(value, out year);
                         }
                     }
-                }
-
-                if (dateBetween != "")
-                {
-                    var dateSplit = dateBetween.Split("&", StringSplitOptions.RemoveEmptyEntries);
-                    var start = Convert.ToDateTime(dateSplit[0].Trim());
-                    var end = Convert.ToDateTime(dateSplit[1].Trim());
-                    month = end.Month;
-                    year = end.Year;
                 }
 
                 var query = (from salary in _context.Salary
@@ -575,6 +589,86 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetEmployeeSalaryHistoryAsync(long EmployeeID)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID",
+                    new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID }).ToListAsync();
+
+                return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<ListResponseTemplate<MasterEmployeePayroll>> GetMasterSalaryAsync(long EmployeeID)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                var data = await _context.MasterEmployeePayroll.FromSqlRaw($@"exec usp_GetMasterSalaryByEmpID @EmployeeID",
+                    new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID }).ToListAsync();
+
+                return new ListResponseTemplate<MasterEmployeePayroll>(data);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<bool> SetConfirmation(List<SalaryConfirmation> salaries, long UserID)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var salaryIds = salaries.Select(x => x.SalaryID).ToList();
+                var salaryList = await _context.Salary.Where(x => salaryIds.Contains(x.SalaryID) && x.IsDeleted == false).ToListAsync();
+                if (salaryList == null || !salaryList.Any()) return false;
+
+                var oldSalaryMonths = salaryList.Select(x => x.Month).Distinct().ToList();
+                var oldSalaryYears = salaryList.Select(x => x.Year).Distinct().ToList();
+                var oldSalary = await _context.Salary.Where(x => oldSalaryYears.Contains(x.Year) && oldSalaryMonths.Contains(x.Month) && x.IsDeleted == false).ToListAsync();
+
+                oldSalary.ForEach(x => x.IsDeleted = true);
+
+                salaryList.ForEach(x =>
+                {
+                    Int32.TryParse(x.Month.ToString(), out int month);
+                    x.PayrollType = string.Concat("Monthly ", CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month), " ", x.Year);
+                    x.UserUp = UserID;
+                    x.DateUp = DateTime.Now;
+                });
+                
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
     }
 }

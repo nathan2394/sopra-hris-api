@@ -8,6 +8,7 @@ using sopra_hris_api.Responses;
 using sopra_hris_api.src.Services;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using System.Numerics;
 
 namespace sopra_hris_api.Controllers;
 
@@ -28,18 +29,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public IActionResult Authenticate([FromQuery] string PhoneNumber)
+    public async Task<IActionResult> Authenticate([FromQuery] string PhoneNumber)
     {
         try
         {
-            var user = _service.Authenticate(PhoneNumber);
-            if (user == null)
-                return BadRequest(new { message = "Phone Number is incorrect" });
-
-            //var token = _service.GenerateToken(user);
-            //var response = new AuthResponse(user, token);
-
-            //return Ok(response);
+            var result = await _service.AuthenticateOTP(PhoneNumber);
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
 
             return Ok(new { message = "OTP sent successfully" });
         }
@@ -57,23 +53,17 @@ public class AuthController : ControllerBase
         }
     }
     [HttpPost("validate-otp")]
-    public IActionResult ValidateOtp([FromQuery] AuthenticationOTPRequest request)
+    public IActionResult ValidateOtp([FromQuery] AuthenticationVerifyOTPRequest request)
     {
         try
         {
             // Validate inputs
-            if (string.IsNullOrEmpty(request.PhoneNumber) || string.IsNullOrEmpty(request.OTP))
-                return BadRequest(new { message = "Phone number and OTP are required" });
+            if (string.IsNullOrEmpty(request.Code))
+                return BadRequest(new { message = "Code cannot be empty" });
 
-            var user = _service.Authenticate(request.PhoneNumber);
+            var user = _service.AuthenticateVerifyOTP(request.PhoneNumber, request.Code);
             if (user == null)
-                return BadRequest(new { message = "Phone Number is incorrect" });
-
-            if (user.OTP != request.OTP)
-                return BadRequest(new { message = "Invalid OTP" });
-
-            if (user.OtpExpiration >= DateTime.Now)
-                return BadRequest(new { message = "OTP has expired!" });
+                return BadRequest(new { message = "Code OTP is incorrect" });
 
             // Generate a token for the authenticated user
             var token = _service.GenerateToken(user);

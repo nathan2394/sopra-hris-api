@@ -56,47 +56,5 @@ namespace sopra_hris_api.Entities
         public string? EmployeeTypeName { get; set; }
         [NotMapped]
         public string? EmployeeJobTitleName { get; set; }
-        [NotMapped]
-        public List<AllowanceDeductionEmployeeDetails>? AllowanceDeductionDetails { get; set; }
-        [NotMapped]
-        public List<MasterEmployeePayroll>? MasterEmployeePayroll { get; set; }
-        [NotMapped]
-        public List<EmployeeSalaryHistory> salaryHistories { get; set; }
-    }
-    [Keyless]
-    public class AllowanceDeductionEmployeeDetails
-    {
-        public long ID { get; set; }
-        public long AllowanceDeductionID { get; set; }
-        public string AllowanceDeductionGroupType { get; set; }
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public decimal Amount { get; set; }
-    }
-    [Keyless]
-    public class MasterEmployeePayroll
-    {
-        public long Year { get; set; }
-        public long EmployeeID { get; set; }
-        public string EmployeeName { get; set; }
-        public decimal BasicSalary { get; set; }
-        public decimal? UMakan { get; set; }
-        public decimal? UTransport { get; set; }
-        public decimal? UJabatan { get; set; }
-        public decimal? UFunctional { get; set; }
-        public decimal? UTKhusus { get; set; }
-        public decimal? UTOperational { get; set; }
-        public decimal? ULembur { get; set; }
-        public decimal? BPJS { get; set; }
-        public decimal? THP { get; set; }
-        public decimal? Netto { get; set; }
-    }
-    [Keyless]
-    public class EmployeeSalaryHistory
-    {
-        public long SalaryID { get; set; }
-        public long Month { get; set; }
-        public long Year { get; set; }
-        public decimal? Netto { get; set; }
     }
 }

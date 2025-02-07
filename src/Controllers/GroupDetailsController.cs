@@ -72,7 +72,7 @@ public class GroupDetailsController : ControllerBase
     {
         try
         {
-            obj.UserIn = Convert.ToInt64(1);
+            obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
             var response = new Response<GroupDetails>(result);

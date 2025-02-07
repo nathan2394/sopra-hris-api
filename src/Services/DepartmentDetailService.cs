@@ -4,6 +4,7 @@ using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Linq;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -108,12 +109,24 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.DepartmentDetails where a.IsDeleted == false select a;
+                var query = from a in _context.DepartmentDetails
+                            where a.IsDeleted == false
+                            join ad in _context.AllowanceDeduction
+                            on a.AllowanceDeductionID equals ad.AllowanceDeductionID
+                            select new DepartmentDetails
+                            {
+                                DepartmentDetailID = a.DepartmentDetailID,
+                                DepartmentID = a.DepartmentID,
+                                AllowanceDeductionID = ad.AllowanceDeductionID,
+                                Amount = a.Amount,
+                                AllowanceDeductionType = ad.Type,
+                                AllowanceDeductionName = ad.Name
+                            };
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.AllowanceDeductionName.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -128,7 +141,9 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "department" => query.Where(x => x.DepartmentID.ToString().Contains(value)),
+                                "allowancededuction" => query.Where(x => x.AllowanceDeductionID.ToString().Contains(value)),
+                                "name" => query.Where(x => x.AllowanceDeductionName.ToString().Contains(value)),
                                 _ => query
                             };
                         }
@@ -147,7 +162,9 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "allowancededuction" => query.OrderByDescending(x => x.AllowanceDeductionID),
+                            "name" => query.OrderByDescending(x => x.AllowanceDeductionName),
+                            "id" => query.OrderByDescending(x => x.DepartmentDetailID),
                             _ => query
                         };
                     }
@@ -155,7 +172,9 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "allowancededuction" => query.OrderBy(x => x.AllowanceDeductionID),
+                            "name" => query.OrderBy(x => x.AllowanceDeductionName),
+                            "id" => query.OrderBy(x => x.DepartmentDetailID),
                             _ => query
                         };
                     }
@@ -196,7 +215,21 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.DepartmentDetails.AsNoTracking().FirstOrDefaultAsync(x => x.DepartmentDetailID == id && x.IsDeleted == false);
+                return await (from a in _context.DepartmentDetails
+                              join ad in _context.AllowanceDeduction
+                              on a.AllowanceDeductionID equals ad.AllowanceDeductionID
+                              where a.DepartmentDetailID == id && a.IsDeleted == false
+                              select new DepartmentDetails
+                              {
+                                  DepartmentDetailID = a.DepartmentDetailID,
+                                  DepartmentID = a.DepartmentID,
+                                  AllowanceDeductionID = a.AllowanceDeductionID,
+                                  Amount = a.Amount,
+                                  AllowanceDeductionName = ad.Name,
+                                  AllowanceDeductionType = ad.Type
+                              })
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {

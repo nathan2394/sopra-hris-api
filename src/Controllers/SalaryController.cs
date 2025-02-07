@@ -75,7 +75,7 @@ public class SalaryController : ControllerBase
     {
         try
         {
-            obj.UserIn = Convert.ToInt64(1);
+            obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
             var response = new Response<Salary>(result);
@@ -328,6 +328,68 @@ public class SalaryController : ControllerBase
             }
 
             return BadRequest("Invalid Filter Type");
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "SalaryController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("EmployeeSalaryHistory/{EmployeeID}")]
+    public async Task<IActionResult> GetEmployeeSalaryHistory(long EmployeeID)
+    {
+        try
+        {
+            var result = await _service.GetEmployeeSalaryHistoryAsync(EmployeeID);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("MasterSalaryByEmpID/{EmployeeID}")]
+    public async Task<IActionResult> GetMasterSalaryByEmpID(long EmployeeID)
+    {
+        try
+        {
+            var result = await _service.GetMasterSalaryAsync(EmployeeID);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("confirmation")]
+    public async Task<IActionResult> SetConfirmation([FromBody] List<SalaryConfirmation> request)
+    {
+        try
+        {
+            long userID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.SetConfirmation(request, userID);
+            return Ok(result);
         }
         catch (Exception ex)
         {

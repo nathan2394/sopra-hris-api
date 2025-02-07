@@ -78,6 +78,8 @@ namespace sopra_hris_api.src.Entities
         public decimal? OVT { get; set; }
         public long? Late { get; set; }
         public decimal BasicSalary { get; set; }
+        public decimal? UHMakan { get; set; }
+        public decimal? UHransport { get; set; }
         public decimal? UMakan { get; set; }
         public decimal? UTransport { get; set; }
         public decimal? UJabatan { get; set; }
@@ -85,6 +87,7 @@ namespace sopra_hris_api.src.Entities
         public decimal? UTKhusus { get; set; }
         public decimal? UTOperational { get; set; }
         public decimal? ULembur { get; set; }
+        public decimal? UMasaKerja { get; set; }
         public decimal? BPJS { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }
@@ -92,5 +95,38 @@ namespace sopra_hris_api.src.Entities
         public decimal? DeductionTotal { get; set; }
         public decimal? THP { get; set; }
         public decimal? Netto { get; set; }
+    }
+    [Keyless]
+    public class EmployeeSalaryHistory
+    {
+        public long SalaryID { get; set; }
+        public long Month { get; set; }
+        public long Year { get; set; }
+        public decimal? Netto { get; set; }
+    }
+    [Keyless]
+    public class MasterEmployeePayroll
+    {
+        public long Year { get; set; }
+        public long EmployeeID { get; set; }
+        public string EmployeeName { get; set; }
+        public decimal BasicSalary { get; set; }
+        public decimal? UMakan { get; set; }
+        public decimal? UTransport { get; set; }
+        public decimal? UJabatan { get; set; }
+        public decimal? UFunctional { get; set; }
+        public decimal? UTKhusus { get; set; }
+        public decimal? UTOperational { get; set; }
+        public decimal? UMasaKerja { get; set; }
+        public decimal? ULembur { get; set; }
+        public decimal? BPJS { get; set; }
+        public decimal? THP { get; set; }
+        public decimal? Netto { get; set; }
+    }
+
+    public class SalaryConfirmation
+    {
+        [Key]
+        public long SalaryID { get; set; }
     }
 }

@@ -25,26 +25,13 @@ namespace sopra_hris_api.src.Services.API
             _context = context;
         }
 
-        public async Task<Employees> CreateAsync(Employees data, List<EmployeeDetails> dataDetails, long userID)
+        public async Task<Employees> CreateAsync(Employees data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                data.UserIn = userID;
                 await _context.Employees.AddAsync(data);
                 await _context.SaveChangesAsync();
-
-                if (data.EmployeeID > 0)
-                {
-                    dataDetails.ForEach(detail =>
-                    {
-                        detail.EmployeeID = data.EmployeeID; 
-                        detail.UserIn = userID;
-                    });
-
-                    await _context.EmployeeDetails.AddRangeAsync(dataDetails);
-                    await _context.SaveChangesAsync();
-                }
 
                 await dbTrans.CommitAsync();
 
@@ -92,7 +79,7 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<Employees> EditAsync(Employees data, List<EmployeeDetails> details, long userID)
+        public async Task<Employees> EditAsync(Employees data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
@@ -135,63 +122,10 @@ namespace sopra_hris_api.src.Services.API
                 obj.BasicSalary = data.BasicSalary;
                 obj.CompanyID = data.CompanyID;
 
-                obj.UserUp = userID;
+                obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
-
                 await _context.SaveChangesAsync();
 
-                if (obj.EmployeeID > 0)
-                {
-                    // Fetch existing EmployeeDetails for this employee
-                    var existingDetails = await _context.EmployeeDetails
-                        .Where(ed => ed.EmployeeID == obj.EmployeeID)
-                        .ToListAsync();
-
-                    // Create or update EmployeeDetails records
-                    var newDetails = details ?? new List<EmployeeDetails>();
-
-                    // Find records to delete (those that are in the database but not in the new data)
-                    var toDelete = existingDetails
-                        .Where(ed => !newDetails.Any(nd => nd.AllowanceDeductionID == ed.AllowanceDeductionID))
-                        .ToList();
-
-                    // Process new or updated EmployeeDetails
-                    foreach (var newDetail in newDetails)
-                    {
-                        var existingDetail = existingDetails
-                            .FirstOrDefault(ed => ed.AllowanceDeductionID == newDetail.AllowanceDeductionID);
-
-                        if (existingDetail != null)
-                        {
-                            // Update existing record's Amount
-                            existingDetail.Amount = newDetail.Amount;
-                            existingDetail.DateUp = DateTime.Now;
-                            existingDetail.UserUp = userID;
-                            _context.EmployeeDetails.Update(existingDetail);
-                        }
-                        else
-                        {
-                            // Insert new record if it doesn't exist
-                            newDetail.EmployeeID = obj.EmployeeID; 
-                            await _context.EmployeeDetails.AddAsync(newDetail);
-                        }
-                    }
-
-                    // Delete any EmployeeDetails records that are no longer part of the new data
-                    if (toDelete.Any())
-                    {
-                        foreach (var objDelete in toDelete)
-                        {
-                            objDelete.IsDeleted = true;
-                            objDelete.DateUp = DateTime.Now;
-                            objDelete.UserUp = userID;
-                            _context.EmployeeDetails.Update(objDelete);
-                        }
-                    }
-
-                    // Save changes to EmployeeDetails
-                    await _context.SaveChangesAsync();
-                }
                 await dbTrans.CommitAsync();
 
                 return obj;
@@ -321,6 +255,7 @@ namespace sopra_hris_api.src.Services.API
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                     "nik" => query.Where(x => x.Nik.Contains(value)),
                                     "ktp" => query.Where(x => x.KTP.Contains(value)),
+                                    "group" => query.Where(x => x.GroupID.ToString().Equals(value)),
                                     "department" => query.Where(x => x.DepartmentID.ToString().Equals(value)),
                                     "function" => query.Where(x => x.FunctionID.ToString().Equals(value)),
                                     "division" => query.Where(x => x.DivisionID.ToString().Equals(value)),
@@ -463,33 +398,6 @@ namespace sopra_hris_api.src.Services.API
                             };
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 
-                var details = await _context.AllowanceDeductionEmployeeDetails.FromSqlRaw($@"select EmployeeDetailID ID,'Employee' AllowanceDeductionGroupType, a.AllowanceDeductionID, b.Name, b.Type, a.Amount 
-from EmployeeDetails a
-inner join AllowanceDeduction b on a.AllowanceDeductionID = b.AllowanceDeductionID
-where a.EmployeeID = {id}
-union all
-select GroupDetailID ID, 'Grade' AllowanceDeductionGroupType, a.AllowanceDeductionID, b.Name, b.Type, a.Amount 
-from GroupDetails a
-inner join AllowanceDeduction b on a.AllowanceDeductionID = b.AllowanceDeductionID
-left join EmployeeDetails ed on ed.AllowanceDeductionID = a.AllowanceDeductionID and ed.EmployeeID = {id}
-where a.GroupID = {data.GroupID}
-and ed.AllowanceDeductionID is null").ToListAsync();
-
-                var masterSalary = await _context.MasterEmployeePayroll.FromSqlRaw($@"exec usp_GetMasterSalaryByEmpID @EmployeeID",
-                    new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = id }).ToListAsync();
-
-                var salaryHistories = await _context.Salary.Where(x => x.EmployeeID == id && x.IsDeleted == false
-                && (x.PayrollType == null || !x.PayrollType.StartsWith("Master Data Payroll")))
-                    .Select(x => new EmployeeSalaryHistory
-                    {
-                        SalaryID = x.SalaryID,
-                        Month = x.Month,
-                        Year = x.Year,
-                        Netto = x.Netto
-                    }).ToListAsync();
-                data.AllowanceDeductionDetails = details;
-                data.MasterEmployeePayroll = masterSalary;
-                data.salaryHistories = salaryHistories;
                 if (data == null) return null;
                 return data;
             }

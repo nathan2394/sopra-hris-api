@@ -108,12 +108,24 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.FunctionDetails where a.IsDeleted == false select a;
+                var query = from a in _context.FunctionDetails
+                            where a.IsDeleted == false
+                            join ad in _context.AllowanceDeduction
+                            on a.AllowanceDeductionID equals ad.AllowanceDeductionID
+                            select new FunctionDetails
+                            {
+                                FunctionDetailID = a.FunctionDetailID,
+                                FunctionID = a.FunctionID,
+                                AllowanceDeductionID = ad.AllowanceDeductionID,
+                                Amount = a.Amount,
+                                AllowanceDeductionType = ad.Type,
+                                AllowanceDeductionName = ad.Name
+                            };
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.AllowanceDeductionName.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -128,7 +140,9 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "function" => query.Where(x => x.FunctionID.ToString().Contains(value)),
+                                "allowancededuction" => query.Where(x => x.AllowanceDeductionID.ToString().Contains(value)),
+                                "name" => query.Where(x => x.AllowanceDeductionName.ToString().Contains(value)),
                                 _ => query
                             };
                         }
@@ -147,7 +161,9 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "allowancededuction" => query.OrderByDescending(x => x.AllowanceDeductionID),
+                            "name" => query.OrderByDescending(x => x.AllowanceDeductionName),
+                            "id" => query.OrderByDescending(x => x.FunctionDetailID),
                             _ => query
                         };
                     }
@@ -155,7 +171,9 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "allowancededuction" => query.OrderBy(x => x.AllowanceDeductionID),
+                            "name" => query.OrderBy(x => x.AllowanceDeductionName),
+                            "id" => query.OrderBy(x => x.FunctionDetailID),
                             _ => query
                         };
                     }
@@ -196,7 +214,21 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.FunctionDetails.AsNoTracking().FirstOrDefaultAsync(x => x.FunctionDetailID == id && x.IsDeleted == false);
+                return await (from a in _context.FunctionDetails
+                              join ad in _context.AllowanceDeduction
+                              on a.AllowanceDeductionID equals ad.AllowanceDeductionID
+                              where a.FunctionDetailID == id && a.IsDeleted == false
+                              select new FunctionDetails
+                              {
+                                  FunctionDetailID = a.FunctionDetailID,
+                                  FunctionID = a.FunctionID,
+                                  AllowanceDeductionID = a.AllowanceDeductionID,
+                                  Amount = a.Amount,
+                                  AllowanceDeductionName = ad.Name,
+                                  AllowanceDeductionType = ad.Type
+                              })
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync();                
             }
             catch (Exception ex)
             {

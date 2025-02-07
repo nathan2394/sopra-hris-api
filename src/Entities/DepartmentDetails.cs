@@ -12,5 +12,9 @@ namespace sopra_hris_api.Entities
         public long DepartmentID { get; set; }
         public long AllowanceDeductionID { get; set; }
         public decimal Amount { get; set; }
+        [NotMapped]
+        public string? AllowanceDeductionName { get; set; }
+        [NotMapped]
+        public string? AllowanceDeductionType { get; set; }
     }
 }
