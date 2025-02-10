@@ -489,7 +489,7 @@ namespace sopra_hris_api.src.Services.API
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID",
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID,@Month,@Year",
                     new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID },
                     new SqlParameter("@Month", SqlDbType.BigInt) { Value = Month },
                     new SqlParameter("@Year", SqlDbType.BigInt) { Value = Year }).ToListAsync();
