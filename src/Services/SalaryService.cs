@@ -205,9 +205,12 @@ namespace sopra_hris_api.src.Services.API
 
                 await dbTrans.CommitAsync();
 
-                var parameters = new List<SqlParameter>();
-                parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = template.FirstOrDefault()?.Month });
-                parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = template.FirstOrDefault()?.Year });
+                var parameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@Month", SqlDbType.Int) { Value = template.FirstOrDefault()?.Month },
+                    new SqlParameter("@Year", SqlDbType.Int) { Value = template.FirstOrDefault()?.Year },
+                    new SqlParameter("@IsFlag", SqlDbType.Bit) { Value = 1 }
+                };
                 var salaryDataList = await _context.SalaryDetailReportsDTO.FromSqlRaw(
                   "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
                   .ToListAsync();
