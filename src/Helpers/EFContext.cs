@@ -30,10 +30,17 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Salary> Salary { get; set; }
         public DbSet<SalaryDetails> SalaryDetails { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
+        public DbSet<Holidays> Holidays { get; set; }
+        public DbSet<Shifts> Shifts { get; set; }
+        public DbSet<AttendanceDetails> AttendanceDetails { get; set; }
+        public DbSet<UnattendanceTypes> UnattendanceTypes { get; set; }
+        public DbSet<Attendances> Attendances { get; set; }
+        public DbSet<Machines> Machines { get; set; }
         public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryTotalDTO> SalaryPayrollSummaryTotalDTO { get; set; }
+        public virtual DbSet<SalaryCalculatorModel> SalaryCalculatorModel { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

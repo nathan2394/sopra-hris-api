@@ -306,4 +306,25 @@ public class SalaryController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpPost("calculator")]
+    public async Task<IActionResult> SetCalculator([FromBody] SalaryCalculatorTemplate request)
+    {
+        try
+        {
+            var result = await _service.SetCalculator(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "SalaryController");
+            return BadRequest(new { message });
+        }
+    }
 }

@@ -42,6 +42,9 @@ namespace sopra_hris_api.Entities
         public string? AccountNo { get; set; }
         public string? Bank { get; set; }
         public string? PayrollType { get; set; }
+        public long? AbsentID { get; set; }
+        public long? ShiftID { get; set; }
+        public bool? IsShift { get; set; }
         [NotMapped]
         public string? DepartmentName { get; set; }
         [NotMapped]

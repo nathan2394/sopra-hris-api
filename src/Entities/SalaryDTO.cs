@@ -126,4 +126,24 @@ namespace sopra_hris_api.src.Entities
         [Key]
         public long SalaryID { get; set; }
     }
+    public class SalaryCalculatorTemplate
+    {
+        public long? HKS { get; set; }
+        public long? HKA { get; set; }
+        public long? ATT { get; set; }
+        public long? MEAL { get; set; }
+        public decimal? OVT { get; set; }
+        public long? GroupID { get; set; }
+        public DateTime? StartJointDate { get; set; }
+        public decimal? BasicSalary { get; set; }
+        public string? PayrollType { get; set; }
+        public decimal? BPJS { get; set; }
+    }
+    [Keyless]
+    public class SalaryCalculatorModel
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public decimal Amount { get; set; }
+    }
 }

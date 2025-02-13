@@ -144,7 +144,38 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<ListResponseTemplate<SalaryCalculatorModel>> SetCalculator(SalaryCalculatorTemplate request)
+        {
+            try
+            {
+                var parameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@HKS", SqlDbType.BigInt) { Value = request.HKS ?? 0L },
+                    new SqlParameter("@HKA", SqlDbType.BigInt) { Value = request.HKA ?? 0L },
+                    new SqlParameter("@ATT", SqlDbType.BigInt) { Value = request.ATT ?? 0L },
+                    new SqlParameter("@OVT", SqlDbType.Decimal) { Value = request.OVT ?? 0 },
+                    new SqlParameter("@MEAL", SqlDbType.BigInt) { Value = request.MEAL ?? 0L },
+                    new SqlParameter("@StartJointDate", SqlDbType.Date) { Value = request.StartJointDate ?? (object) DBNull.Value },
+                    new SqlParameter("@BasicSalary", SqlDbType.Decimal) { Value = request.BasicSalary ?? 0 },
+                    new SqlParameter("@GroupID", SqlDbType.BigInt) { Value = request.GroupID ?? 0L },
+                    new SqlParameter("@PayrollType", SqlDbType.VarChar) { Value = request.PayrollType ?? "" },
+                    new SqlParameter("@BPJS", SqlDbType.Decimal) { Value = request.BPJS ?? 0 },
+                };
 
+                var data = await _context.SalaryCalculatorModel.FromSqlRaw(
+                  "EXEC usp_Calculator @HKS, @HKA, @ATT, @OVT, @MEAL, @StartJointDate, @BasicSalary, @GroupID, @PayrollType, @BPJS", parameters.ToArray())
+                  .ToListAsync();
+                return new ListResponseTemplate<SalaryCalculatorModel>(data);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
         private DataTable ToSalaryTemplateTypeDataTable(List<SalaryTemplateDTO> template)
         {
             var table = new DataTable();

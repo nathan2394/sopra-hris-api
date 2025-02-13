@@ -145,12 +145,18 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Departments>, DepartmentService>();
             services.AddScoped<IServiceAsync<DepartmentDetails>, DepartmentDetailService>();
             services.AddScoped<IServiceEmployeeAsync<Employees>, EmployeeService>();
+            services.AddScoped<IServiceAsync<EmployeeJobTitles>, EmployeeJobTitleService>();
             services.AddScoped<IServiceAsync<EmployeeTypes>, EmployeeTypeService>();
             services.AddScoped<IServiceAsync<EmployeeDetails>, EmployeeDetailService>();
             services.AddScoped<IServiceAsync<Functions>, FunctionService>();
             services.AddScoped<IServiceAsync<FunctionDetails>, FunctionDetailService>();
             services.AddScoped<IServiceAsync<Groups>, GroupService>();
             services.AddScoped<IServiceAsync<GroupDetails>, GroupDetailService>();
+            services.AddScoped<IServiceAsync<Shifts>, ShiftService>();
+            services.AddScoped<IServiceAsync<Holidays>, HolidayService>();
+            services.AddScoped<IServiceAsync<Machines>, MachineService>();
+            services.AddScoped<IServiceAsync<UnattendanceTypes>, UnattendanceTypeService>();
+            services.AddScoped<IServiceAsync<Attendances>, AttendanceService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();
             services.AddScoped<IServiceAsync<TunjanganMasaKerja>, TunjanganMasaKerjaService>();
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();
