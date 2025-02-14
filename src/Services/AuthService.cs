@@ -38,7 +38,7 @@ namespace sopra_hris_api.Services
         {
             try
             {
-                var user = context.Users.FirstOrDefault(x => x.PhoneNumber == PhoneNumber && x.IsDeleted == false);
+                var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.PhoneNumber == PhoneNumber && x.IsDeleted == false);
 
                 if (user == null)
                     return new AuthenticationOTPRequest { Success = false, Message = "User not found." };
@@ -47,7 +47,12 @@ namespace sopra_hris_api.Services
                 string otp = GenerateOTP();
                 user.OTP = otp;
                 user.OtpExpiration = DateTime.Now.AddMinutes(2);
-                context.SaveChanges();
+
+                context.Users.Attach(user);
+                context.Entry(user).Property(x => x.OTP).IsModified = true;
+                context.Entry(user).Property(x => x.OtpExpiration).IsModified = true;
+
+                await context.SaveChangesAsync();
 
                 string userName = user.Name;
                 // Send OTP via WhatsApp
@@ -70,7 +75,7 @@ namespace sopra_hris_api.Services
         }
         public Users AuthenticateVerifyOTP(string PhoneNumber, string code)
         {
-            var user = context.Users.FirstOrDefault(x => x.IsDeleted == false && x.PhoneNumber == PhoneNumber && x.OTP == code);
+            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.IsDeleted == false && x.PhoneNumber == PhoneNumber && x.OTP == code);
             try
             {
                 if (user == null)
@@ -96,7 +101,7 @@ namespace sopra_hris_api.Services
         }
         public Users AuthenticateGoogle(string email)
         {
-            var user = context.Users.FirstOrDefault(x => x.Email == email && x.IsDeleted == false);
+            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && x.IsDeleted == false);
 
             try
             {

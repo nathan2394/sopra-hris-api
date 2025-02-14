@@ -140,7 +140,7 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "group" => query.Where(x => x.GroupID.ToString().Contains(value)),
+                                "group" => query.Where(x => x.GroupID.ToString().Equals(value)),
                                 "allowancededuction" => query.Where(x => x.AllowanceDeductionID.ToString().Contains(value)),
                                 "name" => query.Where(x => x.AllowanceDeductionName.ToString().Contains(value)),
                                 _ => query

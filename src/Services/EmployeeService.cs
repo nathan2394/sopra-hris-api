@@ -24,6 +24,21 @@ namespace sopra_hris_api.src.Services.API
                 await _context.Employees.AddAsync(data);
                 await _context.SaveChangesAsync();
 
+                var users = new Users
+                {
+                    Name = data.EmployeeName,
+                    EmployeeID = data.EmployeeID,
+                    Email = data.Email,
+                    PhoneNumber = data.PhoneNumber,
+                    
+                    IsDeleted = false,
+                    UserIn = data.UserIn,
+                    DateIn = DateTime.Now,
+                };
+
+                await _context.Users.AddAsync(users);
+                await _context.SaveChangesAsync();
+
                 await dbTrans.CommitAsync();
 
                 return data;
@@ -118,6 +133,14 @@ namespace sopra_hris_api.src.Services.API
                 obj.DateUp = DateTime.Now;
                 await _context.SaveChangesAsync();
 
+                var users = await _context.Users.FirstOrDefaultAsync(x => x.EmployeeID == data.EmployeeID && x.IsDeleted == false);
+                if (users != null)
+                {
+                    users.Name = data.EmployeeName;
+                    users.Email = data.Email;
+                    users.PhoneNumber = data.PhoneNumber;
+                    await _context.SaveChangesAsync();
+                }
                 await dbTrans.CommitAsync();
 
                 return obj;
