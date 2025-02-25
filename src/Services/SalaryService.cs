@@ -245,7 +245,7 @@ namespace sopra_hris_api.src.Services.API
                     new SqlParameter("@IsFlag", SqlDbType.Bit) { Value = 1 }
                 };
                 var salaryDataList = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag", parameters.ToArray())
                   .ToListAsync();
 
                 var salaryPayrollSummary = await _context.SalaryPayrollSummaryDTO.FromSqlRaw($@"select d.Name [DepartmentName]
