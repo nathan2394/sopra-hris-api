@@ -129,6 +129,7 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
+                                "code" => query.Where(x => x.Code.Contains(value)),
                                 "name" => query.Where(x => x.Name.Contains(value)),
                                 _ => query
                             };
@@ -148,6 +149,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
+                            "code" => query.OrderByDescending(x => x.Code),
                             "name" => query.OrderByDescending(x => x.Name),
                             _ => query
                         };
@@ -156,6 +158,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
+                            "code" => query.OrderBy(x => x.Code),
                             "name" => query.OrderBy(x => x.Name),
                             _ => query
                         };

@@ -138,6 +138,8 @@ namespace sopra_hris_api.src.Entities
         public decimal? BasicSalary { get; set; }
         public string? PayrollType { get; set; }
         public decimal? BPJS { get; set; }
+        public decimal? Khusus { get; set; }
+        public decimal? Operational { get; set; }
     }
     [Keyless]
     public class SalaryCalculatorModel

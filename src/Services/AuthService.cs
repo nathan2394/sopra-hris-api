@@ -101,7 +101,7 @@ namespace sopra_hris_api.Services
         }
         public Users AuthenticateGoogle(string email)
         {
-            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && x.IsDeleted == false);
+            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && x.RoleID == 1 && x.IsDeleted == false);
 
             try
             {

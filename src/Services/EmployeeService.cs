@@ -21,6 +21,9 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                var sequence = await _context.Employees.Where(x => x.StartWorkingDate.Month == data.StartWorkingDate.Month && x.StartWorkingDate.Year == data.StartWorkingDate.Year && x.IsDeleted == false).CountAsync();
+                data.Nik = string.Concat(data.CompanyID, data.StartWorkingDate.ToString("yyyyMM"), (sequence + 1).ToString("D3"));
+                
                 await _context.Employees.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -30,7 +33,7 @@ namespace sopra_hris_api.src.Services.API
                     EmployeeID = data.EmployeeID,
                     Email = data.Email,
                     PhoneNumber = data.PhoneNumber,
-                    
+
                     IsDeleted = false,
                     UserIn = data.UserIn,
                     DateIn = DateTime.Now,
@@ -128,6 +131,10 @@ namespace sopra_hris_api.src.Services.API
                 obj.BasicSalary = data.BasicSalary;
                 obj.CompanyID = data.CompanyID;
                 obj.PayrollType = data.PayrollType;
+                obj.AbsentID = data.AbsentID;
+                obj.ShiftID = data.ShiftID;
+                obj.IsShift = data.IsShift;
+                obj.GroupShiftID = data.GroupShiftID;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -369,6 +376,14 @@ namespace sopra_hris_api.src.Services.API
                                 on a.JobTitleID equals jobtitle.EmployeeJobTitleID into jobTitleGroup
                             from jobtitle in jobTitleGroup.DefaultIfEmpty()
 
+                            join shift in _context.Shifts
+                                on a.ShiftID equals shift.ShiftID into shiftGroup
+                            from shift in shiftGroup.DefaultIfEmpty()
+
+                            join groupshift in _context.GroupShifts
+                                on a.GroupShiftID equals groupshift.GroupShiftID into groupshiftGroup
+                            from groupshift in groupshiftGroup.DefaultIfEmpty()
+
                             where a.IsDeleted == false && a.EmployeeID == id
                             select new Employees
                             {
@@ -412,6 +427,14 @@ namespace sopra_hris_api.src.Services.API
                                 MotherMaidenName = a.MotherMaidenName,
                                 TKStatus = a.TKStatus,
                                 PayrollType = a.PayrollType,
+                                GroupShiftID = a.GroupShiftID,
+                                AbsentID = a.AbsentID,
+                                ShiftID = a.ShiftID,
+                                IsShift = a.IsShift,
+                                ShiftCode = shiftGroup != null ? shift.Code : null,
+                                ShiftName = shiftGroup != null ? shift.Name : null,
+                                GroupShiftCode = groupshiftGroup != null ? groupshift.Code : null,
+                                GroupShiftName = groupshiftGroup != null ? groupshift.Name : null,
                             };
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 

@@ -161,7 +161,8 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<TunjanganMasaKerja>, TunjanganMasaKerjaService>();
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();
             services.AddScoped<IServiceSalaryDetailsAsync<SalaryDetails>, SalaryDetailService>();
-
+            services.AddScoped<IServiceAsync<GroupShifts>, GroupShiftService>();
+            services.AddScoped<IServiceEmployeeShiftAsync<EmployeeShifts>, EmployeeShiftService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

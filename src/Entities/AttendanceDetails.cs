@@ -18,5 +18,13 @@ namespace sopra_hris_api.Entities
         public DateTime? ClockOut { get; set; }
         public string? Unattendance { get; set; }
         public long? OVTHours { get; set; }
+        [NotMapped]
+        public string EmployeeName { get; set; }
+        [NotMapped]
+        public string? DepartmentName { get; set; }
+        [NotMapped]
+        public string? ShiftCode { get; set; }
+        [NotMapped]
+        public string? ShiftName { get; set; }
     }
 }

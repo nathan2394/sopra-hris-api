@@ -160,10 +160,12 @@ namespace sopra_hris_api.src.Services.API
                     new SqlParameter("@GroupID", SqlDbType.BigInt) { Value = request.GroupID ?? 0L },
                     new SqlParameter("@PayrollType", SqlDbType.VarChar) { Value = request.PayrollType ?? "" },
                     new SqlParameter("@BPJS", SqlDbType.Decimal) { Value = request.BPJS ?? 0 },
+                    new SqlParameter("@Operational", SqlDbType.Decimal) { Value = request.Operational ?? 0 },
+                    new SqlParameter("@Khusus", SqlDbType.Decimal) { Value = request.Khusus ?? 0 },
                 };
 
                 var data = await _context.SalaryCalculatorModel.FromSqlRaw(
-                  "EXEC usp_Calculator @HKS, @HKA, @ATT, @OVT, @MEAL, @StartJointDate, @BasicSalary, @GroupID, @PayrollType, @BPJS", parameters.ToArray())
+                  "EXEC usp_Calculator @HKS, @HKA, @ATT, @OVT, @MEAL, @StartJointDate, @BasicSalary, @GroupID, @PayrollType, @BPJS, @Operational, @Khusus", parameters.ToArray())
                   .ToListAsync();
                 return new ListResponseTemplate<SalaryCalculatorModel>(data);
             }

@@ -15,6 +15,10 @@ namespace sopra_hris_api.Entities
         public TimeSpan? EndBufferTime { get; set; }
         public TimeSpan? StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
+        public TimeSpan? WeekendStartBufferTime { get; set; }
+        public TimeSpan? WeekendEndBufferTime { get; set; }
+        public TimeSpan? WeekendStartTime { get; set; }
+        public TimeSpan? WeekendEndTime { get; set; }
         public long? BreakTime { get; set; }
     }
 }

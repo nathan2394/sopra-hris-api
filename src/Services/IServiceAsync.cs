@@ -1,4 +1,5 @@
-﻿using sopra_hris_api.Entities;
+﻿using System.Data;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 
@@ -42,6 +43,17 @@ namespace sopra_hris_api.src.Services
         Task<T> GetByIdAsync(long id);
         Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetSalaryDetailReports(string filter);
         Task<SalaryDetailReportsDTO> GetSalaryDetails(long id);
+    }
+    public interface IServiceEmployeeShiftAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+         string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<ListResponseTemplateShift<EmployeeGroupShiftTemplate>> GetTemplateAsync(string filter);
+        Task<ListResponseTemplate<T>> SetEmployeeShiftsAsync(DataTable templates, bool isEmployeeBased, long UserID);
 
     }
 }

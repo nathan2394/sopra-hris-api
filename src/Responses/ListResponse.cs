@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using sopra_hris_api.Entities;
 using sopra_hris_api.src.Entities;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -17,7 +18,7 @@ namespace sopra_hris_api.Responses
 			Total = total;
 			Page = page;
 		}
-	}
+    }
     public class ListResponseTemplate<T>
     {
         public IEnumerable<T> Data { get; set; }
@@ -25,6 +26,17 @@ namespace sopra_hris_api.Responses
         public ListResponseTemplate(IEnumerable<T> data)
         {
             Data = data;
+        }
+    }
+    public class ListResponseTemplateShift<T>
+    {
+        public IEnumerable<T> Data { get; set; }
+        public IEnumerable<Shifts> Shifts { get; set; }
+
+        public ListResponseTemplateShift(IEnumerable<T> data, IEnumerable<Shifts> shifts)
+        {
+            Data = data;
+            Shifts = shifts;
         }
     }
 

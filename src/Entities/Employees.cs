@@ -45,6 +45,7 @@ namespace sopra_hris_api.Entities
         public long? AbsentID { get; set; }
         public long? ShiftID { get; set; }
         public bool? IsShift { get; set; }
+        public long? GroupShiftID { get; set; }
         [NotMapped]
         public string? DepartmentName { get; set; }
         [NotMapped]
@@ -59,5 +60,13 @@ namespace sopra_hris_api.Entities
         public string? EmployeeTypeName { get; set; }
         [NotMapped]
         public string? EmployeeJobTitleName { get; set; }
+        [NotMapped]
+        public string? GroupShiftCode { get; set; }
+        [NotMapped]
+        public string? GroupShiftName { get; set; }
+        [NotMapped]
+        public string? ShiftCode { get; set; }
+        [NotMapped]
+        public string? ShiftName { get; set; }
     }
 }

@@ -7,21 +7,21 @@ using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class ShiftService : IServiceAsync<Shifts>
+    public class GroupShiftService : IServiceAsync<GroupShifts>
     {
         private readonly EFContext _context;
 
-        public ShiftService(EFContext context)
+        public GroupShiftService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<Shifts> CreateAsync(Shifts data)
+        public async Task<GroupShifts> CreateAsync(GroupShifts data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.Shifts.AddAsync(data);
+                await _context.GroupShifts.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -45,7 +45,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == id && x.IsDeleted == false);
+                var obj = await _context.GroupShifts.FirstOrDefaultAsync(x => x.GroupShiftID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
@@ -70,24 +70,16 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<Shifts> EditAsync(Shifts data)
+        public async Task<GroupShifts> EditAsync(GroupShifts data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == data.ShiftID && x.IsDeleted == false);
+                var obj = await _context.GroupShifts.FirstOrDefaultAsync(x => x.GroupShiftID == data.GroupShiftID && x.IsDeleted == false);
                 if (obj == null) return null;
 
                 obj.Code = data.Code;
                 obj.Name = data.Name;
-                obj.StartBufferTime = data.StartBufferTime;
-                obj.EndBufferTime = data.EndBufferTime;
-                obj.StartTime = data.StartTime;
-                obj.EndTime = data.EndTime;
-                obj.WeekendStartBufferTime = data.WeekendStartBufferTime;
-                obj.WeekendEndBufferTime = data.WeekendEndBufferTime;
-                obj.WeekendStartTime = data.WeekendStartTime;
-                obj.WeekendEndTime = data.WeekendEndTime;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -111,12 +103,12 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<Shifts>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<GroupShifts>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Shifts where a.IsDeleted == false select a;
+                var query = from a in _context.GroupShifts where a.IsDeleted == false select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
@@ -173,7 +165,7 @@ namespace sopra_hris_api.src.Services.API
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.ShiftID);
+                    query = query.OrderByDescending(x => x.GroupShiftID);
                 }
 
                 // Get Total Before Limit and Page
@@ -191,7 +183,7 @@ namespace sopra_hris_api.src.Services.API
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
-                return new ListResponse<Shifts>(data, total, page);
+                return new ListResponse<GroupShifts>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -203,11 +195,11 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<Shifts> GetByIdAsync(long id)
+        public async Task<GroupShifts> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.Shifts.AsNoTracking().FirstOrDefaultAsync(x => x.ShiftID == id && x.IsDeleted == false);
+                return await _context.GroupShifts.AsNoTracking().FirstOrDefaultAsync(x => x.GroupShiftID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {
