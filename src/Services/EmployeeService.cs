@@ -431,10 +431,10 @@ namespace sopra_hris_api.src.Services.API
                                 AbsentID = a.AbsentID,
                                 ShiftID = a.ShiftID,
                                 IsShift = a.IsShift,
-                                ShiftCode = shiftGroup != null ? shift.Code : null,
-                                ShiftName = shiftGroup != null ? shift.Name : null,
-                                GroupShiftCode = groupshiftGroup != null ? groupshift.Code : null,
-                                GroupShiftName = groupshiftGroup != null ? groupshift.Name : null,
+                                ShiftCode = shift != null ? shift.Code : null,
+                                ShiftName = shift != null ? shift.Name : null,
+                                GroupShiftCode = groupshift != null ? groupshift.Code : null,
+                                GroupShiftName = groupshift != null ? groupshift.Name : null,
                             };
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 

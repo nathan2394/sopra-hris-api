@@ -14,7 +14,7 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-//[Authorize]
+[Authorize]
 public class EmployeeShiftsController : ControllerBase
 {
     private readonly IServiceEmployeeShiftAsync<EmployeeShifts> _service;
@@ -230,8 +230,8 @@ public class EmployeeShiftsController : ControllerBase
                     }
                 }
             }
-            bool isEmployeeBased = dt.Columns[1].ColumnName.Equals("nik", StringComparison.OrdinalIgnoreCase);
-            bool isGroupBased = dt.Columns[1].ColumnName.Equals("group shift name", StringComparison.OrdinalIgnoreCase);
+            bool isEmployeeBased = dt.Columns[0].ColumnName.Equals("employeeid", StringComparison.OrdinalIgnoreCase);
+            bool isGroupBased = dt.Columns[0].ColumnName.Equals("groupshiftid", StringComparison.OrdinalIgnoreCase);
 
             if (!isEmployeeBased && !isGroupBased)
                 return BadRequest("Invalid Excel template format.");
