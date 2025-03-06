@@ -9,6 +9,7 @@ using sopra_hris_api.src.Services;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Numerics;
+using sopra_hris_api.Helpers;
 
 namespace sopra_hris_api.Controllers;
 
@@ -29,15 +30,31 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Authenticate([FromQuery] string PhoneNumber)
+    public async Task<IActionResult> Authenticate([FromQuery] string PhoneNumber, [FromQuery] string Password)
     {
         try
         {
-            var result = await _service.AuthenticateOTP(PhoneNumber);
-            if (!result.Success)
-                return BadRequest(new { message = result.Message });
+            var user = await _service.AuthenticateEmployee(PhoneNumber, Password);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
 
-            return Ok(new { message = "OTP sent successfully" });
+            if (!Utility.VerifyHashedPassword(user.Password, Password))
+                return Unauthorized(new { message = "Incorrect password" });
+
+            if (string.IsNullOrWhiteSpace(user.OTP))
+            {
+                var result = await _service.AuthenticateOTP(PhoneNumber);
+                if (result.Success)
+                    return Ok(new { message = "OTP sent successfully" });
+                else
+                    return BadRequest(new { message = result.Message });
+            }
+            user.Password = "";
+
+            var token = _service.GenerateToken(user, 1);
+            var response = new AuthResponse(user, token);
+
+            return Ok(response);
         }
         catch (Exception ex)
         {
@@ -69,7 +86,7 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "OTP is expired" });
 
             // Generate a token for the authenticated user
-            var token = _service.GenerateToken(user);
+            var token = _service.GenerateToken(user, 1);
             var response = new AuthResponse(user, token);
 
             return Ok(response);
@@ -117,8 +134,8 @@ public class AuthController : ControllerBase
             var user = _service.AuthenticateGoogle(email);
             if (user == null)
                 return BadRequest(new { message = "Email is not registered" });
-
-            var token = _service.GenerateToken(user);
+            
+            var token = _service.GenerateToken(user, 7);
             var response = new AuthResponse(user, token);
 
             return Ok(response);

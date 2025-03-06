@@ -20,5 +20,6 @@ namespace sopra_hris_api.Entities
         public TimeSpan? WeekendStartTime { get; set; }
         public TimeSpan? WeekendEndTime { get; set; }
         public long? BreakTime { get; set; }
+        public int? WorkingDays { get; set; }
     }
 }

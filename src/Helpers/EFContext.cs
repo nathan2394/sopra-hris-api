@@ -38,6 +38,9 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Machines> Machines { get; set; }
         public DbSet<GroupShifts> GroupShifts { get; set; }
         public DbSet<EmployeeShifts> EmployeeShifts { get; set; }
+        public DbSet<Overtimes> Overtimes { get; set; }
+        public DbSet<Reasons> Reasons { get; set; }
+        public DbSet<Unattendances> Unattendances { get; set; }
         public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }

@@ -9,6 +9,10 @@ namespace sopra_hris_api.Entities
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long ModuleID { get; set; }
+        public string Group { get; set; }
         public string Name { get; set; }
+        public string Route { get; set; }
+        public long ParentID { get; set; }
+        public bool IsChild { get; set; }
     }
 }

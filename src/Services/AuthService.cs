@@ -1,10 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-
-using System.Collections.Generic;
-using sopra_hris_api.Responses;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +11,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using System.Numerics;
-using Microsoft.Extensions.Configuration;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace sopra_hris_api.Services
 {
@@ -33,7 +27,49 @@ namespace sopra_hris_api.Services
             this.memoryCache = memoryCache;
             this.config = config;
         }
+        public async Task<Users> AuthenticateEmployee(string PhoneNumber, string Password)
+        {
+            try
+            {
+                var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.PhoneNumber == PhoneNumber && x.IsDeleted == false);
 
+                if (user == null)
+                    return null;
+
+                if (user.EmployeeID > 0)
+                {
+                    var employees = await context.Employees.AsNoTracking().FirstOrDefaultAsync(x => x.EmployeeID == user.EmployeeID && x.IsDeleted == false);
+                    if (employees != null)
+                    {
+                        user.EmployeeName = employees.EmployeeName;
+                        user.DepartmentID = employees.DepartmentID;
+                        user.DivisionID = employees.DivisionID;
+                        user.GroupID = employees.GroupID;
+                        user.CompanyID = employees.CompanyID;
+                        user.Nik = employees.Nik;
+                        user.StartWorkingDate = employees.StartWorkingDate;
+                        user.DepartmentName = await context.Departments.AsNoTracking().Where(x => x.DepartmentID == employees.DepartmentID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
+                        user.DivisionName = await context.Divisions.AsNoTracking().Where(x => x.DivisionID == employees.DivisionID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
+                        user.GroupType = await context.Groups.AsNoTracking().Where(x => x.GroupID == employees.GroupID && x.IsDeleted == false).Select(s => s.Type ?? "").FirstOrDefaultAsync();
+                        user.CompanyName = await context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
+                    }
+                }
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                return null;
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
         public async Task<AuthenticationOTPRequest> AuthenticateOTP(string PhoneNumber)
         {
             try
@@ -84,6 +120,24 @@ namespace sopra_hris_api.Services
                 // Clear password for security reasons
                 user.Password = "";
 
+                if (user.EmployeeID > 0)
+                {
+                    var employees = context.Employees.AsNoTracking().FirstOrDefault(x => x.EmployeeID == user.EmployeeID && x.IsDeleted == false);
+                    if (employees != null)
+                    {
+                        user.EmployeeName = employees.EmployeeName;
+                        user.DepartmentID = employees.DepartmentID;
+                        user.DivisionID = employees.DivisionID;
+                        user.GroupID = employees.GroupID;
+                        user.CompanyID = employees.CompanyID;
+                        user.Nik = employees.Nik;
+                        user.StartWorkingDate = employees.StartWorkingDate;
+                        user.DepartmentName = context.Departments.AsNoTracking().Where(x => x.DepartmentID == employees.DepartmentID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                        user.DivisionName = context.Divisions.AsNoTracking().Where(x => x.DivisionID == employees.DivisionID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                        user.GroupType = context.Groups.AsNoTracking().Where(x => x.GroupID == employees.GroupID && x.IsDeleted == false).Select(s => s.Type ?? "").FirstOrDefault();
+                        user.CompanyName = context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                    }
+                }
                 return user;
             }
             catch (Exception ex)
@@ -101,18 +155,62 @@ namespace sopra_hris_api.Services
         }
         public Users AuthenticateGoogle(string email)
         {
-            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && x.RoleID == 1 && x.IsDeleted == false);
+            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && x.RoleID != 2 && x.IsDeleted == false);
 
             try
             {
                 if (user == null)
                     return null;
 
-                //return response;
-                DateTime utcNow = DateTime.UtcNow; // Get the current UTC time
-                TimeZoneInfo gmtPlus7 = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"); // Time zone for GMT+7
-                DateTime gmtPlus7Time = TimeZoneInfo.ConvertTimeFromUtc(utcNow, gmtPlus7); // Convert UTC to GMT+7
+                if (user.EmployeeID > 0)
+                {
+                    var employees = context.Employees.AsNoTracking().FirstOrDefault(x => x.EmployeeID == user.EmployeeID && x.IsDeleted == false);
+                    if (employees != null)
+                    {
+                        user.EmployeeName = employees.EmployeeName;
+                        user.DepartmentID = employees.DepartmentID;
+                        user.DivisionID = employees.DivisionID;
+                        user.GroupID = employees.GroupID;
+                        user.CompanyID = employees.CompanyID;
+                        user.Nik = employees.Nik;
+                        user.StartWorkingDate = employees.StartWorkingDate;
+                        user.DepartmentName = context.Departments.AsNoTracking().Where(x => x.DepartmentID == employees.DepartmentID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                        user.DivisionName = context.Divisions.AsNoTracking().Where(x => x.DivisionID == employees.DivisionID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                        user.GroupType = context.Groups.AsNoTracking().Where(x => x.GroupID == employees.GroupID && x.IsDeleted == false).Select(s => s.Type ?? "").FirstOrDefault();
+                        user.CompanyName = context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
+                    }
+                }
+                user.RoleName = context.Roles.Where(y => y.RoleID == user.RoleID).Select(x => x.Name ?? "").FirstOrDefault();
 
+                user.ParentMenus = (from rd in context.RoleDetails
+                                    join m in context.Modules on rd.ModuleID equals m.ModuleID
+                                    where rd.RoleID == user.RoleID && m.ParentID == 0
+                                    select new ParentMenu
+                                    {
+                                        ModuleID = rd.ModuleID,
+                                        Group = m.Group,
+                                        Name = m.Name,
+                                        Route = m.Route,
+                                        IsCreate = rd.IsCreate,
+                                        IsRead = rd.IsRead,
+                                        IsUpdate = rd.IsUpdate,
+                                        IsDelete = rd.IsDelete
+                                    }).ToList();
+                user.ChildMenus = (from rd in context.RoleDetails
+                                   join m in context.Modules on rd.ModuleID equals m.ModuleID
+                                   where rd.RoleID == user.RoleID && m.ParentID != 0
+                                   select new ChildMenu
+                                   {
+                                       ParentID = m.ParentID,
+                                       ModuleID = rd.ModuleID,
+                                       Group = m.Group,
+                                       Name = m.Name,
+                                       Route = m.Route,
+                                       IsCreate = rd.IsCreate,
+                                       IsRead = rd.IsRead,
+                                       IsUpdate = rd.IsUpdate,
+                                       IsDelete = rd.IsDelete
+                                   }).ToList();
                 user.Password = "";
 
                 return user;
@@ -130,7 +228,7 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public string GenerateToken(Users user)
+        public string GenerateToken(Users user, int Duration)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var secret = config.GetSection("AppSettings")["Secret"];
@@ -139,13 +237,13 @@ namespace sopra_hris_api.Services
             {
                 new Claim("id", user.UserID.ToString()),
 				//new Claim("name", user.Name),
-				new Claim("roleid", user.RoleID.ToString())
+				new Claim("employeeid", user?.EmployeeID.ToString() ?? "0")
               });
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = claims,
-                Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.UtcNow.AddDays(Duration),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

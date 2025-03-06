@@ -225,7 +225,8 @@ public class SalaryController : ControllerBase
             }
             else if (filter.Contains("payroll"))
             {
-                var result = await _service.GetGeneratePayrollResultAsync(filter);
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var result = await _service.GetGeneratePayrollResultAsync(filter, UserID);
                 return Ok(result);
             }
 
@@ -249,7 +250,8 @@ public class SalaryController : ControllerBase
     {
         try
         {
-            var result = await _service.GetEmployeeSalaryHistoryAsync(EmployeeID, Month, Year);
+            var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.GetEmployeeSalaryHistoryAsync(EmployeeID, Month, Year, UserID);
             return Ok(result);
         }
         catch (Exception ex)

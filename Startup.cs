@@ -155,6 +155,9 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Shifts>, ShiftService>();
             services.AddScoped<IServiceAsync<Holidays>, HolidayService>();
             services.AddScoped<IServiceAsync<Machines>, MachineService>();
+            services.AddScoped<IServiceAsync<Unattendances>, UnattendanceService>();
+            services.AddScoped<IServiceAsync<Overtimes>, OvertimeService>();
+            services.AddScoped<IServiceAsync<Reasons>, ReasonService>();
             services.AddScoped<IServiceAsync<UnattendanceTypes>, UnattendanceTypeService>();
             services.AddScoped<IServiceAsync<Attendances>, AttendanceService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();

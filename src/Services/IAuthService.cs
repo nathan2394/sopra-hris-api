@@ -9,6 +9,7 @@ namespace sopra_hris_api.src.Services
         Task<AuthenticationOTPRequest> AuthenticateOTP(string PhoneNumber);
         Users AuthenticateVerifyOTP(string PhoneNumber, string Code);
         Users AuthenticateGoogle(string email);
-        string GenerateToken(Users user);
+        Task<Users> AuthenticateEmployee(string PhoneNumber, string Password);
+        string GenerateToken(Users user, int Duration);
     }
 }

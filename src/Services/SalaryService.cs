@@ -242,10 +242,11 @@ namespace sopra_hris_api.src.Services.API
                 {
                     new SqlParameter("@Month", SqlDbType.Int) { Value = template.FirstOrDefault()?.Month },
                     new SqlParameter("@Year", SqlDbType.Int) { Value = template.FirstOrDefault()?.Year },
-                    new SqlParameter("@IsFlag", SqlDbType.Bit) { Value = 1 }
+                    new SqlParameter("@IsFlag", SqlDbType.Int) { Value = 1 },
+                    new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID }
                 };
                 var salaryDataList = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag, @UserID", parameters.ToArray())
                   .ToListAsync();
 
                 var salaryPayrollSummary = await _context.SalaryPayrollSummaryDTO.FromSqlRaw($@"select d.Name [DepartmentName]
@@ -402,7 +403,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter)
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, long UserID)
         {
             try
             {
@@ -436,9 +437,11 @@ namespace sopra_hris_api.src.Services.API
                 var parameters = new List<SqlParameter>();
                 parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = month });
                 parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
+                parameters.Add(new SqlParameter("@IsFlag", SqlDbType.Int) { Value = 2 });
+                parameters.Add(new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID });
 
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag", parameters.ToArray())
                   .ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
@@ -516,16 +519,17 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetEmployeeSalaryHistoryAsync(long EmployeeID, long Month, long Year)
+        public async Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetEmployeeSalaryHistoryAsync(long EmployeeID, long Month, long Year, long UserID)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID,@Month,@Year",
+                var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID,@Month,@Year, @UserID",
                     new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID },
                     new SqlParameter("@Month", SqlDbType.BigInt) { Value = Month },
-                    new SqlParameter("@Year", SqlDbType.BigInt) { Value = Year }).ToListAsync();
+                    new SqlParameter("@Year", SqlDbType.BigInt) { Value = Year },
+                    new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID }).ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
