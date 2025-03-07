@@ -11,5 +11,6 @@ namespace sopra_hris_api.Entities
         public long GroupID { get; set; }
         public string Type { get; set; }
         public string Name { get; set; }
+        public int Level { get; set; }
     }
 }

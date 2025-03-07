@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
@@ -26,7 +27,10 @@ public class EmployeesController : ControllerBase
         try
         {
             var total = 0;
-            var result = await _service.GetAllAsync(limit, page, total, search, sort, filter, date);
+            var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+            var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+            var groupid = Convert.ToInt64(User.FindFirstValue("groupid"));
+            var result = await _service.GetAllAsync(limit, page, total, search, sort, filter, date, UserID, employeeid, groupid);
             return Ok(result);
         }
         catch (Exception ex)

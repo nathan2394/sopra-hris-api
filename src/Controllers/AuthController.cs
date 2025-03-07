@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
             if (!Utility.VerifyHashedPassword(user.Password, Password))
                 return Unauthorized(new { message = "Incorrect password" });
 
-            if (string.IsNullOrWhiteSpace(user.OTP))
+            if (!user.IsVerified.HasValue || !user.IsVerified.Value)
             {
                 var result = await _service.AuthenticateOTP(PhoneNumber);
                 if (result.Success)
@@ -50,6 +50,8 @@ public class AuthController : ControllerBase
                     return BadRequest(new { message = result.Message });
             }
             user.Password = "";
+            user.OTP = "";
+            user.OtpExpiration = null;
 
             var token = _service.GenerateToken(user, 1);
             var response = new AuthResponse(user, token);

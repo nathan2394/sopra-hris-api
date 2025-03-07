@@ -165,11 +165,13 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<Employees>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<Employees>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date, long UserID, long EmployeeID, long GroupID)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                var groupLevel = await _context.Groups.Where(y => y.GroupID == GroupID).Select(x => x.Level).FirstOrDefaultAsync();
+
                 var query = from a in _context.Employees
                             join employeeType in _context.EmployeeTypes
                                 on a.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
@@ -195,7 +197,7 @@ namespace sopra_hris_api.src.Services.API
                                 on a.JobTitleID equals jobtitle.EmployeeJobTitleID into jobTitleGroup
                             from jobtitle in jobTitleGroup.DefaultIfEmpty()
 
-                            where a.IsDeleted == false
+                            where a.IsDeleted == false && (groups != null || (groups.Level < groupLevel && groupLevel > 0))
                             select new Employees
                             {
                                 EmployeeID = a.EmployeeID,
@@ -332,7 +334,7 @@ namespace sopra_hris_api.src.Services.API
                 if (data.Count <= 0 && page > 0)
                 {
                     page = 0;
-                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
+                    return await GetAllAsync(limit, page, total, search, sort, filter, date, UserID, EmployeeID, GroupID);
                 }
 
                 return new ListResponse<Employees>(data, total, page);

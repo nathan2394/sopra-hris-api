@@ -85,9 +85,12 @@ namespace sopra_hris_api.src.Services
 
                 obj.Name = data.Name;
                 obj.Email = data.Email;
-
+                obj.PhoneNumber = data.PhoneNumber;
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
+                obj.IsVerified = data.IsVerified;
+                obj.OTP = data.OTP;
+                obj.OtpExpiration = data.OtpExpiration;
 
                 if (!string.IsNullOrEmpty(data.Password))
                     obj.Password = Utility.HashPassword(data.Password);

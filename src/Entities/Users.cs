@@ -17,6 +17,7 @@ namespace sopra_hris_api.Entities
         public string? PhoneNumber { get; set; }
         public string? OTP { get; set; }
         public DateTime? OtpExpiration { get; set; }
+        public bool? IsVerified { get; set; }
         [NotMapped]
         public string? EmployeeName { get; set; }
         [NotMapped]

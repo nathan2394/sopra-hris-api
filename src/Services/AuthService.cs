@@ -83,6 +83,7 @@ namespace sopra_hris_api.Services
                 string otp = GenerateOTP();
                 user.OTP = otp;
                 user.OtpExpiration = DateTime.Now.AddMinutes(2);
+                user.IsVerified = false;
 
                 context.Users.Attach(user);
                 context.Entry(user).Property(x => x.OTP).IsModified = true;
@@ -119,7 +120,8 @@ namespace sopra_hris_api.Services
 
                 // Clear password for security reasons
                 user.Password = "";
-
+                user.OTP = "";
+                user.OtpExpiration = null;
                 if (user.EmployeeID > 0)
                 {
                     var employees = context.Employees.AsNoTracking().FirstOrDefault(x => x.EmployeeID == user.EmployeeID && x.IsDeleted == false);
@@ -138,6 +140,13 @@ namespace sopra_hris_api.Services
                         user.CompanyName = context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
                     }
                 }
+
+                user.IsVerified = true;
+
+                context.Users.Attach(user);
+                context.Entry(user).Property(x => x.IsVerified).IsModified = true;
+                context.SaveChanges();
+
                 return user;
             }
             catch (Exception ex)
@@ -212,6 +221,8 @@ namespace sopra_hris_api.Services
                                        IsDelete = rd.IsDelete
                                    }).ToList();
                 user.Password = "";
+                user.OTP = "";
+                user.OtpExpiration = null;
 
                 return user;
             }
@@ -237,7 +248,8 @@ namespace sopra_hris_api.Services
             {
                 new Claim("id", user.UserID.ToString()),
 				//new Claim("name", user.Name),
-				new Claim("employeeid", user?.EmployeeID.ToString() ?? "0")
+				new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
+                new Claim("groupid", (user?.GroupID ?? 0).ToString())
               });
 
             var tokenDescriptor = new SecurityTokenDescriptor

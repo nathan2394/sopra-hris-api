@@ -295,6 +295,11 @@ namespace sopra_hris_api.src.Services.API
                 employeeShiftTypeTable.Columns.Add("GroupShiftID", typeof(long));
                 foreach (DataRow row in templates.Rows)
                 {
+                    if (isEmployeeBased && string.IsNullOrEmpty(row["EmployeeID"].ToString()))
+                        continue;
+                    if (!isEmployeeBased && string.IsNullOrEmpty(row["GroupShiftID"].ToString()))
+                        continue;
+
                     long employeeId = isEmployeeBased ? Convert.ToInt64(row["EmployeeID"]) : 0L;
                     long groupShiftId = isEmployeeBased ? 0L : Convert.ToInt64(row["GroupShiftID"]);
 
