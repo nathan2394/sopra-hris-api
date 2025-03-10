@@ -4,18 +4,63 @@ using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class UnattendanceService : IServiceAsync<Unattendances>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UnattendanceService(EFContext context)
+        public UnattendanceService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
+        private async Task<int> CalculateEffectiveDuration(DateTime startDate, DateTime endDate, long employeeId)
+        {
+            var totalDays = 0;
+            var employee = await (from e in _context.Employees
+                join s in _context.Shifts on e.ShiftID equals s.ShiftID
+                                  where e.EmployeeID == employeeId && e.IsDeleted == false
+                                  select new
+                                  {
+                                      e.IsShift,
+                                      s.WorkingDays
+                                  }).FirstOrDefaultAsync();
+            if (employee == null)
+                return 0;
 
+            for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
+            {
+                var isHoliday = await _context.Holidays.AnyAsync(h => h.TransDate == date && h.IsDeleted == false);
+                var isNonWorkingShift = await _context.EmployeeShifts.AnyAsync(s => s.EmployeeID == employeeId && s.TransDate == date && s.IsDeleted == false);
+
+                if (isHoliday) continue;
+                if (!employee.IsShift.Value)
+                {
+                    var dayOfWeek = date.DayOfWeek;
+
+                    // Check working days (5 or 6 days a week)
+                    if (employee.WorkingDays == 5 && (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday))
+                        continue;
+
+                    if (employee.WorkingDays == 6 && dayOfWeek == DayOfWeek.Sunday)
+                        continue;
+                }
+                else
+                {
+                    // For shift workers, check their shift schedule
+                    if (isNonWorkingShift) continue;
+                }
+                totalDays++;
+            }
+
+            return totalDays;
+        }
         public async Task<Unattendances> CreateAsync(Unattendances data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -23,6 +68,7 @@ namespace sopra_hris_api.src.Services.API
             {
                 data.IsApproved1 = false;
                 data.IsApproved2 = false;
+                data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
                 await _context.Unattendances.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -115,6 +161,8 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from u in _context.Unattendances
                             join e in _context.Employees on u.EmployeeID equals e.EmployeeID
@@ -123,7 +171,7 @@ namespace sopra_hris_api.src.Services.API
                             from d in deptGroup.DefaultIfEmpty()
                             join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                             from g in groupGroup.DefaultIfEmpty()
-                            where u.IsDeleted == false
+                            where u.IsDeleted == false && ((u.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
                             select new Unattendances
                             {
                                 UnattendanceID = u.UnattendanceID,
@@ -169,15 +217,25 @@ namespace sopra_hris_api.src.Services.API
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if(fieldName== "unattendancetype")
+                                    query = query.Where(x => Ids.Contains(x.UnattendanceTypeID));
                             }
-                            query = fieldName switch
-                            {
-                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
-                                "unattendancetype" => query.Where(x => x.UnattendanceTypeName.Contains(value)),
-                                _ => query
-                            };
+                            else 
+                                query = fieldName switch
+                                {
+                                    "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    _ => query
+                                };
                         }
                     }
+                }
+
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => x.StartDate >= startDate && x.EndDate <= endDate);
                 }
 
                 // Sorting

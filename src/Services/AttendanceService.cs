@@ -4,17 +4,26 @@ using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Security.Claims;
+using Azure.Core;
+using Microsoft.Data.SqlClient;
+using sopra_hris_api.src.Entities;
+using System.Data;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class AttendanceService : IServiceAsync<Attendances>
+    public class AttendanceService : IServiceAttendancesAsync<Attendances>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AttendanceService(EFContext context)
+        public AttendanceService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<Attendances> CreateAsync(Attendances data)
         {
@@ -103,84 +112,36 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<Attendances>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponseTemplate<AttendanceSummary>> GetAllAsync(string filter, string date)
         {
             try
             {
-                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Attendances where a.IsDeleted == false select a;
+                var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
 
-                // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
-
-                // Filtering
-                if (!string.IsNullOrEmpty(filter))
+                DateTime StartDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-24);
+                DateTime EndDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 23);
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
                 {
-                    var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var f in filterList)
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
                     {
-                        var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
-                        if (searchList.Length == 2)
-                        {
-                            var fieldName = searchList[0].Trim().ToLower();
-                            var value = searchList[1].Trim();
-                            query = fieldName switch
-                            {
-                                "employee" => query.Where(x => x.EmployeeID.ToString().Contains(value)),
-                                _ => query
-                            };
-                        }
+                        StartDate = startDate;
+                        EndDate = endDate;
                     }
                 }
-
-                // Sorting
-                if (!string.IsNullOrEmpty(sort))
+                var parameters = new List<SqlParameter>
                 {
-                    var temp = sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                    var orderBy = sort;
-                    if (temp.Length > 1)
-                        orderBy = temp[0];
+                    new SqlParameter("@Start", SqlDbType.DateTime) { Value = StartDate },
+                    new SqlParameter("@End", SqlDbType.DateTime) { Value = EndDate },
+                };
 
-                    if (temp.Length > 1)
-                    {
-                        query = orderBy.ToLower() switch
-                        {
-                            "name" => query.OrderByDescending(x => x.EmployeeID),
-                            _ => query
-                        };
-                    }
-                    else
-                    {
-                        query = orderBy.ToLower() switch
-                        {
-                            "name" => query.OrderBy(x => x.EmployeeID),
-                            _ => query
-                        };
-                    }
-                }
-                else
-                {
-                    query = query.OrderByDescending(x => x.AttendanceID);
-                }
+                var data = await _context.AttendanceSummary.FromSqlRaw(
+                  "EXEC usp_CalculateAttendance @Start, @End", parameters.ToArray())
+                  .ToListAsync();
 
-                // Get Total Before Limit and Page
-                total = await query.CountAsync();
-
-                // Set Limit and Page
-                if (limit != 0)
-                    query = query.Skip(page * limit).Take(limit);
-
-                // Get Data
-                var data = await query.ToListAsync();
-                if (data.Count <= 0 && page > 0)
-                {
-                    page = 0;
-                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
-                }
-
-                return new ListResponse<Attendances>(data, total, page);
+                return new ListResponseTemplate<AttendanceSummary>(data);
             }
             catch (Exception ex)
             {

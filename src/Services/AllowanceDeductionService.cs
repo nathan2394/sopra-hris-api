@@ -9,15 +9,18 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Services;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.src.Helpers;
+using System.Security.Claims;
 
 namespace sopra_hris_api.Services
 {
     public class AllowanceDeductionService: IServiceAsync<AllowanceDeduction>
     {
         private readonly EFContext _context;
-        public AllowanceDeductionService(EFContext context)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public AllowanceDeductionService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ListResponse<AllowanceDeduction>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)

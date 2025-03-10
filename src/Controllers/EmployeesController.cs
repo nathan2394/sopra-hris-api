@@ -27,10 +27,7 @@ public class EmployeesController : ControllerBase
         try
         {
             var total = 0;
-            var UserID = Convert.ToInt64(User.FindFirstValue("id"));
-            var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
-            var groupid = Convert.ToInt64(User.FindFirstValue("groupid"));
-            var result = await _service.GetAllAsync(limit, page, total, search, sort, filter, date, UserID, employeeid, groupid);
+            var result = await _service.GetAllAsync(limit, page, total, search, sort, filter, date);
             return Ok(result);
         }
         catch (Exception ex)

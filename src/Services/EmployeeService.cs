@@ -4,17 +4,20 @@ using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using System.Data;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class EmployeeService : IServiceEmployeeAsync<Employees>
     {
         private readonly EFContext _context;
-
-        public EmployeeService(EFContext context)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public EmployeeService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<Employees> CreateAsync(Employees data)
         {
@@ -165,10 +168,13 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<Employees>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date, long UserID, long EmployeeID, long GroupID)
+        public async Task<ListResponse<Employees>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var GroupID = Convert.ToInt64(User.FindFirstValue("groupid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var groupLevel = await _context.Groups.Where(y => y.GroupID == GroupID).Select(x => x.Level).FirstOrDefaultAsync();
 
@@ -334,7 +340,7 @@ namespace sopra_hris_api.src.Services.API
                 if (data.Count <= 0 && page > 0)
                 {
                     page = 0;
-                    return await GetAllAsync(limit, page, total, search, sort, filter, date, UserID, EmployeeID, GroupID);
+                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
                 return new ListResponse<Employees>(data, total, page);

@@ -14,5 +14,6 @@ namespace sopra_hris_api.Entities
         public string Route { get; set; }
         public long ParentID { get; set; }
         public bool IsChild { get; set; }
+        public string? IconImg { get; set; }
     }
 }

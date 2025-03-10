@@ -46,6 +46,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryTotalDTO> SalaryPayrollSummaryTotalDTO { get; set; }
         public virtual DbSet<SalaryCalculatorModel> SalaryCalculatorModel { get; set; }
+        public virtual DbSet<AttendanceSummary> AttendanceSummary { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

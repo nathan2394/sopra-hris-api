@@ -203,7 +203,8 @@ namespace sopra_hris_api.Services
                                         IsCreate = rd.IsCreate,
                                         IsRead = rd.IsRead,
                                         IsUpdate = rd.IsUpdate,
-                                        IsDelete = rd.IsDelete
+                                        IsDelete = rd.IsDelete,
+                                        IconImg = m.IconImg
                                     }).ToList();
                 user.ChildMenus = (from rd in context.RoleDetails
                                    join m in context.Modules on rd.ModuleID equals m.ModuleID
@@ -218,7 +219,8 @@ namespace sopra_hris_api.Services
                                        IsCreate = rd.IsCreate,
                                        IsRead = rd.IsRead,
                                        IsUpdate = rd.IsUpdate,
-                                       IsDelete = rd.IsDelete
+                                       IsDelete = rd.IsDelete,
+                                       IconImg = m.IconImg
                                    }).ToList();
                 user.Password = "";
                 user.OTP = "";
@@ -248,7 +250,8 @@ namespace sopra_hris_api.Services
             {
                 new Claim("id", user.UserID.ToString()),
 				//new Claim("name", user.Name),
-				new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
+				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
+                new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
                 new Claim("groupid", (user?.GroupID ?? 0).ToString())
               });
 

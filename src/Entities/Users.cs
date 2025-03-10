@@ -57,6 +57,7 @@ namespace sopra_hris_api.Entities
         public long IsRead { get; set; }
         public long IsUpdate { get; set; }
         public long IsDelete { get; set; }
+        public string? IconImg { get; set; }
     }
     public class ChildMenu
     {
@@ -69,5 +70,6 @@ namespace sopra_hris_api.Entities
         public long IsRead { get; set; }
         public long IsUpdate { get; set; }
         public long IsDelete { get; set; }
+        public string? IconImg { get; set; }
     }
 }

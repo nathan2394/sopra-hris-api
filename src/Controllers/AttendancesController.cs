@@ -13,20 +13,19 @@ namespace sopra_hris_api.Controllers;
 [Authorize]
 public class AttendancesController : ControllerBase
 {
-    private readonly IServiceAsync<Attendances> _service;
+    private readonly IServiceAttendancesAsync<Attendances> _service;
 
-    public AttendancesController(IServiceAsync<Attendances> service)
+    public AttendancesController(IServiceAttendancesAsync<Attendances> service)
     {
         _service = service;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
+    public async Task<IActionResult> Get(string filter = "", string date = "")
     {
         try
         {
-            var total = 0;
-            var result = await _service.GetAllAsync(limit, page, total, search, sort, filter, date);
+            var result = await _service.GetAllAsync(filter, date);
             return Ok(result);
         }
         catch (Exception ex)

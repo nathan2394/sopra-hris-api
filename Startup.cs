@@ -159,7 +159,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Overtimes>, OvertimeService>();
             services.AddScoped<IServiceAsync<Reasons>, ReasonService>();
             services.AddScoped<IServiceAsync<UnattendanceTypes>, UnattendanceTypeService>();
-            services.AddScoped<IServiceAsync<Attendances>, AttendanceService>();
+            services.AddScoped<IServiceAttendancesAsync<Attendances>, AttendanceService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();
             services.AddScoped<IServiceAsync<TunjanganMasaKerja>, TunjanganMasaKerjaService>();
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();

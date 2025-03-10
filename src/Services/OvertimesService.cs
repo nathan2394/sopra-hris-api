@@ -4,17 +4,21 @@ using sopra_hris_api.Responses;
 using System.Diagnostics;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class OvertimeService : IServiceAsync<Overtimes>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public OvertimeService(EFContext context)
+        public OvertimeService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<Overtimes> CreateAsync(Overtimes data)
         {
@@ -115,6 +119,8 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = (from o in _context.Overtimes.AsNoTracking()
                              join e in _context.Employees on o.EmployeeID equals e.EmployeeID
@@ -124,7 +130,7 @@ namespace sopra_hris_api.src.Services.API
                              from d in deptGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where o.IsDeleted == false
+                             where o.IsDeleted == false && ((o.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
                              select new Overtimes
                              {
                                  OvertimeID = o.OvertimeID,
@@ -163,22 +169,31 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department")
+                            if (fieldName == "group" || fieldName == "department" || fieldName== "reason")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "reason")
+                                    query = query.Where(x => Ids.Contains(x.ReasonID ?? 0));
                             }
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.Description.Contains(value)),
-                                "reason" => query.Where(x => x.ReasonCode.Contains(value)),
                                 _ => query
                             };
                         }
                     }
+                }
+
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => x.StartDate >= startDate && x.EndDate <= endDate);
                 }
 
                 // Sorting
