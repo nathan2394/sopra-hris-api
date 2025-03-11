@@ -10,6 +10,7 @@ using Microsoft.Data.SqlClient;
 using sopra_hris_api.src.Entities;
 using System.Data;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.Text.RegularExpressions;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -89,6 +90,7 @@ namespace sopra_hris_api.src.Services.API
 
                 obj.EmployeeID = data.EmployeeID;
                 obj.ClockIn = data.ClockIn;
+                obj.Description = data.Description;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -111,6 +113,40 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
+        public async Task<ListResponse<Attendances>> GetAllAsync(int limit, int page, int total, long id, string date)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                DateTime queryDate = DateTime.Parse(date);
+                var query = from a in _context.Attendances where a.IsDeleted == false && a.EmployeeID == id && a.ClockIn.Date == queryDate.Date select a;
+
+                // Get Total Before Limit and Page
+                total = await query.CountAsync();
+
+                // Set Limit and Page
+                if (limit != 0)
+                    query = query.Skip(page * limit).Take(limit);
+
+                // Get Data
+                var data = await query.ToListAsync();
+                if (data.Count <= 0 && page > 0)
+                {
+                    page = 0;
+                    return await GetAllAsync(limit, page, total, id, date);
+                }
+
+                return new ListResponse<Attendances>(data, total, page);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
 
         public async Task<ListResponseTemplate<AttendanceSummary>> GetAllAsync(string filter, string date)
         {
@@ -119,7 +155,8 @@ namespace sopra_hris_api.src.Services.API
                 var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
                 var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
 
-                DateTime StartDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-24);
+                DateTime dateNow = DateTime.Now;
+                DateTime StartDate = new DateTime(dateNow.AddMonths(-1).Year, dateNow.AddMonths(-1).Month, 24);
                 DateTime EndDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 23);
                 // Date Filtering
                 if (!string.IsNullOrEmpty(date))
@@ -153,11 +190,30 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<Attendances> GetByIdAsync(long id)
+        public async Task<ListResponseTemplate<AttendanceDetails>> GetDetailAsync(long id, string date)
         {
             try
             {
-                return await _context.Attendances.AsNoTracking().FirstOrDefaultAsync(x => x.AttendanceID == id && x.IsDeleted == false);
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                DateTime dateNow = DateTime.Now;
+                DateTime StartDate = new DateTime(dateNow.AddMonths(-1).Year, dateNow.AddMonths(-1).Month, 24);
+                DateTime EndDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 23);
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                    {
+                        StartDate = startDate;
+                        EndDate = endDate;
+                    }
+                }
+
+                var query = from ad in _context.AttendanceDetails
+                            where ad.EmployeeID == id && (ad.TransDate >= StartDate && ad.TransDate <= EndDate)
+                            select ad;
+                var data = await query.ToListAsync();
+
+                return new ListResponseTemplate<AttendanceDetails>(data);
             }
             catch (Exception ex)
             {

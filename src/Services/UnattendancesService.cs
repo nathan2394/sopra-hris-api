@@ -66,6 +66,8 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year && x.IsDeleted == false).CountAsync();
+                data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
                 data.IsApproved1 = false;
                 data.IsApproved2 = false;
                 data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
@@ -191,7 +193,8 @@ namespace sopra_hris_api.src.Services.API
                                 GroupType = g.Type,
                                 UnattendanceTypeCode = ut.Code,
                                 UnattendanceTypeName = ut.Name,
-                                Duration = u.Duration
+                                Duration = u.Duration,
+                                VoucherNo = u.VoucherNo
                             };
 
                 // Searching
@@ -224,6 +227,7 @@ namespace sopra_hris_api.src.Services.API
                                 query = fieldName switch
                                 {
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
                                     _ => query
                                 };
                         }
@@ -250,6 +254,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
+                            "voucher" => query.OrderByDescending(x => x.VoucherNo),
                             "department" => query.OrderByDescending(x => x.DepartmentName),
                             "group" => query.OrderByDescending(x => x.GroupType),
                             "unattendance" => query.OrderByDescending(x => x.UnattendanceTypeName),
@@ -262,6 +267,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
+                            "voucher" => query.OrderBy(x => x.VoucherNo),
                             "department" => query.OrderBy(x => x.DepartmentName),
                             "group" => query.OrderBy(x => x.GroupType),
                             "unattendance" => query.OrderBy(x => x.UnattendanceTypeName),
@@ -308,34 +314,35 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 return await (from u in _context.Unattendances.AsNoTracking()
-                                    join e in _context.Employees on u.EmployeeID equals e.EmployeeID
-                                    join ut in _context.UnattendanceTypes on u.UnattendanceTypeID equals ut.UnattendanceTypeID
-                                    join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
-                                    from d in deptGroup.DefaultIfEmpty()
-                                    join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
-                                    from g in groupGroup.DefaultIfEmpty()
-                                    where u.UnattendanceID == id && u.IsDeleted == false
-                                    select new Unattendances
-                                    {
-                                        UnattendanceID = u.UnattendanceID,
-                                        EmployeeID = u.EmployeeID,
-                                        StartDate = u.StartDate,
-                                        EndDate = u.EndDate,
-                                        UnattendanceTypeID = u.UnattendanceTypeID,
-                                        IsApproved1 = u.IsApproved1,
-                                        IsApproved2 = u.IsApproved2,
-                                        Description = u.Description,
-                                        NIK = e.Nik,
-                                        EmployeeName = e.EmployeeName,
-                                        DepartmentName = d.Name,
-                                        DepartmentID = e.DepartmentID,
-                                        GroupID = e.GroupID,
-                                        GroupName = g.Name,
-                                        GroupType = g.Type,
-                                        UnattendanceTypeCode = ut.Code,
-                                        UnattendanceTypeName = ut.Name,
-                                        Duration = u.Duration
-                                    }).AsNoTracking().FirstOrDefaultAsync();
+                              join e in _context.Employees on u.EmployeeID equals e.EmployeeID
+                              join ut in _context.UnattendanceTypes on u.UnattendanceTypeID equals ut.UnattendanceTypeID
+                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
+                              from d in deptGroup.DefaultIfEmpty()
+                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
+                              from g in groupGroup.DefaultIfEmpty()
+                              where u.UnattendanceID == id && u.IsDeleted == false
+                              select new Unattendances
+                              {
+                                  UnattendanceID = u.UnattendanceID,
+                                  EmployeeID = u.EmployeeID,
+                                  StartDate = u.StartDate,
+                                  EndDate = u.EndDate,
+                                  UnattendanceTypeID = u.UnattendanceTypeID,
+                                  IsApproved1 = u.IsApproved1,
+                                  IsApproved2 = u.IsApproved2,
+                                  Description = u.Description,
+                                  NIK = e.Nik,
+                                  EmployeeName = e.EmployeeName,
+                                  DepartmentName = d.Name,
+                                  DepartmentID = e.DepartmentID,
+                                  GroupID = e.GroupID,
+                                  GroupName = g.Name,
+                                  GroupType = g.Type,
+                                  UnattendanceTypeCode = ut.Code,
+                                  UnattendanceTypeName = ut.Name,
+                                  Duration = u.Duration,
+                                  VoucherNo = u.VoucherNo
+                              }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {

@@ -25,8 +25,10 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
                 data.IsApproved1 = false;
                 data.IsApproved2 = false;
+                data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
                 await _context.Overtimes.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -150,7 +152,8 @@ namespace sopra_hris_api.src.Services.API
                                  GroupName = g != null ? g.Name : null,
                                  GroupType = g != null ? g.Type : null,
                                  ReasonCode = r != null ? r.Code : null,
-                                 ReasonName = r != null ? r.Name : null
+                                 ReasonName = r != null ? r.Name : null,
+                                 VoucherNo = o.VoucherNo
                              });
 
                 // Searching
@@ -182,6 +185,7 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.Description.Contains(value)),
+                                "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
                                 _ => query
                             };
                         }
@@ -208,6 +212,7 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
+                            "voucher" => query.OrderByDescending(x => x.VoucherNo),
                             "department" => query.OrderByDescending(x => x.DepartmentName),
                             "group" => query.OrderByDescending(x => x.GroupType),
                             "reason" => query.OrderByDescending(x => x.ReasonName),
@@ -220,11 +225,12 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "department" => query.OrderByDescending(x => x.DepartmentName),
-                            "group" => query.OrderByDescending(x => x.GroupType),
-                            "reason" => query.OrderByDescending(x => x.ReasonName),
-                            "name" => query.OrderByDescending(x => x.EmployeeName),
-                            "startdate" => query.OrderByDescending(x => x.StartDate),
+                            "voucher" => query.OrderBy(x => x.VoucherNo),
+                            "department" => query.OrderBy(x => x.DepartmentName),
+                            "group" => query.OrderBy(x => x.GroupType),
+                            "reason" => query.OrderBy(x => x.ReasonName),
+                            "name" => query.OrderBy(x => x.EmployeeName),
+                            "startdate" => query.OrderBy(x => x.StartDate),
                             _ => query
                         };
                     }
@@ -293,7 +299,8 @@ namespace sopra_hris_api.src.Services.API
                                   GroupName = g != null ? g.Name : null,
                                   GroupType = g != null ? g.Type : null,
                                   ReasonCode = r != null ? r.Code : null,
-                                  ReasonName = r != null ? r.Name : null
+                                  ReasonName = r != null ? r.Name : null,
+                                  VoucherNo = o.VoucherNo
                               }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)

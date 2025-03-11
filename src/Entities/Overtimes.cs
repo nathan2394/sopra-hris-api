@@ -9,6 +9,7 @@ namespace sopra_hris_api.Entities
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long OvertimeID { get; set; }
+        public string VoucherNo { get; set; }
         public long EmployeeID { get; set; }
         public DateTime TransDate { get; set; }
         public DateTime StartDate { get; set; }

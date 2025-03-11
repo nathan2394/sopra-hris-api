@@ -1,30 +1,30 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace sopra_hris_api.Entities
 {
+    [Keyless]
     [Table(name: "AttendanceDetails")]
-    public class AttendanceDetails : Entity
+    public class AttendanceDetails 
     {
-        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long AttendanceDetailID { get; set; }
         public long EmployeeID { get; set; }
+        public string Nik { get; set; }
+        public string EmployeeName { get; set; }
         public DateTime TransDate { get; set; }
-        public long? ShiftID { get; set; }
+        public string DayName { get; set; }
+        public string? ShiftName { get; set; }
+        public int? WorkingDays { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-        public DateTime? ClockIn { get; set; }
-        public DateTime? ClockOut { get; set; }
+        public DateTime? StartBufferTime { get; set; }
+        public DateTime? EndBufferTime { get; set; }
         public string? Unattendance { get; set; }
-        public long? OVTHours { get; set; }
-        [NotMapped]
-        public string EmployeeName { get; set; }
-        [NotMapped]
-        public string? DepartmentName { get; set; }
-        [NotMapped]
-        public string? ShiftCode { get; set; }
-        [NotMapped]
-        public string? ShiftName { get; set; }
+        public DateTime? ActualStartTime { get; set; }
+        public DateTime? ActualEndTime { get; set; }
+        public int? Late { get; set; }
+        public int? Ovt { get; set; }
+        public Single? EffectiveHours { get; set; }
     }
 }

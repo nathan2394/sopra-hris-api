@@ -203,7 +203,7 @@ namespace sopra_hris_api.src.Services.API
                                 on a.JobTitleID equals jobtitle.EmployeeJobTitleID into jobTitleGroup
                             from jobtitle in jobTitleGroup.DefaultIfEmpty()
 
-                            where a.IsDeleted == false && (groups != null || (groups.Level < groupLevel && groupLevel > 0))
+                            where a.IsDeleted == false && (groups.Level < groupLevel && groupLevel > 0)
                             select new Employees
                             {
                                 EmployeeID = a.EmployeeID,

@@ -11,5 +11,6 @@ namespace sopra_hris_api.Entities
         public long AttendanceID { get; set; }
         public long EmployeeID { get; set; }
         public DateTime ClockIn { get; set; }
+        public string? Description { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 
 namespace sopra_hris_api.src.Entities
 {
@@ -35,4 +36,5 @@ namespace sopra_hris_api.src.Entities
         public string? GroupShiftCode { get; set; }
         public string? GroupShiftName { get; set; }
     }
+
 }

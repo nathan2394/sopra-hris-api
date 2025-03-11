@@ -20,8 +20,8 @@ public class AttendancesController : ControllerBase
         _service = service;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Get(string filter = "", string date = "")
+    [HttpGet("{date}")]
+    public async Task<IActionResult> Get(string date = "", string filter = "")
     {
         try
         {
@@ -40,18 +40,36 @@ public class AttendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("ListAttendance/{employeeid}/{date}")]
+    public async Task<IActionResult> GetListAttendance(long employeeid, string date)
     {
         try
         {
-            var result = await _service.GetByIdAsync(id);
+            var result = await _service.GetAllAsync(0, 0, 0, employeeid, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("DetailAttendance/{id}/{date}")]
+    public async Task<IActionResult> GetById(long id, string date)
+    {
+        try
+        {
+            var result = await _service.GetDetailAsync(id, date);
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Attendances>(result);
-            return Ok(response);
+            return Ok(result);
         }
         catch (Exception ex)
         {
