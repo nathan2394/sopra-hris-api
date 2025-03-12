@@ -46,6 +46,8 @@ public class AttendancesController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(0, 0, 0, employeeid, date);
+            if (result == null)
+                return BadRequest(new { message = "Invalid ID" });
             return Ok(result);
         }
         catch (Exception ex)
@@ -60,12 +62,12 @@ public class AttendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-    [HttpGet("DetailAttendance/{id}/{date}")]
-    public async Task<IActionResult> GetById(long id, string date)
+    [HttpGet("DetailAttendance/{employeeid}/{date}")]
+    public async Task<IActionResult> GetById(long employeeid, string date)
     {
         try
         {
-            var result = await _service.GetDetailAsync(id, date);
+            var result = await _service.GetDetailAsync(employeeid, date);
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
