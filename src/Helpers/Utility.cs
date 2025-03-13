@@ -129,6 +129,22 @@ namespace sopra_hris_api.Helpers
                 return false;
             }
         }
+        public static string GetFilterValue(string key, string filter)
+        {
+            if (!string.IsNullOrEmpty(filter))
+            {
+                var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                foreach (var f in filterList)
+                {
+                    var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                    if (searchList.Length == 2 && searchList[0].Trim().ToLower() == key.ToLower())
+                    {
+                        return searchList[1].Trim();
+                    }
+                }
+            }
+            return string.Empty;
+        }
     }
 
 }

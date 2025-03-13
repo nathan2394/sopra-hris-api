@@ -68,9 +68,12 @@ namespace sopra_hris_api.src.Services.API
             {
                 var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year && x.IsDeleted == false).CountAsync();
                 data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
+                data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
                 data.IsApproved1 = false;
                 data.IsApproved2 = false;
-                data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
+                data.ApprovedDate1 = null;
+                data.ApprovedDate2 = null;
+
                 await _context.Unattendances.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -133,9 +136,11 @@ namespace sopra_hris_api.src.Services.API
                 obj.EndDate = data.EndDate;
                 obj.UnattendanceTypeID = data.UnattendanceTypeID;
                 obj.IsApproved1 = data.IsApproved1;
+                obj.ApprovedDate1 = data.ApprovedDate1;
                 obj.IsApproved2 = data.IsApproved2;
+                obj.ApprovedDate2 = data.ApprovedDate2;
                 obj.Description = data.Description;
-                obj.Duration = data.Duration;
+                obj.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -213,17 +218,17 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department")
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "unattendancetype")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
-                                else if(fieldName== "unattendancetype")
+                                else if (fieldName == "unattendancetype")
                                     query = query.Where(x => Ids.Contains(x.UnattendanceTypeID));
                             }
-                            else 
+                            else
                                 query = fieldName switch
                                 {
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
@@ -239,7 +244,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => x.StartDate >= startDate && x.EndDate <= endDate);
+                        query = query.Where(x => x.StartDate >= startDate && x.StartDate <= endDate && x.EndDate >= startDate && x.EndDate <= endDate);
                 }
 
                 // Sorting
@@ -257,7 +262,7 @@ namespace sopra_hris_api.src.Services.API
                             "voucher" => query.OrderByDescending(x => x.VoucherNo),
                             "department" => query.OrderByDescending(x => x.DepartmentName),
                             "group" => query.OrderByDescending(x => x.GroupType),
-                            "unattendance" => query.OrderByDescending(x => x.UnattendanceTypeName),
+                            "unattendancetype" => query.OrderByDescending(x => x.UnattendanceTypeName),
                             "name" => query.OrderByDescending(x => x.EmployeeName),
                             "startdate" => query.OrderByDescending(x => x.StartDate),
                             _ => query
@@ -270,7 +275,7 @@ namespace sopra_hris_api.src.Services.API
                             "voucher" => query.OrderBy(x => x.VoucherNo),
                             "department" => query.OrderBy(x => x.DepartmentName),
                             "group" => query.OrderBy(x => x.GroupType),
-                            "unattendance" => query.OrderBy(x => x.UnattendanceTypeName),
+                            "unattendancetype" => query.OrderBy(x => x.UnattendanceTypeName),
                             "name" => query.OrderBy(x => x.EmployeeName),
                             "startdate" => query.OrderBy(x => x.StartDate),
                             _ => query

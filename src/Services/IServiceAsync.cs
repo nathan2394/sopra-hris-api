@@ -19,8 +19,8 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<AttendanceSummary>> GetAllAsync(string filter, string date);
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, long id, string date);
         Task<ListResponseTemplate<AttendanceDetails>> GetDetailAsync(long id, string date);
-        Task<T> CreateAsync(T data);
-        Task<T> EditAsync(T data);
+        Task<ListResponseTemplate<AttendanceShift>> GetDetailShiftsAsync(long id, string date);
+        Task<AttendanceDetails> SaveAttendancesAsync(AttendanceDTO attendance);
         Task<bool> DeleteAsync(long id, long userID);
     }
     public interface IServiceEmployeeAsync<T>

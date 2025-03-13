@@ -9,13 +9,15 @@ namespace sopra_hris_api.Entities
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long UnattendanceID { get; set; }
-        public string VoucherNo { get; set; }
+        public string? VoucherNo { get; set; }
         public long EmployeeID { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public long UnattendanceTypeID { get; set; }
         public bool? IsApproved1 { get; set; }
+        public DateTime? ApprovedDate1 { get; set; }
         public bool? IsApproved2 { get; set; }
+        public DateTime? ApprovedDate2 { get; set; }
         public string? Description { get; set; }
         public int? Duration { get; set; }
         [NotMapped]

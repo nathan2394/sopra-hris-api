@@ -36,6 +36,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<UnattendanceTypes> UnattendanceTypes { get; set; }
         public DbSet<Attendances> Attendances { get; set; }
         public DbSet<Machines> Machines { get; set; }
+        public DbSet<Attachments> Attachments { get; set; }
         public DbSet<GroupShifts> GroupShifts { get; set; }
         public DbSet<EmployeeShifts> EmployeeShifts { get; set; }
         public DbSet<Overtimes> Overtimes { get; set; }
@@ -47,6 +48,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<SalaryPayrollSummaryTotalDTO> SalaryPayrollSummaryTotalDTO { get; set; }
         public virtual DbSet<SalaryCalculatorModel> SalaryCalculatorModel { get; set; }
         public virtual DbSet<AttendanceSummary> AttendanceSummary { get; set; }
+        public virtual DbSet<AttendanceShift> AttendanceShift { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

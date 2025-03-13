@@ -286,11 +286,6 @@ namespace sopra_hris_api.src.Services.API
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                     "nik" => query.Where(x => x.Nik.Contains(value)),
                                     "ktp" => query.Where(x => x.KTP.Contains(value)),
-                                    "group" => query.Where(x => x.GroupID.ToString().Equals(value)),
-                                    "department" => query.Where(x => x.DepartmentID.ToString().Equals(value)),
-                                    "function" => query.Where(x => x.FunctionID.ToString().Equals(value)),
-                                    "division" => query.Where(x => x.DivisionID.ToString().Equals(value)),
-                                    "employeetype" => query.Where(x => x.EmployeeTypeID.ToString().Equals(value)),
                                     _ => query
                                 };
                             }

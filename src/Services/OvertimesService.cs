@@ -26,9 +26,14 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
+                double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
+                data.OVTHours = (float?)roundedDownOvertime;
                 data.IsApproved1 = false;
                 data.IsApproved2 = false;
-                data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
+                data.ApprovedDate1 = null;
+                data.ApprovedDate2 = null;
+
                 await _context.Overtimes.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -93,8 +98,12 @@ namespace sopra_hris_api.src.Services.API
                 obj.ReasonID = data.ReasonID;
                 obj.Description = data.Description;
                 obj.IsApproved1 = data.IsApproved1;
+                obj.ApprovedDate1 = data.ApprovedDate1;
                 obj.IsApproved2 = data.IsApproved2;
+                obj.ApprovedDate2 = data.ApprovedDate2;
 
+                double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
+                data.OVTHours = (float?)roundedDownOvertime;
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
 
@@ -172,7 +181,7 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department" || fieldName== "reason")
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "reason")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
@@ -197,7 +206,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => x.StartDate >= startDate && x.EndDate <= endDate);
+                        query = query.Where(x => x.TransDate >= startDate && x.TransDate <= endDate);
                 }
 
                 // Sorting

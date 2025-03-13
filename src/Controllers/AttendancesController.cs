@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
+using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Services;
 
 namespace sopra_hris_api.Controllers;
@@ -87,16 +89,16 @@ public class AttendancesController : ControllerBase
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Attendances obj)
+    [HttpGet("AttendanceShift/{employeeid}/{date}")]
+    public async Task<IActionResult> GetShifts(long employeeid, string date)
     {
         try
         {
-            obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.GetDetailShiftsAsync(employeeid, date);
+            if (result == null)
+                return BadRequest(new { message = "Invalid ID" });
 
-            var result = await _service.CreateAsync(obj);
-            var response = new Response<Attendances>(result);
-            return Ok(response);
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -110,18 +112,14 @@ public class AttendancesController : ControllerBase
             Trace.WriteLine(message, "AttendancesController");
             return BadRequest(new { message });
         }
-
     }
-
-    [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Attendances obj)
+    [HttpPost]
+    public async Task<IActionResult> SaveAttendances([FromBody] AttendanceDTO attendance)
     {
         try
         {
-            obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
-
-            var result = await _service.EditAsync(obj);
-            var response = new Response<Attendances>(result);
+            var result = await _service.SaveAttendancesAsync(attendance);
+            var response = new Response<AttendanceDetails>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -136,6 +134,7 @@ public class AttendancesController : ControllerBase
             Trace.WriteLine(message, "AttendancesController");
             return BadRequest(new { message });
         }
+
     }
 
     [HttpDelete("{id}")]

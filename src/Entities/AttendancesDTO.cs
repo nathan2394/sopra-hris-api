@@ -35,6 +35,28 @@ namespace sopra_hris_api.src.Entities
         public long? GroupShiftID { get; set; }
         public string? GroupShiftCode { get; set; }
         public string? GroupShiftName { get; set; }
+        public string? KTP { get; set; }
+        public long? FunctionID { get; set; }
+        public string? FunctionName { get; set; }
     }
-
+    [Keyless]
+    public class AttendanceShift
+    {
+        public DateTime TransDate { get; set; }
+        public long EmployeeID { get; set; }
+        public bool? IsShift { get; set; }
+        public long? ShiftID { get; set; }
+        public string? ShiftCode { get; set; }
+        public string? ShiftName { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+    }
+    [Keyless]
+    public class AttendanceDTO
+    {
+        public long EmployeeID { get; set; }
+        public long ShiftID { get; set; }
+        public DateTime TransDate { get; set; }
+        public List<Attendances> Attendances { get; set; }
+    }
 }

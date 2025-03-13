@@ -7,17 +7,21 @@ using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class EmployeeShiftService : IServiceEmployeeShiftAsync<EmployeeShifts>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public EmployeeShiftService(EFContext context)
+        public EmployeeShiftService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<EmployeeShifts> CreateAsync(EmployeeShifts data)
         {
@@ -112,14 +116,35 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.EmployeeShifts where a.IsDeleted == false select a;
+                var query = from a in _context.EmployeeShifts
+                            join s in _context.Shifts on a.ShiftID equals s.ShiftID
+                            join e in _context.Employees on a.EmployeeID equals e.EmployeeID
+                            where a.IsDeleted == false && ((a.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                            select new EmployeeShifts
+                            {
+                                EmployeeShiftID = a.EmployeeShiftID,
+                                EmployeeID = a.EmployeeID,
+                                ShiftID = a.ShiftID,
+                                TransDate = a.TransDate,
+                                GroupShiftID = a.GroupShiftID,
+                                EmployeeName = e.EmployeeName,
+                                ShiftCode = s.Code,
+                                ShiftName = s.Name
+                            };
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.EmployeeName.Contains(search) || x.ShiftCode.Contains(search) || x.ShiftName.Contains(search)
+                        );
 
+                if (!string.IsNullOrEmpty(date))
+                {
+                    DateTime queryDate = DateTime.Parse(date);
+                    query = query.Where(x => x.TransDate.Value.Date == queryDate.Date);
+                }
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
                 {
@@ -133,7 +158,9 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                "shiftcode" => query.Where(x => x.ShiftCode.Contains(value)),
+                                "shift" => query.Where(x => x.ShiftName.Contains(value)),
                                 _ => query
                             };
                         }
