@@ -14,6 +14,7 @@ namespace sopra_hris_api.Entities
         public string EmployeeName { get; set; }
         public DateTime TransDate { get; set; }
         public string DayName { get; set; }
+        public string? ShiftCode { get; set; }
         public string? ShiftName { get; set; }
         public int? WorkingDays { get; set; }
         public DateTime? StartTime { get; set; }
@@ -25,6 +26,7 @@ namespace sopra_hris_api.Entities
         public DateTime? ActualEndTime { get; set; }
         public int? Late { get; set; }
         public int? Ovt { get; set; }
+        public int? EarlyClockOut { get; set; }
         public Single? EffectiveHours { get; set; }
     }
 }

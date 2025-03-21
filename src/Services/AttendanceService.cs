@@ -272,44 +272,16 @@ namespace sopra_hris_api.src.Services.API
 
                 var data = await _context.AttendanceShift.FromSqlRaw(@"SELECT ad.TransDate,e.IsShift, e.EmployeeID,
                         case when e.IsShift=1 then s.ShiftID else s2.ShiftID end ShiftID,
-                        case when e.IsShift=1 then s.Code else s2.Code end ShiftCode,
-                        case when e.IsShift=1 then s.Name else s2.Name end ShiftName,
-                        CASE 
-                                WHEN E.IsShift = 1 AND S.ShiftID IS NOT NULL THEN CAST(ad.TransDate AS DATETIME) + CAST(S.StartTime AS DATETIME)
-                                WHEN E.IsShift = 0 AND S2.ShiftID IS NOT NULL THEN 
-                                (
-                                    CASE WHEN ((DATENAME(WEEKDAY, ad.TransDate) IN('SATURDAY', 'SUNDAY')) AND S2.WeekendStartTime IS NOT NULL)
-                                    THEN
-                                    CAST(ad.TransDate AS DATETIME) + CAST(S2.WeekendStartTime AS DATETIME)
-                                    ELSE 
-                                    CAST(ad.TransDate AS DATETIME) + CAST(S2.StartTime AS DATETIME)
-                                    END
-                                )
-                                ELSE NULL
-                            END AS StartTime,
-                        CASE 
-                                WHEN E.IsShift = 1 AND S.ShiftID IS NOT NULL THEN 
-                                (
-                                    CASE WHEN S.EndTime < S.StartTime THEN CAST(DATEADD(DAY, 1 ,ad.TransDate) AS DATETIME) + CAST(S.EndTime AS DATETIME) 
-                                    ELSE CAST(ad.TransDate AS DATETIME) + CAST(S.EndTime AS DATETIME)
-                                    END
-                                )
-                                WHEN E.IsShift = 0 AND S2.ShiftID IS NOT NULL THEN 
-                                (
-                                    CASE WHEN ((DATENAME(WEEKDAY, ad.TransDate) IN('SATURDAY', 'SUNDAY')) AND S2.WeekendEndTime IS NOT NULL)
-                                    THEN
-                                    CAST(ad.TransDate AS DATETIME) + CAST(S2.WeekendEndTime AS DATETIME)
-                                    ELSE 
-                                    CAST(ad.TransDate AS DATETIME) + CAST(S2.EndTime AS DATETIME)
-                                    END
-                                )
-                                ELSE NULL 
-                            END AS EndTime
+                        ad.ShiftCode,
+						ad.ShiftName,                        
+                        ad.StartTime AS StartTime,
+                        ad.EndTime AS EndTime
                         FROM AttendanceDetails ad
                         INNER JOIN Employees e on e.EmployeeID=ad.EmployeeID AND e.IsDeleted=0
-                        LEFT JOIN EmployeeShifts es on es.EmployeeID=ad.EmployeeID and es.TransDate=ad.TransDate AND e.IsShift=1 AND es.IsDeleted=0
+                        LEFT JOIN EmployeeShifts es on es.EmployeeID=ad.EmployeeID AND es.TransDate=ad.TransDate AND e.IsShift=1 AND es.IsDeleted=0
                         LEFT JOIN Shifts s on s.ShiftID=es.ShiftID AND s.IsDeleted=0
-                        LEFT JOIN Shifts s2 on s2.ShiftID=e.ShiftID AND e.IsShift=0  AND s2.IsDeleted=0WHERE ad.EmployeeID=@EmployeeID
+                        LEFT JOIN Shifts s2 on s2.ShiftID=e.ShiftID AND e.IsShift=0 AND s2.IsDeleted=0
+                        WHERE ad.EmployeeID=@EmployeeID
 	                        AND ad.TransDate=@TransDate", new SqlParameter("@EmployeeID", id), new SqlParameter("@TransDate", date)).ToListAsync();
 
                 return new ListResponseTemplate<AttendanceShift>(data);

@@ -11,11 +11,11 @@ namespace sopra_hris_api.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Authorize]
-public class UnattendancesController : ControllerBase
+public class EmployeeTransferShiftsController : ControllerBase
 {
-    private readonly IServiceUnAttendancesAsync<Unattendances> _service;
+    private readonly IServiceAsync<EmployeeTransferShifts> _service;
 
-    public UnattendancesController(IServiceUnAttendancesAsync<Unattendances> service)
+    public EmployeeTransferShiftsController(IServiceAsync<EmployeeTransferShifts> service)
     {
         _service = service;
     }
@@ -51,7 +51,7 @@ public class UnattendancesController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Unattendances>(result);
+            var response = new Response<EmployeeTransferShifts>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -63,45 +63,20 @@ public class UnattendancesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "UnattendancesController");
+            Trace.WriteLine(message, "EmployeeTransferShiftsController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Unattendances obj)
+    public async Task<IActionResult> Create([FromBody] EmployeeTransferShifts obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
-            // Handle file uploads
-            //if (attachments != null && attachments.Any())
-            //{
-            //    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UnattendanceUploads");
-            //    if (!Directory.Exists(uploadsFolder))
-            //        Directory.CreateDirectory(uploadsFolder);
-                
-            //    obj.UnattendanceAttachments = new List<UnattendanceAttachments>();
-
-            //    foreach (var file in attachments)
-            //    {
-            //        var filePath = Path.Combine(uploadsFolder, file.FileName);
-            //        using (var stream = new FileStream(filePath, FileMode.Create))
-            //        {
-            //            await file.CopyToAsync(stream);
-            //        }
-
-            //        obj.UnattendanceAttachments.Add(new UnattendanceAttachments
-            //        {
-            //            FileName = file.FileName,
-            //            FilePath = filePath
-            //        });
-            //    }
-            //}
-
             var result = await _service.CreateAsync(obj);
-            var response = new Response<Unattendances>(result);
+            var response = new Response<EmployeeTransferShifts>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -113,44 +88,21 @@ public class UnattendancesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "UnattendancesController");
+            Trace.WriteLine(message, "EmployeeTransferShiftsController");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Unattendances obj)
+    public async Task<IActionResult> Edit([FromBody] EmployeeTransferShifts obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
-            //// Handle file uploads
-            //if (attachments != null && attachments.Any())
-            //{
-            //    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UnattendanceUploads");
-            //    if (!Directory.Exists(uploadsFolder))
-            //        Directory.CreateDirectory(uploadsFolder);
 
-            //    obj.UnattendanceAttachments = new List<UnattendanceAttachments>();
-
-            //    foreach (var file in attachments)
-            //    {
-            //        var filePath = Path.Combine(uploadsFolder, file.FileName);
-            //        using (var stream = new FileStream(filePath, FileMode.Create))
-            //        {
-            //            await file.CopyToAsync(stream);
-            //        }
-
-            //        obj.UnattendanceAttachments.Add(new UnattendanceAttachments
-            //        {
-            //            FileName = file.FileName,
-            //            FilePath = filePath
-            //        });
-            //    }
-            //}
             var result = await _service.EditAsync(obj);
-            var response = new Response<Unattendances>(result);
+            var response = new Response<EmployeeTransferShifts>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -162,7 +114,7 @@ public class UnattendancesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "UnattendancesController");
+            Trace.WriteLine(message, "EmployeeTransferShiftsController");
             return BadRequest(new { message });
         }
     }
@@ -186,7 +138,7 @@ public class UnattendancesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "UnattendancesController");
+            Trace.WriteLine(message, "EmployeeTransferShiftsController");
             return BadRequest(new { message });
         }
     }

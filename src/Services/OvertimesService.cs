@@ -206,7 +206,8 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => x.TransDate >= startDate && x.TransDate <= endDate);
+                        query = query.Where(x => (x.TransDate >= startDate && x.TransDate <= endDate ||
+                         x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
                 }
 
                 // Sorting

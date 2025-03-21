@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class UnattendanceService : IServiceAsync<Unattendances>
+    public class UnattendanceService : IServiceUnAttendancesAsync<Unattendances>
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -20,6 +20,7 @@ namespace sopra_hris_api.src.Services.API
             _httpContextAccessor = httpContextAccessor;
         }
         private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
+        
         private async Task<int> CalculateEffectiveDuration(DateTime startDate, DateTime endDate, long employeeId)
         {
             var totalDays = 0;
@@ -75,7 +76,20 @@ namespace sopra_hris_api.src.Services.API
                 data.ApprovedDate2 = null;
 
                 await _context.Unattendances.AddAsync(data);
-                await _context.SaveChangesAsync();
+                long UnattendanceID = await _context.SaveChangesAsync();
+
+                //if (data.UnattendanceAttachments?.Count > 0)
+                //{
+                //    foreach(var attachment in data.UnattendanceAttachments)
+                //    {
+                //        attachment.UnattendanceID = UnattendanceID;
+                //        attachment.DateIn = data.DateIn;
+                //        attachment.UserIn = data.UserIn;
+                //        attachment.IsDeleted = false;
+                //        await _context.UnattendanceAttachments.AddAsync(attachment);
+                //    }
+                //    await _context.SaveChangesAsync();
+                //}
 
                 await dbTrans.CommitAsync();
 
@@ -144,8 +158,34 @@ namespace sopra_hris_api.src.Services.API
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
-
                 await _context.SaveChangesAsync();
+
+                //if (data.UnattendanceAttachments?.Count > 0)
+                //{
+                //    var existingAttachments = await _context.UnattendanceAttachments
+                //        .Where(x => x.UnattendanceID == data.UnattendanceID)
+                //        .ToListAsync();
+
+                //    foreach (var attachment in data.UnattendanceAttachments)
+                //    {
+                //        var existingAttachment = await _context.UnattendanceAttachments.FirstOrDefaultAsync(x => x.AttachmentID == attachment.AttachmentID);
+                //        if (existingAttachment == null)
+                //        {
+                //            attachment.UnattendanceID = data.UnattendanceID;
+                //            attachment.DateIn = data.DateIn;
+                //            attachment.UserIn = data.UserIn;
+                //            attachment.IsDeleted = false;
+                //            await _context.UnattendanceAttachments.AddAsync(attachment);
+                //        }
+                //    }
+                //    var incomingAttachmentIds = data.UnattendanceAttachments.Select(a => a.AttachmentID).ToHashSet();
+                //    var attachmentsToRemove = existingAttachments.Where(x => !incomingAttachmentIds.Contains(x.AttachmentID)).ToList();
+
+                //    if (attachmentsToRemove.Any())
+                //        _context.UnattendanceAttachments.RemoveRange(attachmentsToRemove);
+                //}
+
+                //await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
 
@@ -244,7 +284,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => x.StartDate >= startDate && x.StartDate <= endDate && x.EndDate >= startDate && x.EndDate <= endDate);
+                        query = query.Where(x => (x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
                 }
 
                 // Sorting
@@ -357,6 +397,11 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        Task<List<Unattendances>> IServiceUnAttendancesAsync<Unattendances>.CreateAttachmentAsync(List<Unattendances> unattendanceAttachments)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -23,6 +23,16 @@ namespace sopra_hris_api.src.Services
         Task<AttendanceDetails> SaveAttendancesAsync(AttendanceDTO attendance);
         Task<bool> DeleteAsync(long id, long userID);
     }
+    public interface IServiceUnAttendancesAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<List<T>> CreateAttachmentAsync(List<T> unattendanceAttachments);
+    }
     public interface IServiceEmployeeAsync<T>
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,

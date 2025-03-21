@@ -18,8 +18,10 @@ namespace sopra_hris_api.Entities
         public string Description { get; set; }
         public Single? OVTHours { get; set; }
         public bool? IsApproved1 { get; set; }
+        public long? ApprovedBy1 { get; set; }
         public DateTime? ApprovedDate1 { get; set; }
         public bool? IsApproved2 { get; set; }
+        public long? ApprovedBy2 { get; set; }
         public DateTime? ApprovedDate2 { get; set; }
         [NotMapped]
         public string? NIK { get; set; }

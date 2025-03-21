@@ -22,6 +22,9 @@ namespace sopra_hris_api.src.Entities
         public int HKA { get; set; }
         public int ATT { get; set; }
         public int Late { get; set; }
+        public int LateCount { get; set; }
+        public int EarlyClockOut { get; set; }
+        public int EarlyClockOutCount { get; set; }
         public int OVT { get; set; }
         public int Absent { get; set; }
         public long? EmployeeTypeID { get; set; }
