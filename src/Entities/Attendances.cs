@@ -12,5 +12,12 @@ namespace sopra_hris_api.Entities
         public long EmployeeID { get; set; }
         public DateTime ClockIn { get; set; }
         public string? Description { get; set; }
+        public string? ProfilePhoto { get; set; }
+        public float? Latitude { get; set; }
+        public float? Longitude { get; set; }
+        public Attendances()
+        {
+            ClockIn = DateTime.Now;
+        }
     }
 }

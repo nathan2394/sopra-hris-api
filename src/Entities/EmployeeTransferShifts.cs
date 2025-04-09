@@ -22,5 +22,19 @@ namespace sopra_hris_api.Entities
         public long? ApprovedBy2 { get; set; }
         public DateTime? ApprovedDate1 { get; set; }
         public DateTime? ApprovedDate2 { get; set; }
+        [NotMapped]
+        public string? NIK { get; set; }
+        [NotMapped]
+        public string? EmployeeName { get; set; }
+        [NotMapped]
+        public string? DepartmentName { get; set; }
+        [NotMapped]
+        public long? DepartmentID { get; set; }
+        [NotMapped]
+        public long? GroupID { get; set; }
+        [NotMapped]
+        public string? GroupType { get; set; }
+        [NotMapped]
+        public string? GroupName { get; set; }
     }
 }

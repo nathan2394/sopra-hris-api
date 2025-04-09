@@ -162,10 +162,11 @@ namespace sopra_hris_api.src.Services.API
                     new SqlParameter("@BPJS", SqlDbType.Decimal) { Value = request.BPJS ?? 0 },
                     new SqlParameter("@Operational", SqlDbType.Decimal) { Value = request.Operational ?? 0 },
                     new SqlParameter("@Khusus", SqlDbType.Decimal) { Value = request.Khusus ?? 0 },
+                    new SqlParameter("@Functional", SqlDbType.Decimal) { Value = request.Functional ?? 0 },
                 };
 
                 var data = await _context.SalaryCalculatorModel.FromSqlRaw(
-                  "EXEC usp_Calculator @HKS, @HKA, @ATT, @OVT, @MEAL, @StartJointDate, @BasicSalary, @GroupID, @PayrollType, @BPJS, @Operational, @Khusus", parameters.ToArray())
+                  "EXEC usp_Calculator @HKS, @HKA, @ATT, @OVT, @MEAL, @StartJointDate, @BasicSalary, @GroupID, @PayrollType, @BPJS, @Operational, @Khusus, @Functional", parameters.ToArray())
                   .ToListAsync();
                 return new ListResponseTemplate<SalaryCalculatorModel>(data);
             }
@@ -441,7 +442,7 @@ namespace sopra_hris_api.src.Services.API
                 parameters.Add(new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID });
 
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag, @UserID", parameters.ToArray())
                   .ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);

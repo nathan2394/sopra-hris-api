@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
+using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Services;
 
 namespace sopra_hris_api.Controllers;
@@ -13,9 +14,9 @@ namespace sopra_hris_api.Controllers;
 [Authorize]
 public class UnattendancesController : ControllerBase
 {
-    private readonly IServiceUnAttendancesAsync<Unattendances> _service;
+    private readonly IServiceUnattendanceOVTAsync<Unattendances> _service;
 
-    public UnattendancesController(IServiceUnAttendancesAsync<Unattendances> service)
+    public UnattendancesController(IServiceUnattendanceOVTAsync<Unattendances> service)
     {
         _service = service;
     }
@@ -41,7 +42,27 @@ public class UnattendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-
+    [HttpGet("ListApproval")]
+    public async Task<IActionResult> GetListApproval(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
+    {
+        try
+        {
+            var total = 0;
+            var result = await _service.GetAllApprovalAsync(limit, page, total, search, sort, filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -74,32 +95,6 @@ public class UnattendancesController : ControllerBase
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
-
-            // Handle file uploads
-            //if (attachments != null && attachments.Any())
-            //{
-            //    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UnattendanceUploads");
-            //    if (!Directory.Exists(uploadsFolder))
-            //        Directory.CreateDirectory(uploadsFolder);
-                
-            //    obj.UnattendanceAttachments = new List<UnattendanceAttachments>();
-
-            //    foreach (var file in attachments)
-            //    {
-            //        var filePath = Path.Combine(uploadsFolder, file.FileName);
-            //        using (var stream = new FileStream(filePath, FileMode.Create))
-            //        {
-            //            await file.CopyToAsync(stream);
-            //        }
-
-            //        obj.UnattendanceAttachments.Add(new UnattendanceAttachments
-            //        {
-            //            FileName = file.FileName,
-            //            FilePath = filePath
-            //        });
-            //    }
-            //}
-
             var result = await _service.CreateAsync(obj);
             var response = new Response<Unattendances>(result);
             return Ok(response);
@@ -125,30 +120,6 @@ public class UnattendancesController : ControllerBase
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
-            //// Handle file uploads
-            //if (attachments != null && attachments.Any())
-            //{
-            //    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UnattendanceUploads");
-            //    if (!Directory.Exists(uploadsFolder))
-            //        Directory.CreateDirectory(uploadsFolder);
-
-            //    obj.UnattendanceAttachments = new List<UnattendanceAttachments>();
-
-            //    foreach (var file in attachments)
-            //    {
-            //        var filePath = Path.Combine(uploadsFolder, file.FileName);
-            //        using (var stream = new FileStream(filePath, FileMode.Create))
-            //        {
-            //            await file.CopyToAsync(stream);
-            //        }
-
-            //        obj.UnattendanceAttachments.Add(new UnattendanceAttachments
-            //        {
-            //            FileName = file.FileName,
-            //            FilePath = filePath
-            //        });
-            //    }
-            //}
             var result = await _service.EditAsync(obj);
             var response = new Response<Unattendances>(result);
             return Ok(response);
@@ -173,6 +144,29 @@ public class UnattendancesController : ControllerBase
         try
         {
             var result = await _service.DeleteAsync(id, Convert.ToInt64(User.FindFirstValue("id")));
+
+            var response = new Response<object>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "UnattendancesController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("Approval")]
+    public async Task<IActionResult> Approval(List<ApprovalDTO> data)
+    {
+        try
+        {
+            var result = await _service.ApprovalAsync(data);
 
             var response = new Response<object>(result);
             return Ok(response);

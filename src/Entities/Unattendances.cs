@@ -21,6 +21,7 @@ namespace sopra_hris_api.Entities
         public long? ApprovedBy2 { get; set; }
         public DateTime? ApprovedDate2 { get; set; }
         public string? Description { get; set; }
+        public string? Attachments { get; set; }
         public int? Duration { get; set; }
         [NotMapped]
         public string? NIK { get; set; }

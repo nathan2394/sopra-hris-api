@@ -94,6 +94,29 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<Attendances> CreateAsync(Attendances data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.Attendances.AddAsync(data);
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return data;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
         public async Task<bool> DeleteAsync(long id, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -123,7 +146,41 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<Attendances> EditAsync(Attendances data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var obj = await _context.Attendances.FirstOrDefaultAsync(x => x.AttendanceID == data.AttendanceID && x.IsDeleted == false);
+                if (obj == null) return null;
 
+                obj.EmployeeID = data.EmployeeID;
+                obj.ClockIn = data.ClockIn;
+                obj.Description = data.Description;
+                obj.ProfilePhoto = data.ProfilePhoto;
+                obj.Latitude = data.Latitude;
+                obj.Longitude = data.Longitude;
+
+                obj.UserUp = data.UserUp;
+                obj.DateUp = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return obj;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
         public async Task<ListResponse<Attendances>> GetAllAsync(int limit, int page, int total, long id, string date)
         {
             try

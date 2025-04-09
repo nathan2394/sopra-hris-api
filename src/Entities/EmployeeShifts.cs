@@ -13,7 +13,7 @@ namespace sopra_hris_api.Entities
         public long? ShiftID { get; set; }
         public DateTime? TransDate { get; set; }
         public long? GroupShiftID { get; set; }
-        [NotMapped]
+        [NotMapped]        
         public string EmployeeName { get; set; }
         [NotMapped]
         public string ShiftCode { get; set; }
@@ -22,6 +22,20 @@ namespace sopra_hris_api.Entities
         [NotMapped]
         public string GroupShiftCode { get; set; }
         [NotMapped]
+        public string GroupShiftName { get; set; }
+    }
+    public class EmployeeShiftsDTO
+    {
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long EmployeeShiftID { get; set; }
+        public long EmployeeID { get; set; }
+        public long? ShiftID { get; set; }
+        public DateTime? TransDate { get; set; }
+        public long? GroupShiftID { get; set; }
+        public string EmployeeName { get; set; }
+        public string ShiftCode { get; set; }
+        public string ShiftName { get; set; }
+        public string GroupShiftCode { get; set; }
         public string GroupShiftName { get; set; }
     }
 }

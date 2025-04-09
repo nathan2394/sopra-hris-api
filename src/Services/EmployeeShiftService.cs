@@ -310,7 +310,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<ListResponseTemplate<EmployeeShifts>> SetEmployeeShiftsAsync(DataTable templates, bool isEmployeeBased, long UserID)
+        public async Task<ListResponseTemplate<EmployeeShiftsDTO>> SetEmployeeShiftsAsync(DataTable templates, bool isEmployeeBased, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
@@ -347,14 +347,21 @@ namespace sopra_hris_api.src.Services.API
                     TypeName = "dbo.EmployeeShiftType",
                     Value = employeeShiftTypeTable
                 };
-                var data = await _context.EmployeeShifts.FromSqlRaw(
+                await _context.Database.ExecuteSqlRawAsync(
                     $"EXEC usp_SaveEmployeeShifts @ShiftData = @ShiftData, @IsEmployeeBased = {isEmployeeBased}, @UserID = {UserID}",
-                    templateParameter
-                ).ToListAsync();
+                    templateParameter);
 
-                await dbTrans.CommitAsync();
-                //var data = await _context.EmployeeShifts.Where(x => x.IsDeleted == false).ToListAsync();
-                return new ListResponseTemplate<EmployeeShifts>(data);
+                var data = await _context.EmployeeShiftsDTO.FromSqlRaw(
+                    @$"SELECT es.EmployeeShiftID,es.EmployeeID,es.ShiftID,es.TransDate,es.GroupShiftID,
+		                    c.Code ShiftCode, c.Name ShiftName, b2.Code GroupShiftCode, b2.Name GroupShiftName, b.EmployeeName
+                        FROM EmployeeShifts es 
+	                    INNER JOIN @ShiftData a on ((a.EmployeeId=es.EmployeeID or es.GroupShiftID=a.GroupShiftID)) and a.TransDate=es.TransDate
+                        LEFT JOIN Employees b ON es.EmployeeID = b.EmployeeID  
+                        LEFT JOIN GroupShifts b2 ON es.GroupShiftID = b2.GroupShiftID  
+                        LEFT JOIN Shifts c ON es.ShiftID = c.ShiftID  
+                        WHERE es.Isdeleted=0", templateParameter).ToListAsync();
+
+                return new ListResponseTemplate<EmployeeShiftsDTO>(data);
             }
             catch (Exception ex)
             {

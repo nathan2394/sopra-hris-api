@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
+using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Services;
 
 namespace sopra_hris_api.Controllers;
@@ -13,9 +14,9 @@ namespace sopra_hris_api.Controllers;
 [Authorize]
 public class OvertimesController : ControllerBase
 {
-    private readonly IServiceAsync<Overtimes> _service;
+    private readonly IServiceUnattendanceOVTAsync<Overtimes> _service;
 
-    public OvertimesController(IServiceAsync<Overtimes> service)
+    public OvertimesController(IServiceUnattendanceOVTAsync<Overtimes> service)
     {
         _service = service;
     }
@@ -42,6 +43,27 @@ public class OvertimesController : ControllerBase
         }
     }
 
+    [HttpGet("ListApproval")]
+    public async Task<IActionResult> GetListApproval(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
+    {
+        try
+        {
+            var total = 0;
+            var result = await _service.GetAllApprovalAsync(limit, page, total, search, sort, filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -125,6 +147,29 @@ public class OvertimesController : ControllerBase
         try
         {
             var result = await _service.DeleteAsync(id, Convert.ToInt64(User.FindFirstValue("id")));
+
+            var response = new Response<object>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "OvertimesController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("Approval")]
+    public async Task<IActionResult> Approval(List<ApprovalDTO> data)
+    {
+        try
+        {
+            var result = await _service.ApprovalAsync(data);
 
             var response = new Response<object>(result);
             return Ok(response);

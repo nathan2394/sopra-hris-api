@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
@@ -113,7 +115,7 @@ public class AttendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-    [HttpPost]
+    [HttpPost("SaveAttendances")]
     public async Task<IActionResult> SaveAttendances([FromBody] AttendanceDTO attendance)
     {
         try
@@ -136,7 +138,56 @@ public class AttendancesController : ControllerBase
         }
 
     }
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] Attendances obj)
+    {
+        try
+        {
+            obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
+            var result = await _service.CreateAsync(obj);
+            var response = new Response<Attendances>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AttendancesController");
+            return BadRequest(new { message });
+        }
+
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> Edit([FromBody] Attendances obj)
+    {
+        try
+        {
+            obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
+
+            var result = await _service.EditAsync(obj);
+            var response = new Response<Attendances>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AttendancesController");
+            return BadRequest(new { message });
+        }
+    }
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -157,6 +208,50 @@ public class AttendancesController : ControllerBase
                 inner = inner.InnerException;
             }
             Trace.WriteLine(message, "AttendancesController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost]
+    [Route("upload")]
+    public async Task<IActionResult> UploadFile(IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
+
+            var allowedExtensions = new[] { ".pdf", ".jpeg", ".jpg", ".png" };
+            var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(fileExtension))
+                return BadRequest("format files are not allowed.");
+
+            // Save the file to a folder
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "AttachmentFiles");
+            var customFileName = $"{Guid.NewGuid()}_{DateTime.Now.Ticks}{Path.GetExtension(file.FileName)}";
+
+            var filePath = Path.Combine(folderPath, customFileName);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            var relativeFilePath = Path.Combine("AttachmentFiles", customFileName);
+            return Ok(new { AttachmentPath = relativeFilePath });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
             return BadRequest(new { message });
         }
     }

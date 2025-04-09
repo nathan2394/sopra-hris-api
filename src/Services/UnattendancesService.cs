@@ -6,10 +6,11 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using sopra_hris_api.src.Entities;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class UnattendanceService : IServiceUnAttendancesAsync<Unattendances>
+    public class UnattendanceService : IServiceUnattendanceOVTAsync<Unattendances>
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -78,19 +79,6 @@ namespace sopra_hris_api.src.Services.API
                 await _context.Unattendances.AddAsync(data);
                 long UnattendanceID = await _context.SaveChangesAsync();
 
-                //if (data.UnattendanceAttachments?.Count > 0)
-                //{
-                //    foreach(var attachment in data.UnattendanceAttachments)
-                //    {
-                //        attachment.UnattendanceID = UnattendanceID;
-                //        attachment.DateIn = data.DateIn;
-                //        attachment.UserIn = data.UserIn;
-                //        attachment.IsDeleted = false;
-                //        await _context.UnattendanceAttachments.AddAsync(attachment);
-                //    }
-                //    await _context.SaveChangesAsync();
-                //}
-
                 await dbTrans.CommitAsync();
 
                 return data;
@@ -154,38 +142,12 @@ namespace sopra_hris_api.src.Services.API
                 obj.IsApproved2 = data.IsApproved2;
                 obj.ApprovedDate2 = data.ApprovedDate2;
                 obj.Description = data.Description;
+                obj.Attachments = data.Attachments;
                 obj.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
                 await _context.SaveChangesAsync();
-
-                //if (data.UnattendanceAttachments?.Count > 0)
-                //{
-                //    var existingAttachments = await _context.UnattendanceAttachments
-                //        .Where(x => x.UnattendanceID == data.UnattendanceID)
-                //        .ToListAsync();
-
-                //    foreach (var attachment in data.UnattendanceAttachments)
-                //    {
-                //        var existingAttachment = await _context.UnattendanceAttachments.FirstOrDefaultAsync(x => x.AttachmentID == attachment.AttachmentID);
-                //        if (existingAttachment == null)
-                //        {
-                //            attachment.UnattendanceID = data.UnattendanceID;
-                //            attachment.DateIn = data.DateIn;
-                //            attachment.UserIn = data.UserIn;
-                //            attachment.IsDeleted = false;
-                //            await _context.UnattendanceAttachments.AddAsync(attachment);
-                //        }
-                //    }
-                //    var incomingAttachmentIds = data.UnattendanceAttachments.Select(a => a.AttachmentID).ToHashSet();
-                //    var attachmentsToRemove = existingAttachments.Where(x => !incomingAttachmentIds.Contains(x.AttachmentID)).ToList();
-
-                //    if (attachmentsToRemove.Any())
-                //        _context.UnattendanceAttachments.RemoveRange(attachmentsToRemove);
-                //}
-
-                //await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
 
@@ -202,8 +164,207 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<bool> ApprovalAsync(List<ApprovalDTO> data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var userid = Convert.ToInt64(User.FindFirstValue("id"));
+                var approveddate = DateTime.Now;
+                bool retval = false;
+                int i = 0;
+                foreach (var approval in data)
+                {
+                    var obj = await _context.Unattendances
+                        .FirstOrDefaultAsync(x => x.UnattendanceID == approval.ID && x.IsDeleted == false);
 
+                    if (obj != null)
+                    {
+                        if (approval.IsApproved1 != null)
+                        {
+                            obj.IsApproved1 = approval.IsApproved1;
+                            obj.ApprovedBy1 = userid;
+                            obj.ApprovedDate1 = approveddate;
+                        }
+                        if (approval.IsApproved2 != null)
+                        {
+                            obj.IsApproved2 = approval.IsApproved2;
+                            obj.ApprovedBy2 = userid;
+                            obj.ApprovedDate2 = approveddate;
+                        }
 
+                        obj.UserUp = userid;
+                        obj.DateUp = approveddate;
+
+                        i += await _context.SaveChangesAsync();
+                    }
+                }
+                if (i > 0)
+                    retval = true;
+
+                await dbTrans.CommitAsync();
+
+                return retval;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+        public async Task<ListResponse<Unattendances>> GetAllApprovalAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                var query = from u in _context.Unattendances
+                            join e in _context.Employees on u.EmployeeID equals e.EmployeeID
+                            join ut in _context.UnattendanceTypes on u.UnattendanceTypeID equals ut.UnattendanceTypeID
+                            join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
+                            from d in deptGroup.DefaultIfEmpty()
+                            join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
+                            from g in groupGroup.DefaultIfEmpty()
+                            where u.IsDeleted == false && ((u.IsApproved1 ?? false) == false || (u.IsApproved2 ?? false) == false)
+                            select new Unattendances
+                            {
+                                UnattendanceID = u.UnattendanceID,
+                                EmployeeID = u.EmployeeID,
+                                StartDate = u.StartDate,
+                                EndDate = u.EndDate,
+                                UnattendanceTypeID = u.UnattendanceTypeID,
+                                IsApproved1 = u.IsApproved1,
+                                IsApproved2 = u.IsApproved2,
+                                Description = u.Description,
+                                NIK = e.Nik,
+                                EmployeeName = e.EmployeeName,
+                                DepartmentName = d.Name,
+                                DepartmentID = e.DepartmentID,
+                                GroupID = e.GroupID,
+                                GroupName = g.Name,
+                                GroupType = g.Type,
+                                UnattendanceTypeCode = ut.Code,
+                                UnattendanceTypeName = ut.Name,
+                                Duration = u.Duration,
+                                VoucherNo = u.VoucherNo
+                            };
+
+                // Searching
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.Description.Contains(search) || x.UnattendanceTypeName.Contains(search) || x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.GroupName.Contains(search)
+                        );
+
+                // Filtering
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var f in filterList)
+                    {
+                        var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                        if (searchList.Length == 2)
+                        {
+                            var fieldName = searchList[0].Trim().ToLower();
+                            var value = searchList[1].Trim();
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "unattendancetype")
+                            {
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "group")
+                                    query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
+                                else if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "unattendancetype")
+                                    query = query.Where(x => Ids.Contains(x.UnattendanceTypeID));
+                            }
+                            else
+                                query = fieldName switch
+                                {
+                                    "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
+                                    "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                    _ => query
+                                };
+                        }
+                    }
+                }
+
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => (x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
+                }
+
+                // Sorting
+                if (!string.IsNullOrEmpty(sort))
+                {
+                    var temp = sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var orderBy = sort;
+                    if (temp.Length > 1)
+                        orderBy = temp[0];
+
+                    if (temp.Length > 1)
+                    {
+                        query = orderBy.ToLower() switch
+                        {
+                            "voucher" => query.OrderByDescending(x => x.VoucherNo),
+                            "department" => query.OrderByDescending(x => x.DepartmentName),
+                            "group" => query.OrderByDescending(x => x.GroupType),
+                            "unattendancetype" => query.OrderByDescending(x => x.UnattendanceTypeName),
+                            "name" => query.OrderByDescending(x => x.EmployeeName),
+                            "startdate" => query.OrderByDescending(x => x.StartDate),
+                            _ => query
+                        };
+                    }
+                    else
+                    {
+                        query = orderBy.ToLower() switch
+                        {
+                            "voucher" => query.OrderBy(x => x.VoucherNo),
+                            "department" => query.OrderBy(x => x.DepartmentName),
+                            "group" => query.OrderBy(x => x.GroupType),
+                            "unattendancetype" => query.OrderBy(x => x.UnattendanceTypeName),
+                            "name" => query.OrderBy(x => x.EmployeeName),
+                            "startdate" => query.OrderBy(x => x.StartDate),
+                            _ => query
+                        };
+                    }
+                }
+                else
+                {
+                    query = query.OrderByDescending(x => x.UnattendanceID);
+                }
+
+                // Get Total Before Limit and Page
+                total = await query.CountAsync();
+
+                // Set Limit and Page
+                if (limit != 0)
+                    query = query.Skip(page * limit).Take(limit);
+
+                // Get Data
+                var data = await query.ToListAsync();
+                if (data.Count <= 0 && page > 0)
+                {
+                    page = 0;
+                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
+                }
+
+                return new ListResponse<Unattendances>(data, total, page);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
         public async Task<ListResponse<Unattendances>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -273,6 +434,7 @@ namespace sopra_hris_api.src.Services.API
                                 {
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                     "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
+                                    "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
                                     _ => query
                                 };
                         }
@@ -397,11 +559,6 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
-        }
-
-        Task<List<Unattendances>> IServiceUnAttendancesAsync<Unattendances>.CreateAttachmentAsync(List<Unattendances> unattendanceAttachments)
-        {
-            throw new NotImplementedException();
         }
     }
 }

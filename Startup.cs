@@ -21,6 +21,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.src.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.FileProviders;
 
 namespace sopra_hris_api
 {
@@ -155,10 +156,10 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Shifts>, ShiftService>();
             services.AddScoped<IServiceAsync<Holidays>, HolidayService>();
             services.AddScoped<IServiceAsync<Machines>, MachineService>();
-            services.AddScoped<IServiceUnAttendancesAsync<Unattendances>, UnattendanceService>();
-            services.AddScoped<IServiceAsync<Overtimes>, OvertimeService>();
+            services.AddScoped<IServiceUnattendanceOVTAsync<Unattendances>, UnattendanceService>();
+            services.AddScoped<IServiceUnattendanceOVTAsync<Overtimes>, OvertimeService>();
             services.AddScoped<IServiceAsync<Reasons>, ReasonService>();
-            services.AddScoped<IServiceAsync<EmployeeTransferShifts>, EmployeeTransferShiftService>();
+            services.AddScoped<IServiceUnattendanceOVTAsync<EmployeeTransferShifts>, EmployeeTransferShiftService>();
             services.AddScoped<IServiceAsync<UnattendanceTypes>, UnattendanceTypeService>();
             services.AddScoped<IServiceAttendancesAsync<Attendances>, AttendanceService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();
@@ -203,7 +204,16 @@ namespace sopra_hris_api
                 c.RoutePrefix = string.Empty;
             });
             app.UseMiddleware<JwtMiddleware>();
-
+            var attachmentDirectory = Path.Combine(Directory.GetCurrentDirectory(), "AttachmentFiles");
+            if (!Directory.Exists(attachmentDirectory))
+            {
+                Directory.CreateDirectory(attachmentDirectory);
+            }
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(attachmentDirectory),
+                RequestPath = "/AttachmentFiles" // URL prefix for static files
+            });
             app.UseEndpoints(x => x.MapControllers());
         }
     }

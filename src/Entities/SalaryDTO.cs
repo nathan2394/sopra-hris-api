@@ -83,6 +83,9 @@ namespace sopra_hris_api.src.Entities
         public decimal? PaidSalary { get; set; }
         public decimal? UHMakan { get; set; }
         public decimal? UHTransport { get; set; }
+        public decimal? UHKhusus { get; set; }
+        public decimal? UHOperational { get; set; }
+        public decimal? UHLembur { get; set; }
         public decimal? UMakan { get; set; }
         public decimal? UTransport { get; set; }
         public decimal? UJabatan { get; set; }
@@ -140,6 +143,7 @@ namespace sopra_hris_api.src.Entities
         public decimal? BPJS { get; set; }
         public decimal? Khusus { get; set; }
         public decimal? Operational { get; set; }
+        public decimal? Functional { get; set; }
     }
     [Keyless]
     public class SalaryCalculatorModel

@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
 
 namespace sopra_hris_api.src.Entities
@@ -61,5 +63,12 @@ namespace sopra_hris_api.src.Entities
         public long ShiftID { get; set; }
         public DateTime TransDate { get; set; }
         public List<Attendances> Attendances { get; set; }
+    }
+    public class ApprovalDTO
+    {
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long ID { get; set; }
+        public bool? IsApproved1 { get; set; }
+        public bool? IsApproved2 { get; set; }
     }
 }
