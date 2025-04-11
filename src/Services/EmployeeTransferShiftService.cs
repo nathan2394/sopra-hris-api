@@ -179,6 +179,8 @@ namespace sopra_hris_api.src.Services.API
                              join e in _context.Employees on et.EmployeeID equals e.EmployeeID
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
                              from d in deptGroup.DefaultIfEmpty()
+                             join di in _context.Divisions on e.DivisionID equals di.DivisionID into divGroup
+                             from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
                              where et.IsDeleted == false && ((et.IsApproved1 ?? false) == false || (et.IsApproved2 ?? false) == false)
@@ -191,11 +193,17 @@ namespace sopra_hris_api.src.Services.API
                                  ShiftToID = et.ShiftToID,
                                  HourDiff = et.HourDiff,
                                  IsApproved1 = et.IsApproved1,
+                                 ApprovedBy1 = et.ApprovedBy1,
+                                 ApprovedDate1 = et.ApprovedDate1,
                                  IsApproved2 = et.IsApproved2,
+                                 ApprovedBy2 = et.ApprovedBy2,
+                                 ApprovedDate2 = et.ApprovedDate2,
                                  NIK = e.Nik,
                                  EmployeeName = e.EmployeeName,
                                  DepartmentID = e.DepartmentID,
                                  DepartmentName = d != null ? d.Name : null,
+                                 DivisionID = e.DivisionID,
+                                 DivisionName = di != null ? di.Name : null,
                                  GroupID = e.GroupID,
                                  GroupName = g != null ? g.Name : null,
                                  GroupType = g != null ? g.Type : null
@@ -203,7 +211,7 @@ namespace sopra_hris_api.src.Services.API
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.GroupName.Contains(search)
+                    query = query.Where(x => x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.DivisionName.Contains(search) || x.GroupName.Contains(search)
                         );
 
                 // Filtering
@@ -217,13 +225,15 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department" || fieldName == "reason")
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "division")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
                             }
                             query = fieldName switch
                             {
@@ -255,6 +265,7 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "department" => query.OrderByDescending(x => x.DepartmentName),
+                            "division" => query.OrderByDescending(x => x.DivisionName),
                             "group" => query.OrderByDescending(x => x.GroupType),
                             "name" => query.OrderByDescending(x => x.EmployeeName),
                             _ => query
@@ -265,6 +276,7 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "department" => query.OrderBy(x => x.DepartmentName),
+                            "division" => query.OrderBy(x => x.DivisionName),
                             "group" => query.OrderBy(x => x.GroupType),
                             "name" => query.OrderBy(x => x.EmployeeName),
                             _ => query
@@ -307,13 +319,46 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.EmployeeTransferShifts where a.IsDeleted == false select a;
-
+                var query = (from et in _context.EmployeeTransferShifts.AsNoTracking()
+                             join e in _context.Employees on et.EmployeeID equals e.EmployeeID
+                             join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
+                             from d in deptGroup.DefaultIfEmpty()
+                             join di in _context.Divisions on e.DivisionID equals di.DivisionID into divGroup
+                             from di in divGroup.DefaultIfEmpty()
+                             join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
+                             from g in groupGroup.DefaultIfEmpty()
+                             where et.IsDeleted == false && ((et.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                             select new EmployeeTransferShifts
+                             {
+                                 EmployeeTransferShiftID = et.EmployeeTransferShiftID,
+                                 EmployeeID = et.EmployeeID,
+                                 TransDate = et.TransDate,
+                                 ShiftFromID = et.ShiftFromID,
+                                 ShiftToID = et.ShiftToID,
+                                 HourDiff = et.HourDiff,
+                                 IsApproved1 = et.IsApproved1,
+                                 ApprovedBy1 = et.ApprovedBy1,
+                                 ApprovedDate1 = et.ApprovedDate1,
+                                 IsApproved2 = et.IsApproved2,
+                                 ApprovedBy2 = et.ApprovedBy2,
+                                 ApprovedDate2 = et.ApprovedDate2,
+                                 NIK = e.Nik,
+                                 EmployeeName = e.EmployeeName,
+                                 DepartmentID = e.DepartmentID,
+                                 DepartmentName = d != null ? d.Name : null,
+                                 DivisionID = e.DivisionID,
+                                 DivisionName = di != null ? di.Name : null,
+                                 GroupID = e.GroupID,
+                                 GroupName = g != null ? g.Name : null,
+                                 GroupType = g != null ? g.Type : null
+                             });
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.DivisionName.Contains(search) || x.GroupName.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -326,9 +371,19 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "division")
+                            {
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "group")
+                                    query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
+                                else if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
+                            }
                             query = fieldName switch
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
+                                "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
                                 _ => query
                             };
                         }
@@ -347,7 +402,10 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderByDescending(x => x.Name),
+                            "department" => query.OrderByDescending(x => x.DepartmentName),
+                            "division" => query.OrderByDescending(x => x.DivisionName),
+                            "group" => query.OrderByDescending(x => x.GroupType),
+                            "name" => query.OrderByDescending(x => x.EmployeeName),
                             _ => query
                         };
                     }
@@ -355,7 +413,10 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            //"name" => query.OrderBy(x => x.Name),
+                            "department" => query.OrderBy(x => x.DepartmentName),
+                            "division" => query.OrderBy(x => x.DivisionName),
+                            "group" => query.OrderBy(x => x.GroupType),
+                            "name" => query.OrderBy(x => x.EmployeeName),
                             _ => query
                         };
                     }

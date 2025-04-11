@@ -31,6 +31,10 @@ namespace sopra_hris_api.Entities
         [NotMapped]
         public long? DepartmentID { get; set; }
         [NotMapped]
+        public string? DivisionName { get; set; }
+        [NotMapped]
+        public long? DivisionID { get; set; }
+        [NotMapped]
         public long? GroupID { get; set; }
         [NotMapped]
         public string? GroupType { get; set; }

@@ -189,9 +189,11 @@ namespace sopra_hris_api.src.Services.API
                              from r in reasonGroup.DefaultIfEmpty()
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
                              from d in deptGroup.DefaultIfEmpty()
+                             join di in _context.Divisions on e.DivisionID equals di.DivisionID into divGroup
+                             from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where o.IsDeleted == false && ((o.IsApproved1 ?? false) == false || (o.IsApproved2 ?? false) == false)
+                             where o.IsDeleted == false && (!o.IsApproved1.HasValue || !o.IsApproved2.HasValue)
                              select new Overtimes
                              {
                                  OvertimeID = o.OvertimeID,
@@ -201,12 +203,18 @@ namespace sopra_hris_api.src.Services.API
                                  EndDate = o.EndDate,
                                  ReasonID = o.ReasonID,
                                  IsApproved1 = o.IsApproved1,
+                                 ApprovedBy1 = o.ApprovedBy1,
+                                 ApprovedDate1 = o.ApprovedDate1,
                                  IsApproved2 = o.IsApproved2,
+                                 ApprovedBy2 = o.ApprovedBy2,
+                                 ApprovedDate2 = o.ApprovedDate2,
                                  Description = o.Description,
                                  NIK = e.Nik,
                                  EmployeeName = e.EmployeeName,
                                  DepartmentID = e.DepartmentID,
                                  DepartmentName = d != null ? d.Name : null,
+                                 DivisionID = e.DivisionID,
+                                 DivisionName = di != null ? di.Name : null,
                                  GroupID = e.GroupID,
                                  GroupName = g != null ? g.Name : null,
                                  GroupType = g != null ? g.Type : null,
@@ -231,13 +239,15 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department" || fieldName == "reason")
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "division" || fieldName == "reason")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
                                 else if (fieldName == "reason")
                                     query = query.Where(x => Ids.Contains(x.ReasonID ?? 0));
                             }
@@ -275,6 +285,7 @@ namespace sopra_hris_api.src.Services.API
                         {
                             "voucher" => query.OrderByDescending(x => x.VoucherNo),
                             "department" => query.OrderByDescending(x => x.DepartmentName),
+                            "division" => query.OrderByDescending(x => x.DivisionName),
                             "group" => query.OrderByDescending(x => x.GroupType),
                             "reason" => query.OrderByDescending(x => x.ReasonName),
                             "name" => query.OrderByDescending(x => x.EmployeeName),
@@ -288,6 +299,7 @@ namespace sopra_hris_api.src.Services.API
                         {
                             "voucher" => query.OrderBy(x => x.VoucherNo),
                             "department" => query.OrderBy(x => x.DepartmentName),
+                            "division" => query.OrderBy(x => x.DivisionName),
                             "group" => query.OrderBy(x => x.GroupType),
                             "reason" => query.OrderBy(x => x.ReasonName),
                             "name" => query.OrderBy(x => x.EmployeeName),
@@ -341,6 +353,8 @@ namespace sopra_hris_api.src.Services.API
                              from r in reasonGroup.DefaultIfEmpty()
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
                              from d in deptGroup.DefaultIfEmpty()
+                             join di in _context.Divisions on e.DivisionID equals di.DivisionID into divGroup
+                             from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
                              where o.IsDeleted == false && ((o.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
@@ -353,12 +367,18 @@ namespace sopra_hris_api.src.Services.API
                                  EndDate = o.EndDate,
                                  ReasonID = o.ReasonID,
                                  IsApproved1 = o.IsApproved1,
+                                 ApprovedBy1 = o.ApprovedBy1,
+                                 ApprovedDate1 = o.ApprovedDate1,
                                  IsApproved2 = o.IsApproved2,
+                                 ApprovedBy2 = o.ApprovedBy2,
+                                 ApprovedDate2 = o.ApprovedDate2,
                                  Description = o.Description,
                                  NIK = e.Nik,
                                  EmployeeName = e.EmployeeName,
                                  DepartmentID = e.DepartmentID,
                                  DepartmentName = d != null ? d.Name : null,
+                                 DivisionID = e.DivisionID,
+                                 DivisionName = di != null ? di.Name : null,
                                  GroupID = e.GroupID,
                                  GroupName = g != null ? g.Name : null,
                                  GroupType = g != null ? g.Type : null,
@@ -383,13 +403,15 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "group" || fieldName == "department" || fieldName == "reason")
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "division" || fieldName == "reason")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "group")
                                     query = query.Where(x => Ids.Contains(x.GroupID ?? 0));
                                 else if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
                                 else if (fieldName == "reason")
                                     query = query.Where(x => Ids.Contains(x.ReasonID ?? 0));
                             }
@@ -427,6 +449,7 @@ namespace sopra_hris_api.src.Services.API
                         {
                             "voucher" => query.OrderByDescending(x => x.VoucherNo),
                             "department" => query.OrderByDescending(x => x.DepartmentName),
+                            "division" => query.OrderByDescending(x => x.DivisionName),
                             "group" => query.OrderByDescending(x => x.GroupType),
                             "reason" => query.OrderByDescending(x => x.ReasonName),
                             "name" => query.OrderByDescending(x => x.EmployeeName),
@@ -440,6 +463,7 @@ namespace sopra_hris_api.src.Services.API
                         {
                             "voucher" => query.OrderBy(x => x.VoucherNo),
                             "department" => query.OrderBy(x => x.DepartmentName),
+                            "division" => query.OrderBy(x => x.DivisionName),
                             "group" => query.OrderBy(x => x.GroupType),
                             "reason" => query.OrderBy(x => x.ReasonName),
                             "name" => query.OrderBy(x => x.EmployeeName),
