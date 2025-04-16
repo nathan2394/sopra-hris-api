@@ -361,6 +361,8 @@ namespace sopra_hris_api.src.Services.API
                         LEFT JOIN Shifts c ON es.ShiftID = c.ShiftID  
                         WHERE es.Isdeleted=0", templateParameter).ToListAsync();
 
+                await dbTrans.CommitAsync();
+
                 return new ListResponseTemplate<EmployeeShiftsDTO>(data);
             }
             catch (Exception ex)

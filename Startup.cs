@@ -167,6 +167,8 @@ namespace sopra_hris_api
             services.AddScoped<IServiceSalaryAsync<Salary>, SalaryService>();
             services.AddScoped<IServiceSalaryDetailsAsync<SalaryDetails>, SalaryDetailService>();
             services.AddScoped<IServiceAsync<GroupShifts>, GroupShiftService>();
+            services.AddScoped<IServiceUploadAsync<AllowanceMeals>, AllowanceMealService>();
+            services.AddScoped<IServiceAsync<BudgetingOvertimes>, BudgetingOvertimeService>();
             services.AddScoped<IServiceEmployeeShiftAsync<EmployeeShifts>, EmployeeShiftService>();
         }
 

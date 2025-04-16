@@ -8,6 +8,7 @@ namespace sopra_hris_api.src.Helpers
     {
         public EFContext(DbContextOptions<EFContext> opts) : base(opts) { }
         public DbSet<AllowanceDeduction> AllowanceDeduction { get; set; }
+        public DbSet<AllowanceMeals> AllowanceMeals {  get; set; }
         public DbSet<Company> Companies { get; set; }
         public DbSet<DivisionDetails> DivisionDetails { get; set; }
         public DbSet<Division> Divisions { get; set; }
@@ -42,6 +43,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<EmployeeShiftsDTO> EmployeeShiftsDTO { get; set; }
         public DbSet<Overtimes> Overtimes { get; set; }
         public DbSet<Reasons> Reasons { get; set; }
+        public DbSet<BudgetingOvertimes> BudgetingOvertimes { get; set; }
         public DbSet<Unattendances> Unattendances { get; set; }
         public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
