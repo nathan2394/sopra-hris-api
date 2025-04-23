@@ -187,10 +187,32 @@ namespace sopra_hris_api.src.Services.API
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 DateTime queryDate = DateTime.Now;
+
                 if (!string.IsNullOrEmpty(date))
                     DateTime.TryParse(date, out queryDate);
 
-                var query = from a in _context.Attendances where a.IsDeleted == false && a.EmployeeID == id && a.ClockIn.Date == queryDate.Date select a;
+                var query = _context.Attendances.FromSqlRaw(@"SELECT a.*
+FROM Attendances a
+LEFT JOIN EmployeeShifts b 
+    ON b.EmployeeID = a.EmployeeID 
+    AND b.IsDeleted = 0 
+    AND CONVERT(DATE, b.TransDate) = @queryDate
+WHERE a.EmployeeID = @id 
+  AND (
+    -- If there is a shift record
+    (b.EmployeeShiftID IS NOT NULL AND (
+        -- For night shift (ID = 3), handle overnight shift times
+        (b.ShiftID = 3 AND (
+            (CAST(a.ClockIn AS TIME) >= '18:00:00' AND CONVERT(DATE, a.ClockIn) = @queryDate)
+            OR
+            (CAST(a.ClockIn AS TIME) < '10:00:00' AND CONVERT(DATE, a.ClockIn) = DATEADD(DAY, 1, @queryDate))
+        ))
+        -- For other shifts, match normal day
+        OR (b.ShiftID <> 3 AND CONVERT(DATE, a.ClockIn) = @queryDate)
+    ))
+    -- If there is no shift record, just use the date
+    OR (b.EmployeeShiftID IS NULL AND CONVERT(DATE, a.ClockIn) = @queryDate)
+  )", new SqlParameter("id", id), new SqlParameter("queryDate", queryDate));
 
                 // Get Total Before Limit and Page
                 total = await query.CountAsync();
@@ -279,6 +301,76 @@ namespace sopra_hris_api.src.Services.API
                     Trace.WriteLine(ex.StackTrace);
                 
                 await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+        public async Task<ListResponseTemplate<AttendanceCheck>> GetListCheckAsync(string filter, string date)
+        {
+            try
+            {
+                DateTime dateNow = DateTime.Now;
+                DateTime StartDate = new DateTime(dateNow.AddMonths(-1).Year, dateNow.AddMonths(-1).Month, 24);
+                DateTime EndDate = new DateTime(dateNow.Year, dateNow.Month, 23);
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                    {
+                        StartDate = startDate;
+                        EndDate = endDate;
+                    }
+                }
+                var nameFilter = Utility.GetFilterValue("name", filter);
+                var employeeIdFilter = Utility.GetFilterValue("employeeid", filter);
+                var departmentIdFilter = Utility.GetFilterValue("departmentid", filter);
+
+                string formattedName = $"%{nameFilter}%";
+                string formattedEmployeeId = string.Join(",", employeeIdFilter
+                    .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()));
+                string formattedDepartmentId = string.Join(",", departmentIdFilter
+                    .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()));
+
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                var queryParameters = new List<SqlParameter> {                    
+                    new SqlParameter("@StartDate", SqlDbType.Date) { Value = StartDate },
+                    new SqlParameter("@EndDate", SqlDbType.Date) { Value = EndDate },
+                    new SqlParameter("@Name", SqlDbType.NVarChar) { Value = formattedName },
+                    new SqlParameter("@EmployeeID", SqlDbType.VarChar) { Value = formattedEmployeeId },
+                    new SqlParameter("@Department", SqlDbType.VarChar) { Value = formattedDepartmentId }
+                };
+                var result = await _context.Set<AttendanceCheck>()
+                    .FromSqlRaw($@"SELECT a.EmployeeID, a.NIK, a.EmployeeName, a.IsShift, TransDate, DayName, ShiftCode, ShiftName, Unattendance, ActualStartTime, ActualEndTime
+FROM AttendanceDetails a
+INNER JOIN Employees e on e.EmployeeID=a.EmployeeID
+INNER JOIN Departments d on d.DepartmentID=e.DepartmentID
+WHERE TransDate BETWEEN @StartDate AND @EndDate
+	AND Unattendance IN ('H','A')
+    AND a.EmployeeName LIKE @Name
+    AND (@EmployeeID = '' OR a.EmployeeID IN (
+        SELECT CAST(value AS BIGINT) 
+        FROM STRING_SPLIT(@EmployeeID, ',') 
+        WHERE RTRIM(LTRIM(value)) <> ''
+      ))
+    AND (@Department = '' OR e.DepartmentID IN (
+        SELECT CAST(value AS BIGINT) 
+        FROM STRING_SPLIT(@Department, ',') 
+        WHERE RTRIM(LTRIM(value)) <> ''
+      ))
+ORDER BY a.EmployeeName, TransDate", queryParameters.ToArray())
+                    .ToListAsync();
+
+                return new ListResponseTemplate<AttendanceCheck>(result);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
 
                 throw;
             }

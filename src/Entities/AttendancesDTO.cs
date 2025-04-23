@@ -71,4 +71,19 @@ namespace sopra_hris_api.src.Entities
         public bool? IsApproved1 { get; set; }
         public bool? IsApproved2 { get; set; }
     }
+    [Keyless]
+    public class AttendanceCheck
+    {
+        public long EmployeeID { get; set; }
+        public string NIK { get; set; }
+        public string EmployeeName { get; set; }
+        public int IsShift { get; set; }
+        public DateTime TransDate { get; set; }
+        public string DayName { get; set; }
+        public string ShiftCode { get; set; }
+        public string ShiftName { get; set; }
+        public string Unattendance { get; set; }
+        public DateTime? ActualStartTime { get; set; }
+        public DateTime? ActualEndTime { get; set; }
+    }
 }

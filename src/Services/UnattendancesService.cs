@@ -71,8 +71,10 @@ namespace sopra_hris_api.src.Services.API
                 var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year && x.IsDeleted == false).CountAsync();
                 data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
                 data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
-                data.IsApproved1 = false;
-                data.IsApproved2 = false;
+                data.IsApproved1 = null;
+                data.IsApproved2 = null;
+                data.ApprovedBy1 = null;
+                data.ApprovedBy2 = null;
                 data.ApprovedDate1 = null;
                 data.ApprovedDate2 = null;
 

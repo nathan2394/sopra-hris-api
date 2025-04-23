@@ -27,6 +27,7 @@ namespace sopra_hris_api.Entities
         public int? Late { get; set; }
         public int? Ovt { get; set; }
         public int? EarlyClockOut { get; set; }
+        public int? Meals { get; set; }
         public Single? EffectiveHours { get; set; }
     }
 }

@@ -44,6 +44,26 @@ public class AttendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpGet("AttendanceCheck/{date}")]
+    public async Task<IActionResult> GetListCheck(string date, string filter = "")
+    {
+        try
+        {
+            var result = await _service.GetListCheckAsync(filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
     [HttpGet("ListAttendance/{employeeid}/{date}")]
     public async Task<IActionResult> GetListAttendance(long employeeid, string date)
     {

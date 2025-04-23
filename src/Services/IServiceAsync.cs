@@ -39,6 +39,7 @@ namespace sopra_hris_api.src.Services
     public interface IServiceAttendancesAsync<T>
     {
         Task<ListResponseTemplate<AttendanceSummary>> GetAllAsync(string filter, string date);
+        Task<ListResponseTemplate<AttendanceCheck>> GetListCheckAsync(string filter, string date);
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, long id, string date);
         Task<ListResponseTemplate<AttendanceDetails>> GetDetailAsync(long id, string date);
         Task<ListResponseTemplate<AttendanceShift>> GetDetailShiftsAsync(long id, string date);

@@ -30,8 +30,10 @@ namespace sopra_hris_api.src.Services.API
                 data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
                 double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
                 data.OVTHours = (float?)roundedDownOvertime;
-                data.IsApproved1 = false;
-                data.IsApproved2 = false;
+                data.IsApproved1 = null;
+                data.IsApproved2 = null;
+                data.ApprovedBy1 = null;
+                data.ApprovedBy2 = null;
                 data.ApprovedDate1 = null;
                 data.ApprovedDate2 = null;
 

@@ -141,6 +141,7 @@ namespace sopra_hris_api
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IServiceAsync<Users>, UserService>();
             services.AddScoped<IServiceAsync<Company>, CompanyService>();
+            services.AddScoped<IServiceAsync<Configurations>, ConfigurationService>();
             services.AddScoped<IServiceAsync<Division>, DivisionService>();
             services.AddScoped<IServiceAsync<DivisionDetails>, DivisionDetailService>();
             services.AddScoped<IServiceAsync<Departments>, DepartmentService>();

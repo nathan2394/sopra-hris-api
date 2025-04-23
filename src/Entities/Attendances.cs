@@ -13,8 +13,8 @@ namespace sopra_hris_api.Entities
         public DateTime ClockIn { get; set; }
         public string? Description { get; set; }
         public string? ProfilePhoto { get; set; }
-        public float? Latitude { get; set; }
-        public float? Longitude { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public Attendances()
         {
             ClockIn = DateTime.Now;

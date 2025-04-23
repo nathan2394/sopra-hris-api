@@ -27,6 +27,12 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                data.IsApproved1 = null;
+                data.IsApproved2 = null;
+                data.ApprovedBy1 = null;
+                data.ApprovedBy2 = null;
+                data.ApprovedDate1 = null;
+                data.ApprovedDate2 = null;
                 await _context.EmployeeTransferShifts.AddAsync(data);
                 await _context.SaveChangesAsync();
 
