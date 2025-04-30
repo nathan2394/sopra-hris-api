@@ -148,6 +148,8 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<DepartmentDetails>, DepartmentDetailService>();
             services.AddScoped<IServiceEmployeeAsync<Employees>, EmployeeService>();
             services.AddScoped<IServiceAsync<EmployeeJobTitles>, EmployeeJobTitleService>();
+            services.AddScoped<IServiceAsync<EmployeeIdeas>, EmployeeIdeaService>();
+            services.AddScoped<IServiceAsync<EmployeeIdeaDetails>, EmployeeIdeaDetailService>();
             services.AddScoped<IServiceAsync<EmployeeTypes>, EmployeeTypeService>();
             services.AddScoped<IServiceAsync<EmployeeDetails>, EmployeeDetailService>();
             services.AddScoped<IServiceAsync<Functions>, FunctionService>();
@@ -158,9 +160,9 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Holidays>, HolidayService>();
             services.AddScoped<IServiceAsync<Machines>, MachineService>();
             services.AddScoped<IServiceUnattendanceOVTAsync<Unattendances>, UnattendanceService>();
-            services.AddScoped<IServiceUnattendanceOVTAsync<Overtimes>, OvertimeService>();
+            services.AddScoped<IServiceOVTAsync<Overtimes>, OvertimeService>();
             services.AddScoped<IServiceAsync<Reasons>, ReasonService>();
-            services.AddScoped<IServiceUnattendanceOVTAsync<EmployeeTransferShifts>, EmployeeTransferShiftService>();
+            services.AddScoped<IServiceEmployeeTransferShiftAsync<EmployeeTransferShifts>, EmployeeTransferShiftService>();
             services.AddScoped<IServiceAsync<UnattendanceTypes>, UnattendanceTypeService>();
             services.AddScoped<IServiceAttendancesAsync<Attendances>, AttendanceService>();
             services.AddScoped<IServiceAsync<AllowanceDeduction>, AllowanceDeductionService>();

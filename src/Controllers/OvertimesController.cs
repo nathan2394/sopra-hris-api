@@ -14,9 +14,9 @@ namespace sopra_hris_api.Controllers;
 [Authorize]
 public class OvertimesController : ControllerBase
 {
-    private readonly IServiceUnattendanceOVTAsync<Overtimes> _service;
+    private readonly IServiceOVTAsync<Overtimes> _service;
 
-    public OvertimesController(IServiceUnattendanceOVTAsync<Overtimes> service)
+    public OvertimesController(IServiceOVTAsync<Overtimes> service)
     {
         _service = service;
     }
@@ -113,9 +113,28 @@ public class OvertimesController : ControllerBase
             Trace.WriteLine(message, "OvertimesController");
             return BadRequest(new { message });
         }
-
     }
-
+    [HttpPost("BulkCreate")]
+    public async Task<IActionResult> BulkCreate([FromBody] BulkOvertimes obj)
+    {
+        try
+        {
+            var result = await _service.BulkCreateAsync(obj);
+            return Ok(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "OvertimesController");
+            return BadRequest(new { message });
+        }
+    }
     [HttpPut]
     public async Task<IActionResult> Edit([FromBody] Overtimes obj)
     {

@@ -13,6 +13,7 @@ namespace sopra_hris_api.Entities
         public int BudgetYear { get; set; }
         public decimal TotalOvertimeHours { get; set; }
         public decimal? TotalOvertimeAmount { get; set; }
+        public decimal? RemainingHours { get; set; }
         public long DepartmentID { get; set; }
         [NotMapped]
         public string? DepartmentName { get; set; }

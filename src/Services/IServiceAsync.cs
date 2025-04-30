@@ -25,6 +25,30 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<AllowanceMealDTO>> GetTemplate(string search, string sort, string filter, string date);
         Task<bool> DeleteAsync(long id, long userID);
     }
+    public interface IServiceOVTAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<string> BulkCreateAsync(BulkOvertimes data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<bool> ApprovalAsync(List<ApprovalDTO> data);
+        Task<ListResponse<T>> GetAllApprovalAsync(int limit, int page, int total, string search, string sort, string filter, string date);
+    }
+    public interface IServiceEmployeeTransferShiftAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<string> BulkCreateAsync(BulkEmployeeTransferShifts data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<bool> ApprovalAsync(List<ApprovalDTO> data);
+        Task<ListResponse<T>> GetAllApprovalAsync(int limit, int page, int total, string search, string sort, string filter, string date);
+    }
     public interface IServiceUnattendanceOVTAsync<T>
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,

@@ -6,10 +6,11 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using System.Security.Claims;
 using sopra_hris_api.src.Entities;
+using Microsoft.Data.SqlClient;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class OvertimeService : IServiceUnattendanceOVTAsync<Overtimes>
+    public class OvertimeService : IServiceOVTAsync<Overtimes>
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -55,7 +56,71 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<string> BulkCreateAsync(BulkOvertimes data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var userid = Convert.ToInt64(User.FindFirstValue("id"));
 
+                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                string voucherNo = $"SPL/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";               
+
+                // Check if a record with the same voucher number already exists
+                var existing = await _context.Overtimes.Where(x => x.VoucherNo == voucherNo && x.IsDeleted == false).CountAsync();
+                if (existing > 0)
+                {
+                    // Mark the existing record as deleted
+                    await _context.Database.ExecuteSqlRawAsync($@"UPDATE Overtimes SET IsDeleted=1,DateUp=GETDATE(),UserUp=@UserID WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
+                        new SqlParameter("VoucherNo", data.VoucherNo),
+                        new SqlParameter("userid", userid));
+                }
+
+                // Calculate overtime hours
+                double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
+
+                var overtimes = new List<Overtimes>();
+                foreach(var empID in data.EmployeeIDs)
+                {
+                    var ovt = new Overtimes()
+                    {
+                        VoucherNo = voucherNo,
+                        OVTHours = (float?)roundedDownOvertime,
+                        EmployeeID = empID,
+                        TransDate = data.TransDate,
+                        StartDate = data.StartDate,
+                        EndDate = data.EndDate,
+                        ReasonID = data.ReasonID,
+                        Description = data.Description,
+                        IsApproved1 = null,
+                        IsApproved2 = null,
+                        ApprovedBy1 = null,
+                        ApprovedBy2 = null,
+                        ApprovedDate1 = null,
+                        ApprovedDate2 = null,
+                    };
+
+                    overtimes.Add(ovt);
+                }
+
+                await _context.Overtimes.AddRangeAsync(overtimes);
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return voucherNo;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
         public async Task<bool> DeleteAsync(long id, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -160,6 +225,23 @@ namespace sopra_hris_api.src.Services.API
                         obj.DateUp = approveddate;
 
                         i += await _context.SaveChangesAsync();
+
+                        if (approval.IsApproved1 == true && approval.IsApproved2 == true)
+                        {
+                            decimal overtimeHours = Convert.ToDecimal(obj.OVTHours);
+
+                            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeID == obj.EmployeeID);
+
+                            if (employee != null)
+                            {
+                                await _context.Database.ExecuteSqlRawAsync($@"update BudgetingOvertimes 
+                                    set RemainingHours=TotalOvertimeHours-@overtimeHours, DateUp=GETDATE(), UserUp=@UserUp
+                                    where DepartmentID=@DepartmentID and BudgetMonth=DATEPART(month,GETDATE())and BudgetYear=DATEPART(year,GETDATE())",
+                                        new SqlParameter("overtimeHours", overtimeHours), 
+                                        new SqlParameter("UserUp", userid), 
+                                        new SqlParameter("DepartmentID", employee.DepartmentID));
+                            }
+                        }
                     }
                 }
                 if (i > 0)
@@ -359,7 +441,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where o.IsDeleted == false && ((o.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                             where o.IsDeleted == false && ((o.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new Overtimes
                              {
                                  OvertimeID = o.OvertimeID,
@@ -433,8 +515,8 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.TransDate >= startDate && x.TransDate <= endDate ||
-                         x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
+                        query = query.Where(x => (x.TransDate.Date >= startDate && x.TransDate.Date <= endDate ||
+                         x.StartDate.Date >= startDate && x.StartDate.Date <= endDate || x.EndDate.Date >= startDate && x.EndDate.Date <= endDate));
                 }
 
                 // Sorting

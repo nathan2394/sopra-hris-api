@@ -308,7 +308,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
+                        query = query.Where(x => (x.StartDate.Date >= startDate && x.StartDate.Date <= endDate || x.EndDate.Date >= startDate && x.EndDate.Date <= endDate));
                 }
 
                 // Sorting
@@ -395,7 +395,7 @@ namespace sopra_hris_api.src.Services.API
                             from di in divGroup.DefaultIfEmpty()
                             join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                             from g in groupGroup.DefaultIfEmpty()
-                            where u.IsDeleted == false && ((u.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                            where u.IsDeleted == false && ((u.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                             select new Unattendances
                             {
                                 UnattendanceID = u.UnattendanceID,

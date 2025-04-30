@@ -23,11 +23,12 @@ namespace sopra_hris_api.src.Entities
         public int HKS { get; set; }
         public int HKA { get; set; }
         public int ATT { get; set; }
+        public int Meals { get; set; }
         public int Late { get; set; }
         public int LateCount { get; set; }
         public int EarlyClockOut { get; set; }
         public int EarlyClockOutCount { get; set; }
-        public int OVT { get; set; }
+        public Single OVT { get; set; }
         public int Absent { get; set; }
         public long? EmployeeTypeID { get; set; }
         public string? EmployeeTypeName { get; set; }
@@ -85,5 +86,29 @@ namespace sopra_hris_api.src.Entities
         public string Unattendance { get; set; }
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
+    }
+    [Keyless]
+    public class BulkOvertimes
+    {
+        public string? VoucherNo { get; set; }
+        public DateTime TransDate { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public long? ReasonID { get; set; }
+        public string Description { get; set; }
+        public Single? OVTHours { get; set; }
+        public List<long> EmployeeIDs { get; set; }
+    }
+    [Keyless]
+    public class BulkEmployeeTransferShifts
+    {
+        public string? VoucherNo { get; set; }
+        public long EmployeeID { get; set; }
+        public DateTime TransDate { get; set; }
+        public long? ShiftFromID { get; set; }
+        public long? ShiftToID { get; set; }
+        public int? HourDiff { get; set; }
+        public string? Remarks { get; set; }
+        public List<long> EmployeeIDs { get; set; }
     }
 }

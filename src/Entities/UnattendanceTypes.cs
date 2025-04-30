@@ -12,5 +12,6 @@ namespace sopra_hris_api.Entities
         public string Code { get; set; }
         public string Name { get; set; }
         public int? Quota { get; set; }
+        public bool? IsEnabled { get;set; }
     }
 }

@@ -109,7 +109,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.UnattendanceTypes where a.IsDeleted == false select a;
+                var query = from a in _context.UnattendanceTypes where a.IsDeleted == false && a.IsEnabled == true select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))

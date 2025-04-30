@@ -7,10 +7,11 @@ using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Data.SqlClient;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class EmployeeTransferShiftService : IServiceUnattendanceOVTAsync<EmployeeTransferShifts>
+    public class EmployeeTransferShiftService : IServiceEmployeeTransferShiftAsync<EmployeeTransferShifts>
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -27,6 +28,10 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                string voucherNo = $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
+
+                data.VoucherNo = voucherNo;
                 data.IsApproved1 = null;
                 data.IsApproved2 = null;
                 data.ApprovedBy1 = null;
@@ -51,7 +56,67 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<string> BulkCreateAsync(BulkEmployeeTransferShifts data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var userid = Convert.ToInt64(User.FindFirstValue("id"));
 
+                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                string voucherNo = $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
+
+                // Check if a record with the same voucher number already exists
+                var existing = await _context.EmployeeTransferShifts.Where(x => x.VoucherNo == voucherNo && x.IsDeleted == false).CountAsync();
+                if (existing > 0)
+                {
+                    // Mark the existing record as deleted
+                    await _context.Database.ExecuteSqlRawAsync($@"UPDATE EmployeeTransferShifts SET IsDeleted=1,DateUp=GETDATE(),UserUp=@UserID WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
+                        new SqlParameter("VoucherNo", data.VoucherNo),
+                        new SqlParameter("userid", userid));
+                }
+
+                var employeeTransferShifts = new List<EmployeeTransferShifts>();
+                foreach (var empID in data.EmployeeIDs)
+                {
+                    var transferShifts = new EmployeeTransferShifts()
+                    {
+                        VoucherNo = voucherNo,
+                        EmployeeID = empID,
+                        ShiftFromID=data.ShiftFromID,
+                        ShiftToID=data.ShiftToID,
+                        HourDiff=data.HourDiff,
+                        TransDate = data.TransDate,
+                        Remarks = data.Remarks,
+                        IsApproved1 = null,
+                        IsApproved2 = null,
+                        ApprovedBy1 = null,
+                        ApprovedBy2 = null,
+                        ApprovedDate1 = null,
+                        ApprovedDate2 = null,
+                    };
+
+                    employeeTransferShifts.Add(transferShifts);
+                }
+
+                await _context.EmployeeTransferShifts.AddRangeAsync(employeeTransferShifts);
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return voucherNo;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
         public async Task<bool> DeleteAsync(long id, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -90,6 +155,7 @@ namespace sopra_hris_api.src.Services.API
                 var obj = await _context.EmployeeTransferShifts.FirstOrDefaultAsync(x => x.EmployeeTransferShiftID == data.EmployeeTransferShiftID && x.IsDeleted == false);
                 if (obj == null) return null;
 
+                obj.VoucherNo = data.VoucherNo;
                 obj.EmployeeID = data.EmployeeID;
                 obj.ShiftFromID = data.ShiftFromID;
                 obj.ShiftToID = data.ShiftToID;
@@ -336,7 +402,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where et.IsDeleted == false && ((et.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                             where et.IsDeleted == false && ((et.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new EmployeeTransferShifts
                              {
                                  EmployeeTransferShiftID = et.EmployeeTransferShiftID,

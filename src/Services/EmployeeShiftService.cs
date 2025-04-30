@@ -122,7 +122,7 @@ namespace sopra_hris_api.src.Services.API
                 var query = from a in _context.EmployeeShifts
                             join s in _context.Shifts on a.ShiftID equals s.ShiftID
                             join e in _context.Employees on a.EmployeeID equals e.EmployeeID
-                            where a.IsDeleted == false && ((a.EmployeeID == employeeid && roleid == 2) || (roleid != 2))
+                            where a.IsDeleted == false && ((a.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                             select new EmployeeShifts
                             {
                                 EmployeeShiftID = a.EmployeeShiftID,

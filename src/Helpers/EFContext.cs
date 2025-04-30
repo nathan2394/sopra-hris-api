@@ -16,6 +16,8 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Departments> Departments { get; set; }
         public DbSet<EmployeeDetails> EmployeeDetails { get; set; }
         public DbSet<Employees> Employees { get; set; }
+        public DbSet<EmployeeIdeas> EmployeeIdeas { get; set; }
+        public DbSet<EmployeeIdeaDetails> EmployeeIdeaDetails { get; set; }
         public DbSet<EmployeeTypes> EmployeeTypes { get; set; }
         public DbSet<EmployeeJobTitles> EmployeeJobTitles { get; set; }
         public DbSet<FunctionDetails> FunctionDetails { get; set; }

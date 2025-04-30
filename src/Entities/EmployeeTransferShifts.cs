@@ -10,10 +10,11 @@ namespace sopra_hris_api.Entities
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long EmployeeTransferShiftID { get; set; }
+        public string? VoucherNo { get; set; }
         public long EmployeeID { get; set; }
         public long? ShiftFromID { get; set; }
         public long? ShiftToID { get; set; }
-        public DateTime? TransDate { get; set; }
+        public DateTime TransDate { get; set; }
         public int? HourDiff { get; set; }
         public string? Remarks { get; set; }
         public bool? IsApproved1 { get; set; }

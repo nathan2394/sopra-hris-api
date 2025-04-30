@@ -246,6 +246,7 @@ WHERE a.EmployeeID = @id
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                _context.Database.SetCommandTimeout(300);
                 var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
                 var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
 
