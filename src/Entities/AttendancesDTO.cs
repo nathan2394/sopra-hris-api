@@ -103,7 +103,6 @@ namespace sopra_hris_api.src.Entities
     public class BulkEmployeeTransferShifts
     {
         public string? VoucherNo { get; set; }
-        public long EmployeeID { get; set; }
         public DateTime TransDate { get; set; }
         public long? ShiftFromID { get; set; }
         public long? ShiftToID { get; set; }

@@ -64,7 +64,7 @@ namespace sopra_hris_api.src.Services.API
                 var userid = Convert.ToInt64(User.FindFirstValue("id"));
 
                 var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
-                string voucherNo = $"SPL/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";               
+                string voucherNo = !string.IsNullOrEmpty(data.VoucherNo) ? data.VoucherNo : $"SPL/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
 
                 // Check if a record with the same voucher number already exists
                 var existing = await _context.Overtimes.Where(x => x.VoucherNo == voucherNo && x.IsDeleted == false).CountAsync();

@@ -116,6 +116,27 @@ public class EmployeeTransferShiftsController : ControllerBase
 
     }
 
+    [HttpPost("BulkCreate")]
+    public async Task<IActionResult> BulkCreate([FromBody] BulkEmployeeTransferShifts obj)
+    {
+        try
+        {
+            var result = await _service.BulkCreateAsync(obj);
+            return Ok(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "OvertimesController");
+            return BadRequest(new { message });
+        }
+    }
     [HttpPut]
     public async Task<IActionResult> Edit([FromBody] EmployeeTransferShifts obj)
     {
