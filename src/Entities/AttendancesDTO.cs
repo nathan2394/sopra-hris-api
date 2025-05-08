@@ -13,6 +13,8 @@ namespace sopra_hris_api.src.Entities
         public long? GroupShiftID { get; set; }
         public string? GroupShiftCode { get; set; }
         public string? GroupShiftName { get; set; }
+        public long? DepartmentID { get; set; }
+        public string? DepartmentName { get; set; }
     }
     [Keyless]
     public class AttendanceSummary

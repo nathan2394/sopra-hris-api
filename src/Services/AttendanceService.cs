@@ -324,8 +324,8 @@ WHERE a.EmployeeID = @id
                     }
                 }
                 var nameFilter = Utility.GetFilterValue("name", filter);
-                var employeeIdFilter = Utility.GetFilterValue("employeeid", filter);
-                var departmentIdFilter = Utility.GetFilterValue("departmentid", filter);
+                var employeeIdFilter = Utility.GetFilterValue("employee", filter);
+                var departmentIdFilter = Utility.GetFilterValue("department", filter);
 
                 string formattedName = $"%{nameFilter}%";
                 string formattedEmployeeId = string.Join(",", employeeIdFilter

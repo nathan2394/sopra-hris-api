@@ -152,6 +152,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<EmployeeIdeaDetails>, EmployeeIdeaDetailService>();
             services.AddScoped<IServiceAsync<EmployeeTypes>, EmployeeTypeService>();
             services.AddScoped<IServiceAsync<EmployeeDetails>, EmployeeDetailService>();
+            services.AddScoped<IServiceAsync<FAQ>, FAQService>();
             services.AddScoped<IServiceAsync<Functions>, FunctionService>();
             services.AddScoped<IServiceAsync<FunctionDetails>, FunctionDetailService>();
             services.AddScoped<IServiceAsync<Groups>, GroupService>();

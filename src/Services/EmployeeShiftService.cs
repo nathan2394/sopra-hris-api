@@ -8,6 +8,8 @@ using sopra_hris_api.src.Entities;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Security.Claims;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.Reflection;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -249,6 +251,9 @@ namespace sopra_hris_api.src.Services.API
 
                 // Fetch shifts only once  
                 var shifts = await _context.Shifts.Where(x => x.IsDeleted == false).ToListAsync();
+                
+                IQueryable<Employees> employeeQuery = _context.Employees.Where(e => e.IsDeleted == false && e.IsShift == true);                
+                string typeFilter = null;
 
                 if (!string.IsNullOrEmpty(filter))
                 {
@@ -262,41 +267,63 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
 
                             if (fieldName == "type")
+                                typeFilter = value.ToLower();
+                            else
                             {
-                                if (value == "employee")
-                                {
-                                    var employees = await _context.Employees
-                                       .Where(e => e.IsDeleted == false && e.IsShift == true)
-                                       .Join(_context.GroupShifts,
-                                           e => e.GroupShiftID,
-                                           gs => gs.GroupShiftID,
-                                           (e, gs) => new EmployeeGroupShiftTemplate
-                                           {
-                                               EmployeeID = e.EmployeeID,
-                                               Nik = e.Nik,
-                                               Name = e.EmployeeName
-                                           })
-                                       .ToListAsync();
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
 
-                                    employeeGroupShiftTemplates.AddRange(employees);
-                                }
-                                else if (value == "groupshift")
+                                switch (fieldName)
                                 {
-                                    var groupShifts = await _context.GroupShifts
-                                        .Where(gs => gs.IsDeleted == false)
-                                        .Select(gs => new EmployeeGroupShiftTemplate
-                                        {
-                                            GroupShiftID = gs.GroupShiftID,
-                                            GroupShiftCode = gs.Code,
-                                            GroupShiftName = gs.Name
-                                        })
-                                        .ToListAsync();
-
-                                    employeeGroupShiftTemplates.AddRange(groupShifts);
+                                    case "group":
+                                        employeeQuery = employeeQuery.Where(e => Ids.Contains(e.GroupID));
+                                        break;
+                                    case "department":
+                                        employeeQuery = employeeQuery.Where(e => Ids.Contains(e.DepartmentID ?? 0));
+                                        break;
+                                    case "function":
+                                        employeeQuery = employeeQuery.Where(e => Ids.Contains(e.FunctionID ?? 0));
+                                        break;
+                                    case "employeetype":
+                                        employeeQuery = employeeQuery.Where(e => Ids.Contains(e.EmployeeTypeID));
+                                        break;
+                                    case "division":
+                                        employeeQuery = employeeQuery.Where(e => Ids.Contains(e.DivisionID ?? 0));
+                                        break;
                                 }
                             }
                         }
                     }
+                }
+
+                if (typeFilter == "employee")
+                {
+                    var employees = await employeeQuery
+                       .Join(_context.GroupShifts,
+                           e => e.GroupShiftID,
+                           gs => gs.GroupShiftID,
+                           (e, gs) => new EmployeeGroupShiftTemplate
+                           {
+                               EmployeeID = e.EmployeeID,
+                               Nik = e.Nik,
+                               Name = e.EmployeeName
+                           })
+                       .ToListAsync();
+
+                    employeeGroupShiftTemplates.AddRange(employees);
+                }
+                else if (typeFilter == "groupshift")
+                {
+                    var groupShifts = await _context.GroupShifts
+                        .Where(gs => gs.IsDeleted == false)
+                        .Select(gs => new EmployeeGroupShiftTemplate
+                        {
+                            GroupShiftID = gs.GroupShiftID,
+                            GroupShiftCode = gs.Code,
+                            GroupShiftName = gs.Name
+                        })
+                        .ToListAsync();
+
+                    employeeGroupShiftTemplates.AddRange(groupShifts);
                 }
 
                 return new ListResponseTemplateShift<EmployeeGroupShiftTemplate>(employeeGroupShiftTemplates, shifts);

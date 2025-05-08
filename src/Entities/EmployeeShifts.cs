@@ -32,10 +32,10 @@ namespace sopra_hris_api.Entities
         public long? ShiftID { get; set; }
         public DateTime? TransDate { get; set; }
         public long? GroupShiftID { get; set; }
-        public string EmployeeName { get; set; }
-        public string ShiftCode { get; set; }
-        public string ShiftName { get; set; }
-        public string GroupShiftCode { get; set; }
-        public string GroupShiftName { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? ShiftCode { get; set; }
+        public string? ShiftName { get; set; }
+        public string? GroupShiftCode { get; set; }
+        public string? GroupShiftName { get; set; }
     }
 }

@@ -423,7 +423,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-
+        
         public async Task<ListResponse<Overtimes>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -431,6 +431,30 @@ namespace sopra_hris_api.src.Services.API
                 var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
                 var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                List<long> allowedEmployeeIds = new List<long>();
+                if (roleid == 6)
+                {
+                    var currentEmployee = await (from e in _context.Employees
+                                                 join g in _context.Groups on e.GroupID equals g.GroupID
+                                                 where e.EmployeeID == employeeid
+                                                 select new
+                                                 {
+                                                     Employee = e,
+                                                     Group = g
+                                                 }).FirstOrDefaultAsync();
+                    if (currentEmployee != null)
+                    {
+                        var currentGroupLevel = currentEmployee.Group.Level;
+                        var currentDeptId = currentEmployee.Employee.DepartmentID;
+
+                        allowedEmployeeIds = await (from e in _context.Employees
+                                                    join g in _context.Groups on e.GroupID equals g.GroupID
+                                                    where g.Level < currentGroupLevel &&
+                                                          e.DepartmentID == currentDeptId
+                                                    select e.EmployeeID).ToListAsync();
+                    }
+                }
+
                 var query = (from o in _context.Overtimes.AsNoTracking()
                              join e in _context.Employees on o.EmployeeID equals e.EmployeeID
                              join r in _context.Reasons on o.ReasonID equals r.ReasonID into reasonGroup
@@ -441,7 +465,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where o.IsDeleted == false && ((o.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
+                             where o.IsDeleted == false && (allowedEmployeeIds != null ? (allowedEmployeeIds.Contains(o.EmployeeID)) : (o.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new Overtimes
                              {
                                  OvertimeID = o.OvertimeID,
@@ -515,8 +539,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.TransDate.Date >= startDate && x.TransDate.Date <= endDate ||
-                         x.StartDate.Date >= startDate && x.StartDate.Date <= endDate || x.EndDate.Date >= startDate && x.EndDate.Date <= endDate));
+                        query = query.Where(x => (x.TransDate.Date >= startDate.Date && x.TransDate.Date <= endDate.Date));
                 }
 
                 // Sorting
@@ -587,7 +610,6 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-
         public async Task<Overtimes> GetByIdAsync(long id)
         {
             try

@@ -278,7 +278,9 @@ namespace sopra_hris_api.src.Services.API
                                  DivisionName = di != null ? di.Name : null,
                                  GroupID = e.GroupID,
                                  GroupName = g != null ? g.Name : null,
-                                 GroupType = g != null ? g.Type : null
+                                 GroupType = g != null ? g.Type : null,
+                                 VoucherNo = et.VoucherNo,
+                                 Remarks = et.Remarks
                              });
 
                 // Searching
@@ -394,6 +396,30 @@ namespace sopra_hris_api.src.Services.API
                 var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
                 var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                List<long> allowedEmployeeIds = new List<long>();
+                if (roleid == 6)
+                {
+                    var currentEmployee = await (from e in _context.Employees
+                                                 join g in _context.Groups on e.GroupID equals g.GroupID
+                                                 where e.EmployeeID == employeeid
+                                                 select new
+                                                 {
+                                                     Employee = e,
+                                                     Group = g
+                                                 }).FirstOrDefaultAsync();
+                    if (currentEmployee != null)
+                    {
+                        var currentGroupLevel = currentEmployee.Group.Level;
+                        var currentDeptId = currentEmployee.Employee.DepartmentID;
+
+                        allowedEmployeeIds = await (from e in _context.Employees
+                                                    join g in _context.Groups on e.GroupID equals g.GroupID
+                                                    where g.Level < currentGroupLevel &&
+                                                          e.DepartmentID == currentDeptId
+                                                    select e.EmployeeID).ToListAsync();
+                    }
+                }
+
                 var query = (from et in _context.EmployeeTransferShifts.AsNoTracking()
                              join e in _context.Employees on et.EmployeeID equals e.EmployeeID
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
@@ -402,7 +428,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where et.IsDeleted == false && ((et.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
+                             where et.IsDeleted == false && (allowedEmployeeIds != null ? (allowedEmployeeIds.Contains(et.EmployeeID)) : (et.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new EmployeeTransferShifts
                              {
                                  EmployeeTransferShiftID = et.EmployeeTransferShiftID,
@@ -425,7 +451,9 @@ namespace sopra_hris_api.src.Services.API
                                  DivisionName = di != null ? di.Name : null,
                                  GroupID = e.GroupID,
                                  GroupName = g != null ? g.Name : null,
-                                 GroupType = g != null ? g.Type : null
+                                 GroupType = g != null ? g.Type : null,
+                                 VoucherNo = et.VoucherNo,
+                                 Remarks = et.Remarks
                              });
                 // Searching
                 if (!string.IsNullOrEmpty(search))
@@ -460,6 +488,14 @@ namespace sopra_hris_api.src.Services.API
                             };
                         }
                     }
+                }
+
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => (x.TransDate.Date >= startDate.Date && x.TransDate.Date <= endDate.Date));
                 }
 
                 // Sorting
