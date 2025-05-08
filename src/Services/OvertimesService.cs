@@ -465,7 +465,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where o.IsDeleted == false && (allowedEmployeeIds != null ? (allowedEmployeeIds.Contains(o.EmployeeID)) : (o.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
+                             where o.IsDeleted == false && (allowedEmployeeIds.Count() > 0 ? (allowedEmployeeIds.Contains(o.EmployeeID)) : (o.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new Overtimes
                              {
                                  OvertimeID = o.OvertimeID,

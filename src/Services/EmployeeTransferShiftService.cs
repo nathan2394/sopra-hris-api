@@ -428,7 +428,7 @@ namespace sopra_hris_api.src.Services.API
                              from di in divGroup.DefaultIfEmpty()
                              join g in _context.Groups on e.GroupID equals g.GroupID into groupGroup
                              from g in groupGroup.DefaultIfEmpty()
-                             where et.IsDeleted == false && (allowedEmployeeIds != null ? (allowedEmployeeIds.Contains(et.EmployeeID)) : (et.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
+                             where et.IsDeleted == false && (allowedEmployeeIds.Count() > 0 ? (allowedEmployeeIds.Contains(et.EmployeeID)) : (et.EmployeeID == employeeid && (roleid == 2 || roleid == 5)) || (roleid != 2 && roleid != 5))
                              select new EmployeeTransferShifts
                              {
                                  EmployeeTransferShiftID = et.EmployeeTransferShiftID,
