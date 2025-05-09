@@ -345,7 +345,7 @@ WHERE a.EmployeeID = @id
                     new SqlParameter("@Department", SqlDbType.VarChar) { Value = formattedDepartmentId }
                 };
                 var result = await _context.Set<AttendanceCheck>()
-                    .FromSqlRaw($@"SELECT a.EmployeeID, a.NIK, a.EmployeeName, a.IsShift, TransDate, DayName, ShiftCode, ShiftName, Unattendance, ActualStartTime, ActualEndTime
+                    .FromSqlRaw($@"SELECT a.EmployeeID, e.DepartmentID, d.Name DepartmentName, a.NIK, a.EmployeeName, a.IsShift, TransDate, DayName, ShiftCode, ShiftName, Unattendance, ActualStartTime, ActualEndTime
 FROM AttendanceDetails a
 INNER JOIN Employees e on e.EmployeeID=a.EmployeeID
 INNER JOIN Departments d on d.DepartmentID=e.DepartmentID

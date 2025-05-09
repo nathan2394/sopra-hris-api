@@ -27,7 +27,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
                 data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
                 double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
                 data.OVTHours = (float?)roundedDownOvertime;
@@ -293,6 +293,7 @@ namespace sopra_hris_api.src.Services.API
                                  ApprovedBy2 = o.ApprovedBy2,
                                  ApprovedDate2 = o.ApprovedDate2,
                                  Description = o.Description,
+                                 OVTHours = o.OVTHours,
                                  NIK = e.Nik,
                                  EmployeeName = e.EmployeeName,
                                  DepartmentID = e.DepartmentID,
@@ -481,6 +482,7 @@ namespace sopra_hris_api.src.Services.API
                                  ApprovedBy2 = o.ApprovedBy2,
                                  ApprovedDate2 = o.ApprovedDate2,
                                  Description = o.Description,
+                                 OVTHours = o.OVTHours,
                                  NIK = e.Nik,
                                  EmployeeName = e.EmployeeName,
                                  DepartmentID = e.DepartmentID,
@@ -634,6 +636,7 @@ namespace sopra_hris_api.src.Services.API
                                   IsApproved1 = o.IsApproved1,
                                   IsApproved2 = o.IsApproved2,
                                   Description = o.Description,
+                                  OVTHours = o.OVTHours,
                                   NIK = e.Nik,
                                   EmployeeName = e.EmployeeName,
                                   DepartmentID = e.DepartmentID,

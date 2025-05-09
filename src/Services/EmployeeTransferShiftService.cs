@@ -28,7 +28,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
+                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
                 string voucherNo = $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
 
                 data.VoucherNo = voucherNo;
@@ -312,6 +312,7 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                 _ => query
                             };
                         }
@@ -484,6 +485,7 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                 _ => query
                             };
                         }

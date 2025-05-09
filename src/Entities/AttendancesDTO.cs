@@ -88,6 +88,8 @@ namespace sopra_hris_api.src.Entities
         public string Unattendance { get; set; }
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
+        public long DepartmentID { get; set; }
+        public string DepartmentName { get; set; }
     }
     [Keyless]
     public class BulkOvertimes
