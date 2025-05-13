@@ -375,7 +375,7 @@ namespace sopra_hris_api.src.Services.API
                 if (data.Count <= 0 && page > 0)
                 {
                     page = 0;
-                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
+                    return await GetAllApprovalAsync(limit, page, total, search, sort, filter, date);
                 }
 
                 return new ListResponse<EmployeeTransferShifts>(data, total, page);

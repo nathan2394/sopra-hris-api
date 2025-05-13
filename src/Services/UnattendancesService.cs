@@ -26,12 +26,13 @@ namespace sopra_hris_api.src.Services.API
         {
             var totalDays = 0;
             var employee = await (from e in _context.Employees
-                join s in _context.Shifts on e.ShiftID equals s.ShiftID
+                join s in _context.Shifts on e.ShiftID equals s.ShiftID into shiftGroup
+                from s in shiftGroup.DefaultIfEmpty()
                                   where e.EmployeeID == employeeId && e.IsDeleted == false
                                   select new
                                   {
                                       e.IsShift,
-                                      s.WorkingDays
+                                      WorkingDays = s != null ? s.WorkingDays : null
                                   }).FirstOrDefaultAsync();
             if (employee == null)
                 return 0;
@@ -39,8 +40,6 @@ namespace sopra_hris_api.src.Services.API
             for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
             {
                 var isHoliday = await _context.Holidays.AnyAsync(h => h.TransDate == date && h.IsDeleted == false);
-                var isNonWorkingShift = await _context.EmployeeShifts.AnyAsync(s => s.EmployeeID == employeeId && s.TransDate == date && s.IsDeleted == false);
-
                 if (isHoliday) continue;
                 if (!employee.IsShift.Value)
                 {
@@ -52,11 +51,6 @@ namespace sopra_hris_api.src.Services.API
 
                     if (employee.WorkingDays == 6 && dayOfWeek == DayOfWeek.Sunday)
                         continue;
-                }
-                else
-                {
-                    // For shift workers, check their shift schedule
-                    if (isNonWorkingShift) continue;
                 }
                 totalDays++;
             }
@@ -260,7 +254,8 @@ namespace sopra_hris_api.src.Services.API
                                 UnattendanceTypeCode = ut.Code,
                                 UnattendanceTypeName = ut.Name,
                                 Duration = u.Duration,
-                                VoucherNo = u.VoucherNo
+                                VoucherNo = u.VoucherNo,
+                                Attachments = u.Attachments
                             };
 
                 // Searching
@@ -365,7 +360,7 @@ namespace sopra_hris_api.src.Services.API
                 if (data.Count <= 0 && page > 0)
                 {
                     page = 0;
-                    return await GetAllAsync(limit, page, total, search, sort, filter, date);
+                    return await GetAllApprovalAsync(limit, page, total, search, sort, filter, date);
                 }
 
                 return new ListResponse<Unattendances>(data, total, page);
@@ -422,7 +417,8 @@ namespace sopra_hris_api.src.Services.API
                                 UnattendanceTypeCode = ut.Code,
                                 UnattendanceTypeName = ut.Name,
                                 Duration = u.Duration,
-                                VoucherNo = u.VoucherNo
+                                VoucherNo = u.VoucherNo,
+                                Attachments = u.Attachments
                             };
 
                 // Searching
