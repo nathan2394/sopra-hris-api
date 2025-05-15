@@ -102,6 +102,47 @@ namespace sopra_hris_api.src.Services.API
                 await _context.EmployeeTransferShifts.AddRangeAsync(employeeTransferShifts);
                 await _context.SaveChangesAsync();
 
+                if (employeeTransferShifts.Count > 0) {
+                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
+SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
+INTO #TEMP
+FROM EmployeeTransferShifts o
+INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
+WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+
+SELECT distinct u.Email
+FROM MatrixApproval m
+INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
+INNER JOIN Users u on u.EmployeeID=(case when m.Checker is not null then m.Checker else m.Releaser end) AND u.IsDeleted=0 AND u.RoleID=(case when m.Checker is not null then 7 else 8 end)
+WHERE m.IsDeleted=0 AND t.IsApproved1=1 AND t.IsApproved2 is null
+
+DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
+
+                    if (mailto?.Count > 0)
+                    {
+                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
+                        var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == data.ShiftToID);
+                        string subject = $"Pengajuan Tukar Shift – {voucherNo}";
+                        string body = $@"<!DOCTYPE html>
+                                    <html>
+                                      <body>
+                                        <p>Dear <strong>{user.Name}</strong>,</p>
+
+                                        <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
+
+                                        <p>
+                                          <strong>Voucher No:</strong> {voucherNo}<br>
+                                          <strong>Tanggal:</strong> {data.TransDate.Date:dd MMM yyy}<br>
+                                          <strong>Shift:</strong> {shift.Code} - {shift.Name}
+                                        </p>
+
+                                        <p>Terima kasih atas perhatian.</p>
+                                      </body>
+                                    </html>";
+                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
+                    }                
+                }
+
                 await dbTrans.CommitAsync();
 
                 return voucherNo;
@@ -200,28 +241,60 @@ namespace sopra_hris_api.src.Services.API
                 int i = 0;
                 foreach (var approval in data)
                 {
-                    var obj = await _context.EmployeeTransferShifts
-                        .FirstOrDefaultAsync(x => x.EmployeeTransferShiftID == approval.ID && x.IsDeleted == false);
+                    i += await _context.Database.ExecuteSqlRawAsync($@"UPDATE EmployeeTransferShifts
+                                        SET IsApproved1=@IsApproved1,ApprovedBy1=@ApprovedBy1,ApprovedDate1=@ApprovedDate1,
+                                            IsApproved2=@IsApproved2,ApprovedBy2=@ApprovedBy2,ApprovedDate2=@ApprovedDate2,
+                                            ApprovalNotes=@ApprovalNotes,UserUp=@UserUp,DateUp=@DateUp
+                                        WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
+                                        new SqlParameter("VoucherNo", approval.VoucherNo),
+                                        new SqlParameter("IsApproved1", approval.IsApproved1 != null ? approval.IsApproved1 : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedBy1", approval.IsApproved1 != null ? userid : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedDate1", approval.IsApproved1 != null ? approveddate : (object)DBNull.Value),
+                                        new SqlParameter("IsApproved2", approval.IsApproved2 != null ? userid : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedBy2", approval.IsApproved2 != null ? approval.IsApproved2 : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedDate2", approval.IsApproved2 != null ? approveddate : (object)DBNull.Value),
+                                        new SqlParameter("ApprovalNotes", approval.ApprovalNotes),
+                                        new SqlParameter("UserUp", userid),
+                                        new SqlParameter("DateUp", approveddate));
 
-                    if (obj != null)
+                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
+SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
+INTO #TEMP
+FROM EmployeeTransferShifts o
+INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
+WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+
+SELECT distinct u.Email
+FROM MatrixApproval m
+INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
+INNER JOIN Users u on u.EmployeeID=m.Releaser AND u.IsDeleted=0 AND u.RoleID=8
+WHERE m.IsDeleted=0 AND t.IsApproved1=1 AND t.IsApproved2 is null
+
+DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsync();
+
+                    if (mailto?.Count > 0)
                     {
-                        if (approval.IsApproved1 != null)
-                        {
-                            obj.IsApproved1 = approval.IsApproved1;
-                            obj.ApprovedBy1 = userid;
-                            obj.ApprovedDate1 = approveddate;
-                        }
-                        if (approval.IsApproved2 != null)
-                        {
-                            obj.IsApproved2 = approval.IsApproved2;
-                            obj.ApprovedBy2 = userid;
-                            obj.ApprovedDate2 = approveddate;
-                        }
+                        var ovt = await _context.EmployeeTransferShifts.FirstOrDefaultAsync(x => x.VoucherNo == approval.VoucherNo && x.IsDeleted == false);
+                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
+                        var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == ovt.ShiftToID);
+                        string subject = $"Pengajuan Tukar Shift – {ovt.VoucherNo}";
+                        string body = $@"<!DOCTYPE html>
+                                    <html>
+                                      <body>
+                                        <p>Dear <strong>{user.Name}</strong>,</p>
 
-                        obj.UserUp = userid;
-                        obj.DateUp = approveddate;
+                                        <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
 
-                        i += await _context.SaveChangesAsync();
+                                        <p>
+                                          <strong>Voucher No:</strong> {ovt.VoucherNo}<br>
+                                          <strong>Tanggal:</strong> {ovt.TransDate.Date:dd MMM yyy}<br>
+                                          <strong>Shift:</strong> {shift.Code} - {shift.Name}
+                                        </p>
+
+                                        <p>Terima kasih atas perhatian.</p>
+                                      </body>
+                                    </html>";
+                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
                     }
                 }
                 if (i > 0)
@@ -247,7 +320,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = (from et in _context.EmployeeTransferShifts.AsNoTracking()
+                var query = (from et in _context.EmployeeTransferShifts
                              join e in _context.Employees on et.EmployeeID equals e.EmployeeID
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
                              from d in deptGroup.DefaultIfEmpty()
@@ -421,7 +494,7 @@ namespace sopra_hris_api.src.Services.API
                     }
                 }
 
-                var query = (from et in _context.EmployeeTransferShifts.AsNoTracking()
+                var query = (from et in _context.EmployeeTransferShifts
                              join e in _context.Employees on et.EmployeeID equals e.EmployeeID
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
                              from d in deptGroup.DefaultIfEmpty()

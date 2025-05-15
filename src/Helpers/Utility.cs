@@ -1,13 +1,15 @@
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.IdentityModel.Tokens;
-using sopra_hris_api.Entities;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Net.Mail;
 using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using sopra_hris_api.Entities;
 
 namespace sopra_hris_api.Helpers
 {
@@ -144,6 +146,52 @@ namespace sopra_hris_api.Helpers
                 }
             }
             return string.Empty;
+        }
+        public static void sendMail(string mailto, string mailcc, string subjectMail, string bodyMail)
+        {
+            try
+            {
+                var fromAddress = new MailAddress(config["SmtpSettings:From"], config["SmtpSettings:DisplayName"]);
+
+                var smtp = new SmtpClient
+                {
+                    Host = config["SmtpSettings:Host"],
+                    Port = Convert.ToInt32(config["SmtpSettings:Port"]),
+                    EnableSsl = Convert.ToBoolean(config["SmtpSettings:EnableSsl"]),
+                    Credentials = new NetworkCredential(config["SmtpSettings:Username"], config["SmtpSettings:Password"])
+                };
+
+                var message = new MailMessage
+                {
+                    From = fromAddress,
+                    Subject = subjectMail,
+                    Body = bodyMail,
+                    IsBodyHtml = true // Set to false if sending plain text
+                };
+
+                if (!string.IsNullOrWhiteSpace(mailto))
+                {
+                    foreach (var to in mailto.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        message.To.Add(to.Trim());
+                    }
+                }
+
+                // Add CC if provided
+                if (!string.IsNullOrWhiteSpace(mailcc))
+                {
+                    foreach (var cc in mailcc.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        message.CC.Add(cc.Trim());
+                    }
+                }
+
+                smtp.Send(message);
+            }
+            catch (Exception ex)
+            {
+
+            }
         }
     }
 

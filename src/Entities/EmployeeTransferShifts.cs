@@ -23,6 +23,7 @@ namespace sopra_hris_api.Entities
         public long? ApprovedBy2 { get; set; }
         public DateTime? ApprovedDate1 { get; set; }
         public DateTime? ApprovedDate2 { get; set; }
+        public string? ApprovalNotes { get; set; }
         [NotMapped]
         public string? NIK { get; set; }
         [NotMapped]

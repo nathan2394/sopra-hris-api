@@ -31,6 +31,7 @@ namespace sopra_hris_api.src.Entities
         public int EarlyClockOut { get; set; }
         public int EarlyClockOutCount { get; set; }
         public Single OVT { get; set; }
+        public DateTime StartWorkingDate { get; set; }
         public int Absent { get; set; }
         public long? EmployeeTypeID { get; set; }
         public string? EmployeeTypeName { get; set; }
@@ -70,9 +71,10 @@ namespace sopra_hris_api.src.Entities
     public class ApprovalDTO
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long ID { get; set; }
+        public string VoucherNo { get; set; }
         public bool? IsApproved1 { get; set; }
         public bool? IsApproved2 { get; set; }
+        public string? ApprovalNotes { get; set; }
     }
     [Keyless]
     public class AttendanceCheck
@@ -81,6 +83,7 @@ namespace sopra_hris_api.src.Entities
         public string NIK { get; set; }
         public string EmployeeName { get; set; }
         public int IsShift { get; set; }
+        public DateTime StartWorkingDate { get; set; }
         public DateTime TransDate { get; set; }
         public string DayName { get; set; }
         public string ShiftCode { get; set; }
@@ -90,6 +93,16 @@ namespace sopra_hris_api.src.Entities
         public DateTime? ActualEndTime { get; set; }
         public long DepartmentID { get; set; }
         public string DepartmentName { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public DateTime? StartBufferTime { get; set; }
+        public DateTime? EndBufferTime { get; set; }
+        public int? WorkingDays { get; set; }
+        public int? Late { get; set; }
+        public int? Ovt { get; set; }
+        public int? EarlyClockOut { get; set; }
+        public int? Meals { get; set; }
+        public Single? EffectiveHours { get; set; }
     }
     [Keyless]
     public class BulkOvertimes

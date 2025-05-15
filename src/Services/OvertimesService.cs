@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using System.Linq;
+using System.Security.Claims;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
-using sopra_hris_api.src.Helpers;
-using System.Security.Claims;
 using sopra_hris_api.src.Entities;
-using Microsoft.Data.SqlClient;
+using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -42,7 +43,6 @@ namespace sopra_hris_api.src.Services.API
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
-
                 return data;
             }
             catch (Exception ex)
@@ -102,9 +102,48 @@ namespace sopra_hris_api.src.Services.API
 
                     overtimes.Add(ovt);
                 }
-
                 await _context.Overtimes.AddRangeAsync(overtimes);
                 await _context.SaveChangesAsync();
+                if (overtimes.Count > 0)
+                {
+                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
+SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
+INTO #TEMP
+FROM Overtimes o
+INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
+WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+
+SELECT distinct u.Email
+FROM MatrixApproval m
+INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
+INNER JOIN Users u on u.EmployeeID=(case when m.Checker is not null then m.Checker else m.Releaser end) AND u.IsDeleted=0 AND u.RoleID=(case when m.Checker is not null then 7 else 8 end)
+WHERE m.IsDeleted=0 AND t.IsApproved1 is null AND t.IsApproved2 is null
+
+DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
+
+                    if (mailto?.Count > 0)
+                    {
+                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
+                        string subject = $"Pengajuan Lembur – {voucherNo}";
+                        string body = $@"<!DOCTYPE html>
+                                    <html>
+                                      <body>
+                                        <p>Dear <strong>{user.Name}</strong>,</p>
+
+                                        <p>Mohon persetujuannya untuk pengajuan lembur berikut:</p>
+
+                                        <p>
+                                          <strong>Voucher No:</strong> {voucherNo}<br>
+                                          <strong>Tanggal:</strong> {data.TransDate.Date:dd MMM yyy}<br>
+                                          <strong>Jam:</strong> {data.StartDate:HH:mm} - {data.EndDate:HH:mm}
+                                        </p>
+
+                                        <p>Terima kasih atas perhatian.</p>
+                                      </body>
+                                    </html>";
+                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
+                    }
+                }
 
                 await dbTrans.CommitAsync();
 
@@ -201,47 +240,86 @@ namespace sopra_hris_api.src.Services.API
                 var approveddate = DateTime.Now;
                 bool retval = false;
                 int i = 0;
+
                 foreach (var approval in data)
                 {
-                    var obj = await _context.Overtimes
-                        .FirstOrDefaultAsync(x => x.OvertimeID == approval.ID && x.IsDeleted == false);
+                    i += await _context.Database.ExecuteSqlRawAsync($@"UPDATE Overtimes
+                                        SET IsApproved1=@IsApproved1,ApprovedBy1=@ApprovedBy1,ApprovedDate1=@ApprovedDate1,
+                                            IsApproved2=@IsApproved2,ApprovedBy2=@ApprovedBy2,ApprovedDate2=@ApprovedDate2,
+                                            ApprovalNotes=@ApprovalNotes,UserUp=@UserUp,DateUp=@DateUp
+                                        WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
+                                        new SqlParameter("VoucherNo", approval.VoucherNo),
+                                        new SqlParameter("IsApproved1", approval.IsApproved1 != null ? approval.IsApproved1 : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedBy1", approval.IsApproved1 != null ? userid : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedDate1", approval.IsApproved1 != null ? approveddate : (object)DBNull.Value),
+                                        new SqlParameter("IsApproved2", approval.IsApproved2 != null ? userid : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedBy2", approval.IsApproved2 != null ? approval.IsApproved2 : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedDate2", approval.IsApproved2 != null ? approveddate : (object)DBNull.Value),
+                                        new SqlParameter("ApprovalNotes", approval.ApprovalNotes),
+                                        new SqlParameter("UserUp", userid),
+                                        new SqlParameter("DateUp", approveddate));
 
-                    if (obj != null)
+                    await _context.Database.ExecuteSqlRawAsync($@"SELECT o.VoucherNo,TransDate,e.DepartmentID,SUM(o.OVTHours)OVTHours, CASE 
+                                        WHEN DAY(o.TransDate) >= 24 THEN MONTH(DATEADD(MONTH, 1, o.TransDate))
+                                        ELSE MONTH(o.TransDate)
+                                    END AS BudgetMonth,
+                                    CASE 
+                                        WHEN DAY(o.TransDate) >= 24 THEN YEAR(DATEADD(MONTH, 1, o.TransDate))
+                                        ELSE YEAR(o.TransDate)
+                                    END AS BudgetYear
+                                INTO #TEMP
+                                FROM Overtimes o
+                                INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
+                                WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 AND o.IsApproved1=1 AND o.IsApproved2=1
+                                GROUP BY o.VoucherNo,TransDate,e.DepartmentID
+                                select * from #TEMP
+                                update b
+                                set RemainingHours=ISNULL(RemainingHours,TotalOvertimeHours)-t.OVTHours, DateUp=GETDATE(), UserUp=-1
+                                from BudgetingOvertimes b
+                                inner join #TEMP t on t.DepartmentID=b.DepartmentID 
+                                where b.BudgetMonth=t.BudgetMonth and b.BudgetYear=t.BudgetYear
+
+                                DROP TABLE #TEMP",
+                            new SqlParameter("VoucherNo", approval.VoucherNo),
+                            new SqlParameter("UserUp", userid));
+
+                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
+SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
+INTO #TEMP
+FROM Overtimes o
+INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
+WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+
+SELECT distinct u.Email
+FROM MatrixApproval m
+INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
+INNER JOIN Users u on u.EmployeeID=m.Releaser AND u.IsDeleted=0 AND u.RoleID=8
+WHERE m.IsDeleted=0 AND t.IsApproved1=1 AND t.IsApproved2 is null
+
+DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsync();
+
+                    if (mailto?.Count > 0)
                     {
-                        if (approval.IsApproved1 != null)
-                        {
-                            obj.IsApproved1 = approval.IsApproved1;
-                            obj.ApprovedBy1 = userid;
-                            obj.ApprovedDate1 = approveddate;
-                        }
-                        if (approval.IsApproved2 != null)
-                        {
-                            obj.IsApproved2 = approval.IsApproved2;
-                            obj.ApprovedBy2 = userid;
-                            obj.ApprovedDate2 = approveddate;
-                        }
+                        var ovt = await _context.Overtimes.FirstOrDefaultAsync(x => x.VoucherNo == approval.VoucherNo && x.IsDeleted == false);
+                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
+                        string subject = $"Pengajuan Lembur – {ovt.VoucherNo}";
+                        string body = $@"<!DOCTYPE html>
+                                    <html>
+                                      <body>
+                                        <p>Dear <strong>{user.Name}</strong>,</p>
 
-                        obj.UserUp = userid;
-                        obj.DateUp = approveddate;
+                                        <p>Mohon persetujuannya untuk pengajuan lembur berikut:</p>
 
-                        i += await _context.SaveChangesAsync();
+                                        <p>
+                                          <strong>Voucher No:</strong> {ovt.VoucherNo}<br>
+                                          <strong>Tanggal:</strong> {ovt.TransDate.Date:dd MMM yyy}<br>
+                                          <strong>Jam:</strong> {ovt.StartDate:HH:mm} - {ovt.EndDate:HH:mm}
+                                        </p>
 
-                        if (approval.IsApproved1 == true && approval.IsApproved2 == true)
-                        {
-                            decimal overtimeHours = Convert.ToDecimal(obj.OVTHours);
-
-                            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeID == obj.EmployeeID);
-
-                            if (employee != null)
-                            {
-                                await _context.Database.ExecuteSqlRawAsync($@"update BudgetingOvertimes 
-                                    set RemainingHours=TotalOvertimeHours-@overtimeHours, DateUp=GETDATE(), UserUp=@UserUp
-                                    where DepartmentID=@DepartmentID and BudgetMonth=DATEPART(month,GETDATE())and BudgetYear=DATEPART(year,GETDATE())",
-                                        new SqlParameter("overtimeHours", overtimeHours), 
-                                        new SqlParameter("UserUp", userid), 
-                                        new SqlParameter("DepartmentID", employee.DepartmentID));
-                            }
-                        }
+                                        <p>Terima kasih atas perhatian.</p>
+                                      </body>
+                                    </html>";
+                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
                     }
                 }
                 if (i > 0)
@@ -266,8 +344,16 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var GroupID = Convert.ToInt64(User.FindFirstValue("groupid"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = (from o in _context.Overtimes.AsNoTracking()
+
+                var matrixApproval = await _context.MatrixApproval.Where(x => x.IsDeleted == false).ToListAsync();
+                
+                var query = (from o in _context.Overtimes
                              join e in _context.Employees on o.EmployeeID equals e.EmployeeID
                              join r in _context.Reasons on o.ReasonID equals r.ReasonID into reasonGroup
                              from r in reasonGroup.DefaultIfEmpty()
@@ -308,6 +394,39 @@ namespace sopra_hris_api.src.Services.API
                                  VoucherNo = o.VoucherNo
                              });
 
+                if (RoleID == 8)//releaser
+                {
+                    matrixApproval = matrixApproval.Where(x => x.Releaser == EmployeeID).Distinct().ToList();
+
+                    if (matrixApproval?.Count > 0)
+                    {
+                        var deptIds = matrixApproval.Select(x => x.DepartmentID).Distinct().ToList();
+                        if (deptIds.Count > 0)
+                            query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
+                        bool hasChecker = matrixApproval.Any(x => x.Checker != null);
+                        if (hasChecker)
+                            query = query.Where(x => x.IsApproved1.HasValue);
+                        else
+                            query = query.Where(x => !x.IsApproved1.HasValue && !x.IsApproved2.HasValue);
+                    }
+                    else
+                        query = query.Where(x => false);
+                }
+                else if (RoleID == 7)//checker
+                {
+                    matrixApproval = matrixApproval.Where(x => x.Checker == EmployeeID).Distinct().ToList();
+
+                    if (matrixApproval?.Count > 0)
+                    {
+                        var deptIds = matrixApproval.Select(x => x.DepartmentID).Distinct().ToList();
+                        if (deptIds.Count > 0)
+                            query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
+
+                        query = query.Where(x => !x.IsApproved1.HasValue);
+                    }
+                    else
+                        query = query.Where(x => false);
+                }
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.Description.Contains(search) || x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.GroupName.Contains(search)
@@ -456,7 +575,7 @@ namespace sopra_hris_api.src.Services.API
                     }
                 }
 
-                var query = (from o in _context.Overtimes.AsNoTracking()
+                var query = (from o in _context.Overtimes
                              join e in _context.Employees on o.EmployeeID equals e.EmployeeID
                              join r in _context.Reasons on o.ReasonID equals r.ReasonID into reasonGroup
                              from r in reasonGroup.DefaultIfEmpty()

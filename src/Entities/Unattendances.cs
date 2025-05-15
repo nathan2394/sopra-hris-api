@@ -20,6 +20,7 @@ namespace sopra_hris_api.Entities
         public bool? IsApproved2 { get; set; }
         public long? ApprovedBy2 { get; set; }
         public DateTime? ApprovedDate2 { get; set; }
+        public string? ApprovalNotes { get; set; }
         public string? Description { get; set; }
         public string? Attachments { get; set; }
         public int? Duration { get; set; }

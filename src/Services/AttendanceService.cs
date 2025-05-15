@@ -345,25 +345,28 @@ WHERE a.EmployeeID = @id
                     new SqlParameter("@Department", SqlDbType.VarChar) { Value = formattedDepartmentId }
                 };
                 var result = await _context.Set<AttendanceCheck>()
-                    .FromSqlRaw($@"SELECT a.EmployeeID, e.DepartmentID, d.Name DepartmentName, a.NIK, a.EmployeeName, a.IsShift, TransDate, DayName, ShiftCode, ShiftName, Unattendance, ActualStartTime, ActualEndTime
-FROM AttendanceDetails a
-INNER JOIN Employees e on e.EmployeeID=a.EmployeeID
-INNER JOIN Departments d on d.DepartmentID=e.DepartmentID
-WHERE TransDate BETWEEN @StartDate AND @EndDate
-	AND Unattendance IN ('H','A')
-    AND a.EmployeeName LIKE @Name
-    AND (@EmployeeID = '' OR a.EmployeeID IN (
-        SELECT CAST(value AS BIGINT) 
-        FROM STRING_SPLIT(@EmployeeID, ',') 
-        WHERE RTRIM(LTRIM(value)) <> ''
-      ))
-    AND (@Department = '' OR e.DepartmentID IN (
-        SELECT CAST(value AS BIGINT) 
-        FROM STRING_SPLIT(@Department, ',') 
-        WHERE RTRIM(LTRIM(value)) <> ''
-      ))
-ORDER BY a.EmployeeName, TransDate", queryParameters.ToArray())
-                    .ToListAsync();
+                    .FromSqlRaw($@"SELECT a.EmployeeID, e.DepartmentID, d.Name DepartmentName, a.NIK, a.EmployeeName, 
+                                    a.StartWorkingDate, a.IsShift, TransDate, DayName, ShiftCode, ShiftName, 
+                                    StartTime,EndTime,StartBufferTime,EndBufferTime, Unattendance,
+                                    ActualStartTime,ActualEndTime,WorkingDays,Late,Ovt,EarlyClockOut,Meals,EffectiveHours
+                                FROM AttendanceDetails a
+                                INNER JOIN Employees e on e.EmployeeID=a.EmployeeID
+                                INNER JOIN Departments d on d.DepartmentID=e.DepartmentID
+                                WHERE TransDate BETWEEN @StartDate AND @EndDate
+	                                AND Unattendance IN ('H','A')
+                                    AND a.EmployeeName LIKE @Name
+                                    AND (@EmployeeID = '' OR a.EmployeeID IN (
+                                        SELECT CAST(value AS BIGINT) 
+                                        FROM STRING_SPLIT(@EmployeeID, ',') 
+                                        WHERE RTRIM(LTRIM(value)) <> ''
+                                      ))
+                                    AND (@Department = '' OR e.DepartmentID IN (
+                                        SELECT CAST(value AS BIGINT) 
+                                        FROM STRING_SPLIT(@Department, ',') 
+                                        WHERE RTRIM(LTRIM(value)) <> ''
+                                      ))
+                                ORDER BY a.EmployeeName, TransDate", queryParameters.ToArray())
+                                    .ToListAsync();
 
                 return new ListResponseTemplate<AttendanceCheck>(result);
             }

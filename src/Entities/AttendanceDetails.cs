@@ -16,6 +16,7 @@ namespace sopra_hris_api.Entities
         public string DayName { get; set; }
         public string? ShiftCode { get; set; }
         public string? ShiftName { get; set; }
+        public DateTime? StartWorkingDate { get; set; }
         public int? WorkingDays { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
