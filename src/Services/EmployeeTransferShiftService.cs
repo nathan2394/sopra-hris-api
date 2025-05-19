@@ -72,7 +72,7 @@ namespace sopra_hris_api.src.Services.API
                 {
                     // Mark the existing record as deleted
                     await _context.Database.ExecuteSqlRawAsync($@"UPDATE EmployeeTransferShifts SET IsDeleted=1,DateUp=GETDATE(),UserUp=@UserID WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
-                        new SqlParameter("VoucherNo", data.VoucherNo),
+                        new SqlParameter("VoucherNo", voucherNo),
                         new SqlParameter("userid", userid));
                 }
 
@@ -83,9 +83,9 @@ namespace sopra_hris_api.src.Services.API
                     {
                         VoucherNo = voucherNo,
                         EmployeeID = empID,
-                        ShiftFromID=data.ShiftFromID,
-                        ShiftToID=data.ShiftToID,
-                        HourDiff=data.HourDiff,
+                        ShiftFromID = data.ShiftFromID,
+                        ShiftToID = data.ShiftToID,
+                        HourDiff = data.HourDiff,
                         TransDate = data.TransDate,
                         Remarks = data.Remarks,
                         IsApproved1 = null,
@@ -102,31 +102,41 @@ namespace sopra_hris_api.src.Services.API
                 await _context.EmployeeTransferShifts.AddRangeAsync(employeeTransferShifts);
                 await _context.SaveChangesAsync();
 
-                if (employeeTransferShifts.Count > 0) {
-                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
-SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
-INTO #TEMP
-FROM EmployeeTransferShifts o
-INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
-WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+                if (employeeTransferShifts.Count > 0) 
+                {
+                    var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
+        SELECT DISTINCT u.Email, u.Name
+        FROM (
+            SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1, o.IsApproved2
+            FROM EmployeeTransferShifts o
+            INNER JOIN Employees e ON e.EmployeeID = o.EmployeeID
+            WHERE o.VoucherNo = @VoucherNo AND o.IsDeleted = 0
+        ) AS t
+        INNER JOIN MatrixApproval m ON t.DepartmentID = m.DepartmentID 
+                                   AND (m.DivisionID = t.DivisionID OR m.DivisionID IS NULL)
+        INNER JOIN Users u ON u.EmployeeID = 
+                                (CASE 
+                                    WHEN m.Checker IS NOT NULL THEN m.Checker 
+                                    ELSE m.Releaser 
+                                 END)
+                          AND u.IsDeleted = 0 
+                          AND u.RoleID = 
+                                (CASE 
+                                    WHEN m.Checker IS NOT NULL THEN 7 
+                                    ELSE 8 
+                                 END)
+        WHERE m.IsDeleted = 0 
+          AND t.IsApproved1 IS NULL 
+          AND t.IsApproved2 IS NULL", new SqlParameter("VoucherNo", voucherNo)).FirstOrDefaultAsync();
 
-SELECT distinct u.Email
-FROM MatrixApproval m
-INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
-INNER JOIN Users u on u.EmployeeID=(case when m.Checker is not null then m.Checker else m.Releaser end) AND u.IsDeleted=0 AND u.RoleID=(case when m.Checker is not null then 7 else 8 end)
-WHERE m.IsDeleted=0 AND t.IsApproved1=1 AND t.IsApproved2 is null
-
-DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
-
-                    if (mailto?.Count > 0)
+                    if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
                     {
-                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
                         var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == data.ShiftToID);
                         string subject = $"Pengajuan Tukar Shift – {voucherNo}";
                         string body = $@"<!DOCTYPE html>
                                     <html>
                                       <body>
-                                        <p>Dear <strong>{user.Name}</strong>,</p>
+                                        <p>Dear <strong>{mailto.Name}</strong>,</p>
 
                                         <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
 
@@ -139,7 +149,7 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
                                         <p>Terima kasih atas perhatian.</p>
                                       </body>
                                     </html>";
-                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
+                        Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
                     }                
                 }
 
@@ -242,7 +252,9 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
                 foreach (var approval in data)
                 {
                     i += await _context.Database.ExecuteSqlRawAsync($@"UPDATE EmployeeTransferShifts
-                                        SET IsApproved1=@IsApproved1,ApprovedBy1=@ApprovedBy1,ApprovedDate1=@ApprovedDate1,
+                                        SET IsApproved1=CASE WHEN @IsApproved1 IS NOT NULL THEN @IsApproved1 ELSE IsApproved1 END,
+                                            ApprovedBy1=CASE WHEN @IsApproved1 IS NOT NULL THEN @ApprovedBy1 ELSE ApprovedBy1 END,
+                                            ApprovedDate1=CASE WHEN @IsApproved1 IS NOT NULL THEN @ApprovedDate1 ELSE ApprovedDate1 END,
                                             IsApproved2=@IsApproved2,ApprovedBy2=@ApprovedBy2,ApprovedDate2=@ApprovedDate2,
                                             ApprovalNotes=@ApprovalNotes,UserUp=@UserUp,DateUp=@DateUp
                                         WHERE VoucherNo=@VoucherNo AND IsDeleted=0",
@@ -250,38 +262,40 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", voucherNo)).ToListAsync();
                                         new SqlParameter("IsApproved1", approval.IsApproved1 != null ? approval.IsApproved1 : (object)DBNull.Value),
                                         new SqlParameter("ApprovedBy1", approval.IsApproved1 != null ? userid : (object)DBNull.Value),
                                         new SqlParameter("ApprovedDate1", approval.IsApproved1 != null ? approveddate : (object)DBNull.Value),
-                                        new SqlParameter("IsApproved2", approval.IsApproved2 != null ? userid : (object)DBNull.Value),
-                                        new SqlParameter("ApprovedBy2", approval.IsApproved2 != null ? approval.IsApproved2 : (object)DBNull.Value),
+                                        new SqlParameter("IsApproved2", approval.IsApproved2 != null ? approval.IsApproved2 : (object)DBNull.Value),
+                                        new SqlParameter("ApprovedBy2", approval.IsApproved2 != null ? userid : (object)DBNull.Value),
                                         new SqlParameter("ApprovedDate2", approval.IsApproved2 != null ? approveddate : (object)DBNull.Value),
                                         new SqlParameter("ApprovalNotes", approval.ApprovalNotes),
                                         new SqlParameter("UserUp", userid),
                                         new SqlParameter("DateUp", approveddate));
 
-                    var mailto = await _context.Database.SqlQueryRaw<string>(@"
-SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1,o.IsApproved2
-INTO #TEMP
-FROM EmployeeTransferShifts o
-INNER JOIN Employees e ON e.EmployeeID=o.EmployeeID
-WHERE o.VoucherNo=@VoucherNo and o.IsDeleted=0 
+                    var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
+SELECT DISTINCT u.Email, u.Name
+        FROM (
+            SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1, o.IsApproved2
+            FROM EmployeeTransferShifts o
+            INNER JOIN Employees e ON e.EmployeeID = o.EmployeeID
+            WHERE o.VoucherNo = @VoucherNo AND o.IsDeleted = 0
+        ) AS t
+        INNER JOIN MatrixApproval m ON t.DepartmentID = m.DepartmentID 
+                                   AND (m.DivisionID = t.DivisionID OR m.DivisionID IS NULL)
+        INNER JOIN Users u ON u.EmployeeID = m.Releaser 
+                          AND u.IsDeleted = 0 
+                          AND u.RoleID = 8 
+        WHERE m.IsDeleted = 0 
+          AND ISNULL(t.IsApproved1,-1)= case when m.Checker is null then -1 else 1 end
+          AND t.IsApproved2 IS NULL
+", new SqlParameter("VoucherNo", approval.VoucherNo)).FirstOrDefaultAsync();
 
-SELECT distinct u.Email
-FROM MatrixApproval m
-INNER JOIN #TEMP t on t.DepartmentID=m.DepartmentID AND (m.DivisionID=t.DivisionID or m.DivisionID is null)
-INNER JOIN Users u on u.EmployeeID=m.Releaser AND u.IsDeleted=0 AND u.RoleID=8
-WHERE m.IsDeleted=0 AND t.IsApproved1=1 AND t.IsApproved2 is null
-
-DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsync();
-
-                    if (mailto?.Count > 0)
+                    if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
                     {
                         var ovt = await _context.EmployeeTransferShifts.FirstOrDefaultAsync(x => x.VoucherNo == approval.VoucherNo && x.IsDeleted == false);
-                        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == mailto.First() && x.IsDeleted == false && x.RoleID > 6);
                         var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == ovt.ShiftToID);
                         string subject = $"Pengajuan Tukar Shift – {ovt.VoucherNo}";
                         string body = $@"<!DOCTYPE html>
                                     <html>
                                       <body>
-                                        <p>Dear <strong>{user.Name}</strong>,</p>
+                                        <p>Dear <strong>{mailto.Name}</strong>,</p>
 
                                         <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
 
@@ -294,7 +308,7 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsyn
                                         <p>Terima kasih atas perhatian.</p>
                                       </body>
                                     </html>";
-                        Utility.sendMail(String.Join(";", mailto), "", subject, body);
+                        Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
                     }
                 }
                 if (i > 0)
@@ -319,7 +333,13 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsyn
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var GroupID = Convert.ToInt64(User.FindFirstValue("groupid"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                var matrixApproval = await _context.MatrixApproval.Where(x => x.IsDeleted == false).ToListAsync();
                 var query = (from et in _context.EmployeeTransferShifts
                              join e in _context.Employees on et.EmployeeID equals e.EmployeeID
                              join d in _context.Departments on e.DepartmentID equals d.DepartmentID into deptGroup
@@ -355,7 +375,39 @@ DROP TABLE #TEMP", new SqlParameter("VoucherNo", approval.VoucherNo)).ToListAsyn
                                  VoucherNo = et.VoucherNo,
                                  Remarks = et.Remarks
                              });
+                if (RoleID == 8)//releaser
+                {
+                    matrixApproval = matrixApproval.Where(x => x.Releaser == EmployeeID).Distinct().ToList();
 
+                    if (matrixApproval?.Count > 0)
+                    {
+                        var deptIds = matrixApproval.Select(x => x.DepartmentID).Distinct().ToList();
+                        if (deptIds.Count > 0)
+                            query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
+                        bool hasChecker = matrixApproval.Any(x => x.Checker != null);
+                        if (hasChecker)
+                            query = query.Where(x => x.IsApproved1.HasValue);
+                        else
+                            query = query.Where(x => !x.IsApproved1.HasValue && !x.IsApproved2.HasValue);
+                    }
+                    else
+                        query = query.Where(x => false);
+                }
+                else if (RoleID == 7)//checker
+                {
+                    matrixApproval = matrixApproval.Where(x => x.Checker == EmployeeID).Distinct().ToList();
+
+                    if (matrixApproval?.Count > 0)
+                    {
+                        var deptIds = matrixApproval.Select(x => x.DepartmentID).Distinct().ToList();
+                        if (deptIds.Count > 0)
+                            query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
+
+                        query = query.Where(x => !x.IsApproved1.HasValue);
+                    }
+                    else
+                        query = query.Where(x => false);
+                }
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.EmployeeName.Contains(search) || x.DepartmentName.Contains(search) || x.DivisionName.Contains(search) || x.GroupName.Contains(search)

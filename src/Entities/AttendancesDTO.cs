@@ -68,6 +68,12 @@ namespace sopra_hris_api.src.Entities
         public DateTime TransDate { get; set; }
         public List<Attendances> Attendances { get; set; }
     }
+    [Keyless]
+    public class EmailDTO
+    {
+        public string Email { get; set; }
+        public string Name { get; set; }
+    }
     public class ApprovalDTO
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]

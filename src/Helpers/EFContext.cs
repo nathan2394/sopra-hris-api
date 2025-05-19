@@ -38,6 +38,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Shifts> Shifts { get; set; }
         public DbSet<AttendanceDetails> AttendanceDetails { get; set; }
         public DbSet<UnattendanceTypes> UnattendanceTypes { get; set; }
+        public virtual DbSet<EmailDTO> EmailDTO { get; set; }
         public DbSet<Attendances> Attendances { get; set; }
         public DbSet<Configurations> Configurations { get; set; }
         public DbSet<MatrixApproval> MatrixApproval { get; set; }
