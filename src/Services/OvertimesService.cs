@@ -28,22 +28,29 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
-                data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
-                double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
-                data.OVTHours = (float?)roundedDownOvertime;
-                data.IsApproved1 = null;
-                data.IsApproved2 = null;
-                data.ApprovedBy1 = null;
-                data.ApprovedBy2 = null;
-                data.ApprovedDate1 = null;
-                data.ApprovedDate2 = null;
+                var ot_old = await _context.Overtimes.FirstOrDefaultAsync(x => x.IsDeleted == false && x.TransDate == data.TransDate
+                && x.EmployeeID == data.EmployeeID && x.StartDate == data.StartDate && x.EndDate == data.EndDate);
+                if (ot_old == null)
+                {
+                    var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
+                    data.VoucherNo = string.Concat("SPL/", data.TransDate.ToString("yyMM"), (sequence + 1).ToString("D5"));
+                    double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
+                    data.OVTHours = (float?)roundedDownOvertime;
+                    data.IsApproved1 = null;
+                    data.IsApproved2 = null;
+                    data.ApprovedBy1 = null;
+                    data.ApprovedBy2 = null;
+                    data.ApprovedDate1 = null;
+                    data.ApprovedDate2 = null;
+                    data.ApprovalNotes = null;
 
-                await _context.Overtimes.AddAsync(data);
-                await _context.SaveChangesAsync();
+                    await _context.Overtimes.AddAsync(data);
+                    await _context.SaveChangesAsync();
 
-                await dbTrans.CommitAsync();
-                return data;
+                    await dbTrans.CommitAsync();
+                    return data;
+                }
+                return ot_old;
             }
             catch (Exception ex)
             {
@@ -63,8 +70,8 @@ namespace sopra_hris_api.src.Services.API
             {
                 var userid = Convert.ToInt64(User.FindFirstValue("id"));
 
-                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
-                string voucherNo = !string.IsNullOrEmpty(data.VoucherNo) ? data.VoucherNo : $"SPL/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
+                var sequence = await _context.Overtimes.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
+                string voucherNo = !string.IsNullOrEmpty(data.VoucherNo) ? data.VoucherNo : $"SPL/{data.TransDate:yyMM}{(sequence + 1).ToString("D5")}";
 
                 // Check if a record with the same voucher number already exists
                 var existing = await _context.Overtimes.Where(x => x.VoucherNo == voucherNo && x.IsDeleted == false).CountAsync();
@@ -98,6 +105,9 @@ namespace sopra_hris_api.src.Services.API
                         ApprovedBy2 = null,
                         ApprovedDate1 = null,
                         ApprovedDate2 = null,
+                        UserIn = userid,
+                        DateIn = DateTime.Now,
+                        IsDeleted = false
                     };
 
                     overtimes.Add(ovt);
@@ -215,8 +225,11 @@ namespace sopra_hris_api.src.Services.API
                 obj.Description = data.Description;
                 obj.IsApproved1 = data.IsApproved1;
                 obj.ApprovedDate1 = data.ApprovedDate1;
+                obj.ApprovedBy1 = data.ApprovedBy1;
                 obj.IsApproved2 = data.IsApproved2;
                 obj.ApprovedDate2 = data.ApprovedDate2;
+                obj.ApprovedBy2 = data.ApprovedBy2;
+                obj.ApprovalNotes = data.ApprovalNotes;
 
                 double roundedDownOvertime = Math.Floor(((data.EndDate - data.StartDate).TotalHours) * 2) / 2;
                 data.OVTHours = (float?)roundedDownOvertime;
@@ -485,8 +498,7 @@ SELECT DISTINCT u.Email, u.Name
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.TransDate >= startDate && x.TransDate <= endDate ||
-                         x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
+                        query = query.Where(x => (x.TransDate.Date >= startDate.Date && x.TransDate.Date <= endDate.Date));
                 }
 
                 // Sorting

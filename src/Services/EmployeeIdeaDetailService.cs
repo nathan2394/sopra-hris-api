@@ -108,7 +108,15 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.EmployeeIdeaDetails where a.IsDeleted == false select a;
+                var query = from a in _context.EmployeeIdeaDetails
+                            join e in _context.Employees on a.EmployeeID equals e.EmployeeID
+                            where a.IsDeleted == false select new EmployeeIdeaDetails
+                            {
+                                EmployeeID = e.EmployeeID,
+                                EmployeeName= e.EmployeeName,
+                                EmployeeIdeaDetailID=a.EmployeeIdeaDetailID,
+                                EmployeeIdeasID=a.EmployeeIdeasID,                                
+                            };
 
                 // Searching
                 //if (!string.IsNullOrEmpty(search))

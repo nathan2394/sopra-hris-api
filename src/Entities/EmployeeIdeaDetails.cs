@@ -11,6 +11,7 @@ namespace sopra_hris_api.Entities
         public long EmployeeIdeaDetailID { get; set; }
         public long EmployeeIdeasID { get; set; }
         public long EmployeeID { get; set; }
-
+        [NotMapped]
+        public string EmployeeName { get; set; }
     }
 }

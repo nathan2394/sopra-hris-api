@@ -29,7 +29,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
-                string voucherNo = $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
+                string voucherNo = $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D5")}";
 
                 data.VoucherNo = voucherNo;
                 data.IsApproved1 = null;
@@ -38,6 +38,8 @@ namespace sopra_hris_api.src.Services.API
                 data.ApprovedBy2 = null;
                 data.ApprovedDate1 = null;
                 data.ApprovedDate2 = null;
+                data.ApprovalNotes = null;
+
                 await _context.EmployeeTransferShifts.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -63,8 +65,8 @@ namespace sopra_hris_api.src.Services.API
             {
                 var userid = Convert.ToInt64(User.FindFirstValue("id"));
 
-                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year && x.IsDeleted == false).CountAsync();
-                string voucherNo = !string.IsNullOrEmpty(data.VoucherNo) ? data.VoucherNo : $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D4")}";
+                var sequence = await _context.EmployeeTransferShifts.Where(x => x.TransDate.Month == data.TransDate.Month && x.TransDate.Year == data.TransDate.Year).CountAsync();
+                string voucherNo = !string.IsNullOrEmpty(data.VoucherNo) ? data.VoucherNo : $"TFS/{data.TransDate:yyMM}{(sequence + 1).ToString("D5")}";
 
                 // Check if a record with the same voucher number already exists
                 var existing = await _context.EmployeeTransferShifts.Where(x => x.VoucherNo == voucherNo && x.IsDeleted == false).CountAsync();
@@ -94,6 +96,9 @@ namespace sopra_hris_api.src.Services.API
                         ApprovedBy2 = null,
                         ApprovedDate1 = null,
                         ApprovedDate2 = null,
+                        UserIn = userid,
+                        DateIn = DateTime.Now,
+                        IsDeleted = false
                     };
 
                     employeeTransferShifts.Add(transferShifts);
@@ -219,6 +224,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.ApprovedBy2 = data.ApprovedBy2;
                 obj.ApprovedDate1 = data.ApprovedDate1;
                 obj.ApprovedDate2 = data.ApprovedDate2;
+                obj.ApprovalNotes = data.ApprovalNotes;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -449,7 +455,7 @@ SELECT DISTINCT u.Email, u.Name
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.TransDate >= startDate && x.TransDate <= endDate));
+                        query = query.Where(x => (x.TransDate.Date >= startDate.Date && x.TransDate.Date <= endDate.Date));
                 }
 
                 // Sorting

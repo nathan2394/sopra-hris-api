@@ -63,8 +63,12 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year).CountAsync();
-                data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D4"));
+                var ot_old = await _context.Unattendances.FirstOrDefaultAsync(x => x.IsDeleted == false && x.UnattendanceTypeID == data.UnattendanceTypeID
+                && x.EmployeeID == data.EmployeeID && x.StartDate == data.StartDate && x.EndDate == data.EndDate);
+                if (ot_old == null)
+                {
+                    var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year).CountAsync();
+                data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D5"));
                 data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
                 data.IsApproved1 = null;
                 data.IsApproved2 = null;
@@ -72,6 +76,7 @@ namespace sopra_hris_api.src.Services.API
                 data.ApprovedBy2 = null;
                 data.ApprovedDate1 = null;
                 data.ApprovedDate2 = null;
+                data.ApprovalNotes = null;
 
                 await _context.Unattendances.AddAsync(data);
                 long UnattendanceID = await _context.SaveChangesAsync();
@@ -110,7 +115,7 @@ namespace sopra_hris_api.src.Services.API
                                       <body>
                                         <p>Dear <strong>{mailto.Name}</strong>,</p>
 
-                                        <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
+                                        <p>Mohon persetujuannya untuk pengajuan ketidakhadiran berikut:</p>
 
                                         <p>
                                           <strong>Voucher No:</strong> {data.VoucherNo}<br>
@@ -127,6 +132,8 @@ namespace sopra_hris_api.src.Services.API
 
                 return data;
             }
+                return ot_old;
+        }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message);
@@ -183,8 +190,11 @@ namespace sopra_hris_api.src.Services.API
                 obj.UnattendanceTypeID = data.UnattendanceTypeID;
                 obj.IsApproved1 = data.IsApproved1;
                 obj.ApprovedDate1 = data.ApprovedDate1;
+                obj.ApprovedBy1 = data.ApprovedBy1;
                 obj.IsApproved2 = data.IsApproved2;
                 obj.ApprovedDate2 = data.ApprovedDate2;
+                obj.ApprovedBy2 = data.ApprovedBy2;
+                obj.ApprovalNotes = data.ApprovalNotes;
                 obj.Description = data.Description;
                 obj.Attachments = data.Attachments;
                 obj.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
@@ -265,7 +275,7 @@ SELECT DISTINCT u.Email, u.Name
                                       <body>
                                         <p>Dear <strong>{mailto.Name}</strong>,</p>
 
-                                        <p>Mohon persetujuannya untuk pengajuan tukar shift berikut:</p>
+                                        <p>Mohon persetujuannya untuk pengajuan ketidakhadiran berikut:</p>
 
                                         <p>
                                           <strong>Voucher No:</strong> {ovt.VoucherNo}<br>
@@ -425,7 +435,7 @@ SELECT DISTINCT u.Email, u.Name
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.StartDate.Date >= startDate && x.StartDate.Date <= endDate || x.EndDate.Date >= startDate && x.EndDate.Date <= endDate));
+                        query = query.Where(x => (x.StartDate.Date >= startDate.Date && x.StartDate.Date <= endDate.Date || x.EndDate.Date >= startDate.Date && x.EndDate.Date <= endDate.Date));
                 }
 
                 // Sorting
@@ -588,7 +598,7 @@ SELECT DISTINCT u.Email, u.Name
                 {
                     var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
                     if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
-                        query = query.Where(x => (x.StartDate >= startDate && x.StartDate <= endDate || x.EndDate >= startDate && x.EndDate <= endDate));
+                        query = query.Where(x => (x.StartDate.Date >= startDate.Date && x.StartDate.Date <= endDate.Date || x.EndDate.Date >= startDate.Date && x.EndDate.Date <= endDate.Date));
                 }
 
                 // Sorting

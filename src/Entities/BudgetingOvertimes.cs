@@ -15,6 +15,11 @@ namespace sopra_hris_api.Entities
         public decimal? TotalOvertimeAmount { get; set; }
         public decimal? RemainingHours { get; set; }
         public long DepartmentID { get; set; }
+        public bool? IsApproved1 { get; set; }
+        public long? ApprovedBy1 { get; set; }
+        public DateTime? ApprovedDate1 { get; set; }
+        public string? ApprovalNotes { get; set; }
+        public string? VoucherNo { get; set; }
         [NotMapped]
         public string? DepartmentName { get; set; }
     }
