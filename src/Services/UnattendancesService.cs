@@ -67,21 +67,30 @@ namespace sopra_hris_api.src.Services.API
                 && x.EmployeeID == data.EmployeeID && x.StartDate == data.StartDate && x.EndDate == data.EndDate);
                 if (ot_old == null)
                 {
+                    int duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
                     var sequence = await _context.Unattendances.Where(x => x.StartDate.Month == data.StartDate.Month && x.StartDate.Year == data.StartDate.Year).CountAsync();
-                data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D5"));
-                data.Duration = await CalculateEffectiveDuration(data.StartDate, data.EndDate, data.EmployeeID);
-                data.IsApproved1 = null;
-                data.IsApproved2 = null;
-                data.ApprovedBy1 = null;
-                data.ApprovedBy2 = null;
-                data.ApprovedDate1 = null;
-                data.ApprovedDate2 = null;
-                data.ApprovalNotes = null;
+                    data.VoucherNo = string.Concat("SKT/", data.StartDate.ToString("yyMM"), (sequence + 1).ToString("D5"));
+                    data.Duration = duration;
+                    data.IsApproved1 = null;
+                    data.IsApproved2 = null;
+                    data.ApprovedBy1 = null;
+                    data.ApprovedBy2 = null;
+                    data.ApprovedDate1 = null;
+                    data.ApprovedDate2 = null;
+                    data.ApprovalNotes = null;
 
-                await _context.Unattendances.AddAsync(data);
-                long UnattendanceID = await _context.SaveChangesAsync();
+                    await _context.Unattendances.AddAsync(data);
+                    long UnattendanceID = await _context.SaveChangesAsync();
 
-                var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
+                    await _context.Database.ExecuteSqlRawAsync(@"if exists (select 1 from EmployeeLeaveQuotas where EmployeeID=@EmployeeID and Year=@Year AND LeaveTypeID=2)
+                                begin
+                                update EmployeeLeaveQuotas
+                                set UsedQuota=ISNULL(UsedQuota,0)+@Duration,DateUp=GETDATE(),UserUp=@UserID
+                                where EmployeeID=@EmployeeID and Year=@Year AND LeaveTypeID=2
+                                end", new SqlParameter("EmployeeID", data.EmployeeID), new SqlParameter("Year", data.StartDate.Year)
+                                , new SqlParameter("Duration", duration), new SqlParameter("UserID", data.UserIn));
+
+                    var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
         SELECT DISTINCT u.Email, u.Name
         FROM (
             SELECT DISTINCT e.DepartmentID, e.DivisionID, o.IsApproved1, o.IsApproved2
@@ -106,11 +115,11 @@ namespace sopra_hris_api.src.Services.API
           AND t.IsApproved1 IS NULL 
           AND t.IsApproved2 IS NULL", new SqlParameter("VoucherNo", data.VoucherNo)).FirstOrDefaultAsync();
 
-                if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
-                {
-                    var types = await _context.UnattendanceTypes.FirstOrDefaultAsync(x => x.UnattendanceTypeID == data.UnattendanceTypeID);
-                    string subject = $"Pengajuan Ketidakhadiran – {data.VoucherNo}";
-                    string body = $@"<!DOCTYPE html>
+                    if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
+                    {
+                        var types = await _context.UnattendanceTypes.FirstOrDefaultAsync(x => x.UnattendanceTypeID == data.UnattendanceTypeID);
+                        string subject = $"Pengajuan Ketidakhadiran – {data.VoucherNo}";
+                        string body = $@"<!DOCTYPE html>
                                     <html>
                                       <body>
                                         <p>Dear <strong>{mailto.Name}</strong>,</p>
@@ -126,14 +135,14 @@ namespace sopra_hris_api.src.Services.API
                                         <p>Terima kasih atas perhatian.</p>
                                       </body>
                                     </html>";
-                    Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
-                }
-                await dbTrans.CommitAsync();
+                        Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
+                    }
+                    await dbTrans.CommitAsync();
 
-                return data;
-            }
+                    return data;
+                }
                 return ot_old;
-        }
+            }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message);
@@ -246,6 +255,12 @@ namespace sopra_hris_api.src.Services.API
                                         new SqlParameter("ApprovalNotes", approval.ApprovalNotes),
                                         new SqlParameter("UserUp", userid),
                                         new SqlParameter("DateUp", approveddate));
+
+                    await _context.Database.ExecuteSqlRawAsync(@"update a
+                                set UsedQuota=case when UsedQuota-b.Duration<0 then 0 else UsedQuota-b.Duration end,DateUp=GETDATE(),UserUp=@UserID
+                                from EmployeeLeaveQuotas a
+                                inner join Unattendances b on b.EmployeeID=a.EmployeeID AND a.Year=Year(b.StartDate)
+                                where b.VoucherNo=@VoucherNo AND LeaveTypeID=2", new SqlParameter("VoucherNo", approval.VoucherNo), new SqlParameter("UserID", userid));
 
                     var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
 SELECT DISTINCT u.Email, u.Name
@@ -368,7 +383,7 @@ SELECT DISTINCT u.Email, u.Name
                             query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
                         bool hasChecker = matrixApproval.Any(x => x.Checker != null);
                         if (hasChecker)
-                            query = query.Where(x => x.IsApproved1.HasValue);
+                            query = query.Where(x => x.IsApproved1.HasValue && x.IsApproved1.Value == true && !x.IsApproved2.HasValue);
                         else
                             query = query.Where(x => !x.IsApproved1.HasValue && !x.IsApproved2.HasValue);
                     }

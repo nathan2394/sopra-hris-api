@@ -283,6 +283,7 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 query = fieldName switch
                                 {
+                                    "status" => query.Where(x => value == "nonactive" ? x.EndWorkingDate.HasValue : !x.EndWorkingDate.HasValue),
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                     "nik" => query.Where(x => x.Nik.Contains(value)),
                                     "ktp" => query.Where(x => x.KTP.Contains(value)),

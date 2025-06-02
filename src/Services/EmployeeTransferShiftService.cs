@@ -392,7 +392,7 @@ SELECT DISTINCT u.Email, u.Name
                             query = query.Where(x => deptIds.Contains(x.DepartmentID ?? 0));
                         bool hasChecker = matrixApproval.Any(x => x.Checker != null);
                         if (hasChecker)
-                            query = query.Where(x => x.IsApproved1.HasValue);
+                            query = query.Where(x => x.IsApproved1.HasValue && x.IsApproved1.Value == true && !x.IsApproved2.HasValue);
                         else
                             query = query.Where(x => !x.IsApproved1.HasValue && !x.IsApproved2.HasValue);
                     }

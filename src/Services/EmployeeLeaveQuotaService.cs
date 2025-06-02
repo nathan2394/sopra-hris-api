@@ -1,31 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using sopra_hris_api.Entities;
-using System.Diagnostics;
-using sopra_hris_api.Responses;
-using sopra_hris_api.src.Entities;
-using sopra_hris_api.src.Helpers;
 using sopra_hris_api.Helpers;
+using sopra_hris_api.Responses;
+using System.Diagnostics;
+using sopra_hris_api.Entities;
+using sopra_hris_api.src.Helpers;
 
-namespace sopra_hris_api.src.Services
+namespace sopra_hris_api.src.Services.API
 {
-    public class UserService : IServiceAsync<Users>
+    public class EmployeeLeaveQuotaService : IServiceAsync<EmployeeLeaveQuotas>
     {
         private readonly EFContext _context;
 
-        public UserService(EFContext context)
+        public EmployeeLeaveQuotaService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<Users> CreateAsync(Users data)
+        public async Task<EmployeeLeaveQuotas> CreateAsync(EmployeeLeaveQuotas data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (string.IsNullOrEmpty(data.Password)) data.Password = "password";
-                data.Password = Utility.HashPassword(data.Password);
-
-                await _context.Users.AddAsync(data);
+                await _context.EmployeeLeaveQuotas.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -44,16 +40,16 @@ namespace sopra_hris_api.src.Services
             }
         }
 
-        public async Task<bool> DeleteAsync(long id, long userID)
+        public async Task<bool> DeleteAsync(long id, long UserID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Users.FirstOrDefaultAsync(x => x.UserID == id && x.IsDeleted == false);
+                var obj = await _context.EmployeeLeaveQuotas.FirstOrDefaultAsync(x => x.QuotaID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
-                obj.UserUp = userID;
+                obj.UserUp = UserID;
                 obj.DateUp = DateTime.Now;
 
                 await _context.SaveChangesAsync();
@@ -67,33 +63,29 @@ namespace sopra_hris_api.src.Services
                 Trace.WriteLine(ex.Message);
                 if (ex.StackTrace != null)
                     Trace.WriteLine(ex.StackTrace);
+
                 await dbTrans.RollbackAsync();
 
                 throw;
             }
         }
 
-        public async Task<Users> EditAsync(Users data)
+        public async Task<EmployeeLeaveQuotas> EditAsync(EmployeeLeaveQuotas data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.Users.FirstOrDefaultAsync(x => x.UserID == data.UserID && x.IsDeleted == false);
+                var obj = await _context.EmployeeLeaveQuotas.FirstOrDefaultAsync(x => x.QuotaID == data.QuotaID && x.IsDeleted == false);
                 if (obj == null) return null;
 
-                obj.RoleID = data.RoleID;
                 obj.EmployeeID = data.EmployeeID;
-                obj.Name = data.Name;
-                obj.Email = data.Email;
-                obj.PhoneNumber = data.PhoneNumber;
+                obj.LeaveTypeID = data.LeaveTypeID;
+                obj.Year = data.Year;
+                obj.TotalQuota = data.TotalQuota;
+                obj.UsedQuota = data.UsedQuota;
+
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
-                obj.IsVerified = data.IsVerified;
-                obj.OTP = data.OTP;
-                obj.OtpExpiration = data.OtpExpiration;
-
-                if (!string.IsNullOrEmpty(data.Password))
-                    obj.Password = Utility.HashPassword(data.Password);
 
                 await _context.SaveChangesAsync();
 
@@ -106,22 +98,37 @@ namespace sopra_hris_api.src.Services
                 Trace.WriteLine(ex.Message);
                 if (ex.StackTrace != null)
                     Trace.WriteLine(ex.StackTrace);
+
                 await dbTrans.RollbackAsync();
+
                 throw;
             }
         }
 
-        public async Task<ListResponse<Users>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+
+        public async Task<ListResponse<EmployeeLeaveQuotas>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Users where a.IsDeleted == false select a;
+                var query = from a in _context.EmployeeLeaveQuotas
+                            join e in _context.Employees on a.EmployeeID equals e.EmployeeID
+                            where a.IsDeleted == false
+                            select new EmployeeLeaveQuotas
+                            {
+                                EmployeeID = e.EmployeeID,
+                                QuotaID = a.QuotaID,
+                                LeaveTypeID = a.LeaveTypeID,
+                                TotalQuota = a.TotalQuota,
+                                UsedQuota = a.UsedQuota,
+                                Year = a.Year,
+                                EmployeeName = e.EmployeeName
+                            };
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.Name.Contains(search)
-                        || x.Email.Contains(search));
+                    query = query.Where(x => x.EmployeeName.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -136,9 +143,9 @@ namespace sopra_hris_api.src.Services
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "name" => query.Where(x => x.Name.Contains(value)),
-                                "email" => query.Where(x => x.Email.Contains(value)),
-                                //"role" => query.Where(x => x.RoleID.Contains(value)),
+                                "year" => query.Where(x => x.Year.Equals(value)),
+                                "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                 _ => query
                             };
                         }
@@ -157,8 +164,7 @@ namespace sopra_hris_api.src.Services
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderByDescending(x => x.Name),
-                            "email" => query.OrderByDescending(x => x.Email),
+                            "name" => query.OrderByDescending(x => x.EmployeeName),
                             _ => query
                         };
                     }
@@ -166,15 +172,14 @@ namespace sopra_hris_api.src.Services
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderBy(x => x.Name),
-                            "email" => query.OrderBy(x => x.Email),
+                            "name" => query.OrderBy(x => x.EmployeeName),
                             _ => query
                         };
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.UserID);
+                    query = query.OrderByDescending(x => x.QuotaID);
                 }
 
                 // Get Total Before Limit and Page
@@ -192,7 +197,7 @@ namespace sopra_hris_api.src.Services
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
-                return new ListResponse<Users>(data, total, page);
+                return new ListResponse<EmployeeLeaveQuotas>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -204,11 +209,11 @@ namespace sopra_hris_api.src.Services
             }
         }
 
-        public async Task<Users> GetByIdAsync(long id)
+        public async Task<EmployeeLeaveQuotas> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == id && x.IsDeleted == false);
+                return await _context.EmployeeLeaveQuotas.AsNoTracking().FirstOrDefaultAsync(x => x.QuotaID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {
@@ -219,7 +224,5 @@ namespace sopra_hris_api.src.Services
                 throw;
             }
         }
-
     }
 }
-
