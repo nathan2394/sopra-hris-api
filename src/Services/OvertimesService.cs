@@ -598,6 +598,8 @@ SELECT DISTINCT u.Email, u.Name
                                                     where g.Level < currentGroupLevel &&
                                                           e.DepartmentID == currentDeptId
                                                     select e.EmployeeID).ToListAsync();
+
+                        allowedEmployeeIds.Add(currentEmployee.Employee.EmployeeID);
                     }
                 }
 
