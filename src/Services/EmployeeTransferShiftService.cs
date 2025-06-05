@@ -298,6 +298,7 @@ SELECT DISTINCT u.Email, u.Name
                     {
                         var ovt = await _context.EmployeeTransferShifts.FirstOrDefaultAsync(x => x.VoucherNo == approval.VoucherNo && x.IsDeleted == false);
                         var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == ovt.ShiftToID);
+                        string shiftname = shift != null ? string.Concat(shift.Code, " - ", shift.Name) : "OFF";
                         string subject = $"Pengajuan Tukar Shift – {ovt.VoucherNo}";
                         string body = $@"<!DOCTYPE html>
                                     <html>
@@ -309,7 +310,7 @@ SELECT DISTINCT u.Email, u.Name
                                         <p>
                                           <strong>Voucher No:</strong> {ovt.VoucherNo}<br>
                                           <strong>Tanggal:</strong> {ovt.TransDate.Date:dd MMM yyy}<br>
-                                          <strong>Shift:</strong> {shift.Code} - {shift.Name}
+                                          <strong>Shift:</strong> {shiftname}
                                         </p>
 
                                         <p>Terima kasih atas perhatian.</p>

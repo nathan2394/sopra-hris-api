@@ -1,15 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using System.Diagnostics;
+using System.Reflection;
+using System.Security.Claims;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
-using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
-using Microsoft.Data.SqlClient;
-using System.Data;
-using System.Security.Claims;
+using sopra_hris_api.src.Helpers;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using System.Reflection;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -251,8 +252,10 @@ namespace sopra_hris_api.src.Services.API
 
                 // Fetch shifts only once  
                 var shifts = await _context.Shifts.Where(x => x.IsDeleted == false).ToListAsync();
-                
-                IQueryable<Employees> employeeQuery = _context.Employees.Where(e => e.IsDeleted == false && e.IsShift == true);                
+
+                DateTime queryDate = new DateTime(DateTime.Now.AddMonths(-1).Year, DateTime.Now.AddMonths(-1).Month, 23);
+
+                IQueryable<Employees> employeeQuery = _context.Employees.Where(e => e.IsDeleted == false && e.IsShift == true && (!e.EndWorkingDate.HasValue || e.EndWorkingDate.Value.Date >= queryDate.Date));                
                 string typeFilter = null;
 
                 if (!string.IsNullOrEmpty(filter))

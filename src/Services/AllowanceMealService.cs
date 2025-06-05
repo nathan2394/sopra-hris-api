@@ -266,7 +266,7 @@ namespace sopra_hris_api.src.Services.API
                              from d in deptGroup.DefaultIfEmpty()
                              join di in _context.Divisions on e.DivisionID equals di.DivisionID into divGroup
                              from di in divGroup.DefaultIfEmpty()
-                             where e.IsDeleted == false && e.GroupID != 15
+                             where e.IsDeleted == false && e.GroupID != 15 && (!e.EndWorkingDate.HasValue || e.EndWorkingDate.Value.Date >= queryDate.Date)
                              select new AllowanceMealDTO
                              {
                                  EmployeeID = e.EmployeeID,
