@@ -137,6 +137,7 @@ namespace sopra_hris_api.src.Services.API
                     if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
                     {
                         var shift = await _context.Shifts.FirstOrDefaultAsync(x => x.ShiftID == data.ShiftToID);
+                        string shiftname = shift != null ? string.Concat(shift.Code, " - ", shift.Name) : "OFF";
                         string subject = $"Pengajuan Tukar Shift – {voucherNo}";
                         string body = $@"<!DOCTYPE html>
                                     <html>
@@ -148,7 +149,7 @@ namespace sopra_hris_api.src.Services.API
                                         <p>
                                           <strong>Voucher No:</strong> {voucherNo}<br>
                                           <strong>Tanggal:</strong> {data.TransDate.Date:dd MMM yyy}<br>
-                                          <strong>Shift:</strong> {shift.Code} - {shift.Name}
+                                          <strong>Shift:</strong> {shiftname}
                                         </p>
 
                                         <p>Terima kasih atas perhatian.</p>

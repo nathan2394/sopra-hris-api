@@ -22,6 +22,7 @@ using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.src.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.FileProviders;
+using sopra_hris_api.src.Entities;
 
 namespace sopra_hris_api
 {
@@ -175,6 +176,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceUnattendanceOVTAsync<BudgetingOvertimes>, BudgetingOvertimeService>();
             services.AddScoped<IServiceEmployeeShiftAsync<EmployeeShifts>, EmployeeShiftService>();
             services.AddScoped<IServiceAsync<EmployeeLeaveQuotas>, EmployeeLeaveQuotaService>();
+            services.AddScoped<IServiceDashboardAsync<DashboardDTO>, DashboardService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

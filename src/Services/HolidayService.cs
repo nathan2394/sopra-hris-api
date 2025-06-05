@@ -135,6 +135,16 @@ namespace sopra_hris_api.src.Services.API
                     }
                 }
 
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => (x.TransDate.Date >= startDate.Date && x.TransDate.Date <= endDate.Date));
+                    else if (dateRange.Length == 1 && DateTime.TryParse(dateRange[0], out var dateTime))
+                        query = query.Where(x => x.TransDate.Date == dateTime.Date);
+                }
+
                 // Sorting
                 if (!string.IsNullOrEmpty(sort))
                 {

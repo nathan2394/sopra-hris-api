@@ -14,6 +14,14 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
     }
+    public interface IServiceDashboardAsync<T>
+    {
+        Task<ListResponseTemplate<DashboardDTO.DashboardAttendanceByShift>> GetAttendanceByShift(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardAttendanceNormalAbnormal>> GetAttendanceNormalAbnormal(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardAttendanceSummary>> GetAttendanceSummary(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardBudgetOvertimes>> GetBudgetOvertimes(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardApproval>> GetApproval(string filter, string date);
+    }
     public interface IServiceUploadAsync<T>
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
