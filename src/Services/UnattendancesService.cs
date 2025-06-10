@@ -169,6 +169,12 @@ namespace sopra_hris_api.src.Services.API
 
                 await _context.SaveChangesAsync();
 
+                await _context.Database.ExecuteSqlRawAsync(@"update a
+                                set UsedQuota=case when UsedQuota-b.Duration<0 then 0 else UsedQuota-b.Duration end,DateUp=GETDATE(),UserUp=@UserID
+                                from EmployeeLeaveQuotas a
+                                inner join Unattendances b on b.EmployeeID=a.EmployeeID AND a.Year=Year(b.StartDate)
+                                where b.UnattendanceID=@UnattendanceID AND LeaveTypeID=2", new SqlParameter("UnattendanceID", id), new SqlParameter("UserID", UserID));
+
                 await dbTrans.CommitAsync();
 
                 return true;
@@ -256,7 +262,8 @@ namespace sopra_hris_api.src.Services.API
                                         new SqlParameter("UserUp", userid),
                                         new SqlParameter("DateUp", approveddate));
 
-                    await _context.Database.ExecuteSqlRawAsync(@"update a
+                    if ((approval.IsApproved1.HasValue && approval.IsApproved1.Value == false) || (approval.IsApproved2.HasValue && approval.IsApproved2.Value == false))
+                        await _context.Database.ExecuteSqlRawAsync(@"update a
                                 set UsedQuota=case when UsedQuota-b.Duration<0 then 0 else UsedQuota-b.Duration end,DateUp=GETDATE(),UserUp=@UserID
                                 from EmployeeLeaveQuotas a
                                 inner join Unattendances b on b.EmployeeID=a.EmployeeID AND a.Year=Year(b.StartDate)
