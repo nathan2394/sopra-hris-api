@@ -292,8 +292,14 @@ namespace sopra_hris_api.src.Services.API
                                 Int32.TryParse(value, out year);
                                 query = query.Where(x => x.BudgetYear == year);
                             }
-                            else
-                                query = fieldName switch
+                            if (fieldName == "department")
+                            {
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID));
+                            }
+
+                            query = fieldName switch
                                 {
                                     "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
                                     _ => query
@@ -365,6 +371,8 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var employeeid = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var roleid = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from b in _context.BudgetingOvertimes
                             join d in _context.Departments on b.DepartmentID equals d.DepartmentID
@@ -416,6 +424,12 @@ namespace sopra_hris_api.src.Services.API
                                 query = query.Where(x => x.BudgetYear.Equals(year));
                             }
 
+                            if (fieldName == "department")
+                            {
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID));
+                            }
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.DepartmentName.Contains(value)),
@@ -423,6 +437,13 @@ namespace sopra_hris_api.src.Services.API
                             };
                         }
                     }
+                }
+
+                if (roleid == 6 || roleid == 7)
+                {
+                    var employees = await _context.Employees.FirstOrDefaultAsync(x => x.EmployeeID == employeeid);
+                    var currentDeptId = employees.DepartmentID;
+                    query = query.Where(x => x.DepartmentID == currentDeptId);
                 }
 
                 // Sorting
