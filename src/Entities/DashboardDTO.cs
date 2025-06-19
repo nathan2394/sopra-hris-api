@@ -18,6 +18,8 @@ namespace sopra_hris_api.src.Entities
         [Keyless]
         public class DashboardAttendanceSummary
         {
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
             public int ATT { get; set; }
             public int Meals { get; set; }
             public int Late { get; set; }
@@ -28,12 +30,16 @@ namespace sopra_hris_api.src.Entities
         [Keyless]
         public class DashboardAttendanceNormalAbnormal
         {
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
             public int ATT { get; set; }
             public int Abnormal { get; set; }
         }
         [Keyless]
         public class DashboardAttendanceByShift
         {
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
             public string ShiftCode { get; set; }
             public string ShiftName { get; set; }
             public int ATT { get; set; }
@@ -45,6 +51,8 @@ namespace sopra_hris_api.src.Entities
         [Keyless]
         public class DashboardApproval
         {
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
             public string Type { get; set; }
             public int Total { get; set; }
             public int Approved { get; set; }
