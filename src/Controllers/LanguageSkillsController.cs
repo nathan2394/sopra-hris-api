@@ -10,12 +10,11 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize]
-public class EmployeeIdeasController : ControllerBase
+public class LanguageSkillsController : ControllerBase
 {
-    private readonly IServiceAsync<EmployeeIdeas> _service;
+    private readonly IServiceAsync<LanguageSkills> _service;
 
-    public EmployeeIdeasController(IServiceAsync<EmployeeIdeas> service)
+    public LanguageSkillsController(IServiceAsync<LanguageSkills> service)
     {
         _service = service;
     }
@@ -51,7 +50,7 @@ public class EmployeeIdeasController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<EmployeeIdeas>(result);
+            var response = new Response<LanguageSkills>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -63,20 +62,20 @@ public class EmployeeIdeasController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeeIdeasController");
+            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] EmployeeIdeas obj)
+    public async Task<IActionResult> Create([FromBody] LanguageSkills obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
-            var response = new Response<EmployeeIdeas>(result);
+            var response = new Response<LanguageSkills>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -88,21 +87,21 @@ public class EmployeeIdeasController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeeIdeasController");
+            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] EmployeeIdeas obj)
+    public async Task<IActionResult> Edit([FromBody] LanguageSkills obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj);
-            var response = new Response<EmployeeIdeas>(result);
+            var response = new Response<LanguageSkills>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -114,7 +113,7 @@ public class EmployeeIdeasController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeeIdeasController");
+            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -138,51 +137,7 @@ public class EmployeeIdeasController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeeIdeasController");
-            return BadRequest(new { message });
-        }
-    }
-    [HttpPost]
-    [Route("upload")]
-    public async Task<IActionResult> UploadFile(IFormFile file)
-    {
-        try
-        {
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("No file uploaded.");
-            }
-
-            var allowedExtensions = new[] { ".pdf", ".jpeg", ".jpg", ".png" };
-            var fileExtension = Path.GetExtension(file.FileName).ToLower();
-
-            if (!allowedExtensions.Contains(fileExtension))
-                return BadRequest("format files are not allowed.");
-
-            // Save the file to a folder
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeIdeasFiles");
-            var customFileName = $"{Guid.NewGuid()}_{DateTime.Now.Ticks}{Path.GetExtension(file.FileName)}";
-
-            var filePath = Path.Combine(folderPath, customFileName);
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            var relativeFilePath = Path.Combine("EmployeeIdeasFiles", customFileName);
-            return Ok(new { AttachmentPath = relativeFilePath });
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
+            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }

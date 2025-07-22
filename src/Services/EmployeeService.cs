@@ -175,6 +175,7 @@ namespace sopra_hris_api.src.Services.API
                 var UserID = Convert.ToInt64(User.FindFirstValue("id"));
                 var EmployeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
                 var GroupID = Convert.ToInt64(User.FindFirstValue("groupid"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var groupLevel = await _context.Groups.Where(y => y.GroupID == GroupID).Select(x => x.Level).FirstOrDefaultAsync();
 
@@ -247,8 +248,8 @@ namespace sopra_hris_api.src.Services.API
                                 TKStatus = a.TKStatus,
                                 PayrollType = a.PayrollType,
                             };
+                                
                 // Searching
-
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.EmployeeName.Contains(search)
                         );
@@ -350,7 +351,158 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<ListResponse<Employees>> GetList(int limit, int page, int total, string search, string sort, string filter, string date)
+        {
+            try
+            {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
+                var query = from a in _context.Employees
+                            join employeeType in _context.EmployeeTypes
+                                on a.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
+                            from employeeType in employeeTypeGroup.DefaultIfEmpty()
+
+                            join groups in _context.Groups
+                                on a.GroupID equals groups.GroupID into groupGroup
+                            from groups in groupGroup.DefaultIfEmpty()
+
+                            join division in _context.Divisions
+                                on a.DivisionID equals division.DivisionID into divisionGroup
+                            from division in divisionGroup.DefaultIfEmpty()
+
+                            join department in _context.Departments
+                                on a.DepartmentID equals department.DepartmentID into departmentGroup
+                            from department in departmentGroup.DefaultIfEmpty()
+
+                            where a.IsDeleted == false
+                            select new Employees
+                            {
+                                EmployeeID = a.EmployeeID,
+                                Nik = a.Nik,
+                                EmployeeName = a.EmployeeName,
+                                Gender = a.Gender,
+                                Email = a.Email,
+                                PhoneNumber = a.PhoneNumber,
+                                KTP = a.KTP,
+                                StartWorkingDate = a.StartWorkingDate,
+                                StartJointDate = a.StartJointDate,
+                                EndWorkingDate = a.EndWorkingDate,
+                                EmployeeTypeID = a.EmployeeTypeID,
+                                EmployeeTypeName = employeeType != null ? employeeType.Name : null,
+                                GroupID = a.GroupID,
+                                GroupName = groups != null ? groups.Name : null,
+                                GroupType = groups != null ? groups.Type : null,
+                                DivisionID = a.DivisionID,
+                                DivisionName = division != null ? division.Name : null,
+                                DepartmentID = a.DepartmentID,
+                                DepartmentName = department != null ? department.Name : null,
+                                CompanyID = a.CompanyID,
+                                PayrollType = a.PayrollType,
+                            };
+
+                // Searching
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.EmployeeName.Contains(search)
+                        );
+
+                // Filtering
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    var filterList = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var f in filterList)
+                    {
+                        var searchList = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                        if (searchList.Length == 2)
+                        {
+                            var fieldName = searchList[0].Trim().ToLower();
+                            var value = searchList[1].Trim();
+
+                            if (fieldName == "group" || fieldName == "department" || fieldName == "function" || fieldName == "employeetype" || fieldName == "division")
+                            {
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "group")
+                                    query = query.Where(x => Ids.Contains(x.GroupID));
+                                else if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                                else if (fieldName == "function")
+                                    query = query.Where(x => Ids.Contains(x.FunctionID ?? 0));
+                                else if (fieldName == "employeetype")
+                                    query = query.Where(x => Ids.Contains(x.EmployeeTypeID));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
+                            }
+                            else
+                            {
+                                query = fieldName switch
+                                {
+                                    "status" => query.Where(x => value == "nonactive" ? x.EndWorkingDate.HasValue : !x.EndWorkingDate.HasValue),
+                                    "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    "nik" => query.Where(x => x.Nik.Contains(value)),
+                                    "ktp" => query.Where(x => x.KTP.Contains(value)),
+                                    _ => query
+                                };
+                            }
+                        }
+                    }
+                }
+
+                // Sorting
+                if (!string.IsNullOrEmpty(sort))
+                {
+                    var temp = sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var orderBy = sort;
+                    if (temp.Length > 1)
+                        orderBy = temp[0];
+
+                    if (temp.Length > 1)
+                    {
+                        query = orderBy.ToLower() switch
+                        {
+                            "name" => query.OrderByDescending(x => x.EmployeeName),
+                            _ => query
+                        };
+                    }
+                    else
+                    {
+                        query = orderBy.ToLower() switch
+                        {
+                            "name" => query.OrderBy(x => x.EmployeeName),
+                            _ => query
+                        };
+                    }
+                }
+                else
+                {
+                    query = query.OrderByDescending(x => x.EmployeeID);
+                }
+
+                // Get Total Before Limit and Page
+                total = await query.CountAsync();
+
+                // Set Limit and Page
+                if (limit != 0)
+                    query = query.Skip(page * limit).Take(limit);
+
+                // Get Data
+                var data = await query.ToListAsync();
+                if (data.Count <= 0 && page > 0)
+                {
+                    page = 0;
+                    return await GetList(limit, page, total, search, sort, filter, date);
+                }
+
+                return new ListResponse<Employees>(data, total, page);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
         public async Task<Employees> GetByIdAsync(long id)
         {
             try

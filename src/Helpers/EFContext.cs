@@ -17,11 +17,15 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Departments> Departments { get; set; }
         public DbSet<EmployeeDetails> EmployeeDetails { get; set; }
         public DbSet<Employees> Employees { get; set; }
+        public DbSet<IdeaAwards> IdeaAwards { get; set; }
         public DbSet<EmployeeIdeas> EmployeeIdeas { get; set; }
         public DbSet<EmployeeIdeaDetails> EmployeeIdeaDetails { get; set; }
         public DbSet<EmployeeTypes> EmployeeTypes { get; set; }
         public DbSet<EmployeeJobTitles> EmployeeJobTitles { get; set; }
         public DbSet<EmployeeLeaveQuotas> EmployeeLeaveQuotas { get; set; }
+        public DbSet<AttendanceIncentive> AttendanceIncentive { get; set; }
+        public DbSet<EmployeeMonthlyReward> EmployeeMonthlyReward { get; set; }
+        public DbSet<SupervisorBenefit> SupervisorBenefit { get; set; }
         public DbSet<FAQ> FAQ { get; set; }
         public DbSet<FunctionDetails> FunctionDetails { get; set; }
         public DbSet<Functions> Functions { get; set; }
@@ -53,6 +57,18 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Reasons> Reasons { get; set; }
         public DbSet<BudgetingOvertimes> BudgetingOvertimes { get; set; }
         public DbSet<Unattendances> Unattendances { get; set; }
+        public DbSet<PKWTContracts> PKWTContracts { get; set; }
+        public DbSet<Jobs> Jobs { get; set; }
+        public DbSet<Candidates> Candidates { get; set; }
+        public DbSet<Applicants> Applicants { get; set; }
+        public DbSet<WarningLetters> WarningLetters { get; set; }
+        public DbSet<ApplicantOtherInfo> ApplicantOtherInfo { get; set; }
+        public DbSet<OtherReferences> OtherReferences { get; set; }
+        public DbSet<WorkExperience> WorkExperience { get; set; }
+        public DbSet<LanguageSkills> LanguageSkills { get; set; }
+        public DbSet<OrganizationalHistory> OrganizationalHistory { get; set; }
+        public DbSet<EducationHistory> EducationHistory { get; set; }
+        public DbSet<ApplicantFamilys> ApplicantFamilys { get; set; }
         public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }

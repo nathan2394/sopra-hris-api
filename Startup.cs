@@ -162,6 +162,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<Holidays>, HolidayService>();
             services.AddScoped<IServiceAsync<Machines>, MachineService>();
             services.AddScoped<IServiceUnattendanceOVTAsync<Unattendances>, UnattendanceService>();
+            services.AddScoped<IServiceAsync<PKWTContracts>, PKWTContractService>();
             services.AddScoped<IServiceOVTAsync<Overtimes>, OvertimeService>();
             services.AddScoped<IServiceAsync<Reasons>, ReasonService>();
             services.AddScoped<IServiceEmployeeTransferShiftAsync<EmployeeTransferShifts>, EmployeeTransferShiftService>();
@@ -176,6 +177,22 @@ namespace sopra_hris_api
             services.AddScoped<IServiceUnattendanceOVTAsync<BudgetingOvertimes>, BudgetingOvertimeService>();
             services.AddScoped<IServiceEmployeeShiftAsync<EmployeeShifts>, EmployeeShiftService>();
             services.AddScoped<IServiceAsync<EmployeeLeaveQuotas>, EmployeeLeaveQuotaService>();
+            services.AddScoped<IServiceAsync<SupervisorBenefit>, SupervisorBenefitService>();
+            services.AddScoped<IServiceAsync<EmployeeMonthlyReward>, EmployeeMonthlyRewardService>();
+            services.AddScoped<IServiceAsync<AttendanceIncentive>, AttendanceIncentiveService>();
+            services.AddScoped<IServiceAsync<Jobs>, JobService>();
+            services.AddScoped<IServiceAsync<Candidates>, CandidateService>();
+            services.AddScoped<IServiceAsync<Applicants>, ApplicantService>();
+            services.AddScoped<IServiceAsync<ApplicantFamilys>, ApplicantFamilyService>();
+            services.AddScoped<IServiceAsync<ApplicantOtherInfo>, ApplicantOtherInfoService>();
+            services.AddScoped<IServiceAsync<AttendanceIncentive>, AttendanceIncentiveService>();
+            services.AddScoped<IServiceAsync<IdeaAwards>, IdeaAwardService>();            
+            services.AddScoped<IServiceAsync<EducationHistory>, EducationHistoryService>();
+            services.AddScoped<IServiceAsync<LanguageSkills>, LanguageSkillService>();
+            services.AddScoped<IServiceAsync<OrganizationalHistory>, OrganizationalHistoryService>();
+            services.AddScoped<IServiceAsync<OtherReferences>, OtherReferenceService>();
+            services.AddScoped<IServiceAsync<WorkExperience>, WorkExperienceService>();
+            services.AddScoped<IServiceAsync<WarningLetters>, WarningLetterService>();
             services.AddScoped<IServiceDashboardAsync<DashboardDTO>, DashboardService>();
         }
 
@@ -215,9 +232,12 @@ namespace sopra_hris_api
             app.UseMiddleware<JwtMiddleware>();
             var attachmentDirectory = Path.Combine(Directory.GetCurrentDirectory(), "AttachmentFiles");
             if (!Directory.Exists(attachmentDirectory))
-            {
                 Directory.CreateDirectory(attachmentDirectory);
-            }
+
+            var attachmentIdeasDirectory = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeIdeasFiles");
+            if (!Directory.Exists(attachmentIdeasDirectory))
+                Directory.CreateDirectory(attachmentIdeasDirectory);
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(attachmentDirectory),

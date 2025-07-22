@@ -84,6 +84,8 @@ namespace sopra_hris_api.src.Services
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
         string filter, string date);
+        Task<ListResponse<T>> GetList(int limit, int page, int total, string search, string sort,
+        string filter, string date);
         Task<T> GetByIdAsync(long id);
         Task<T> CreateAsync(T data);
         Task<T> EditAsync(T data);

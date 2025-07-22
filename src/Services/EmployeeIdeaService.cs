@@ -21,6 +21,8 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                data.SubmittedByUserID = data.UserIn;
+                data.SubmittedDate = data.DateIn;
                 await _context.EmployeeIdeas.AddAsync(data);
                 await _context.SaveChangesAsync();
 
@@ -46,8 +48,8 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 var obj = await _context.EmployeeIdeas.FirstOrDefaultAsync(x => x.EmployeeIdeasID == id && x.IsDeleted == false);
-                if (obj == null) return false;
-
+                if (obj == null) return false;                
+                
                 obj.IsDeleted = true;
                 obj.UserUp = UserID;
                 obj.DateUp = DateTime.Now;
@@ -84,6 +86,15 @@ namespace sopra_hris_api.src.Services.API
                 obj.Impact = data.Impact;
                 obj.SubmissionType = data.SubmissionType;
                 obj.Status = data.Status;
+                obj.EstimatedImplementationTime= data.EstimatedImplementationTime;
+                obj.AttachmentLink = data.AttachmentLink;
+                obj.ReviewDate = data.ReviewDate;
+                obj.ReviewerComments = data.ReviewerComments;
+                obj.TrialDate = data.TrialDate;
+                obj.MonitoringEndDate = data.MonitoringEndDate;
+                obj.ActualImplementationDetails = data.ActualImplementationDetails;
+                obj.ImplementationDate = data.ImplementationDate;
+                obj.ActualImpactDetails = data.ActualImpactDetails;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -112,12 +123,43 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.EmployeeIdeas where a.IsDeleted == false select a;
+                var query = from a in _context.EmployeeIdeas
+                            join user in _context.Users on a.SubmittedByUserID equals user.UserID into userJoin
+                            from user in userJoin.DefaultIfEmpty()
+                            join employee in _context.Employees on user.EmployeeID equals employee.EmployeeID into employeeJoin
+                            from employee in employeeJoin.DefaultIfEmpty()
+                            join department in _context.Departments on employee.DepartmentID equals department.DepartmentID into departmentJoin
+                            from department in departmentJoin.DefaultIfEmpty()
+                            where a.IsDeleted == false
+                            select new EmployeeIdeas
+                            {
+                                EmployeeIdeasID = a.EmployeeIdeasID,
+                                Title = a.Title,
+                                Description = a.Description,
+                                Implementation = a.Implementation,
+                                Impact = a.Impact,
+                                EstimatedImplementationTime = a.EstimatedImplementationTime,
+                                AttachmentLink = a.AttachmentLink,
+                                ReviewDate = a.ReviewDate,
+                                ReviewerComments = a.ReviewerComments,
+                                TrialDate = a.TrialDate,
+                                MonitoringEndDate = a.MonitoringEndDate,
+                                ActualImplementationDetails = a.ActualImplementationDetails,
+                                ImplementationDate = a.ImplementationDate,
+                                ActualImpactDetails = a.ActualImpactDetails,
+                                SubmittedByUserID = a.SubmittedByUserID,
+                                SubmittedDate = a.SubmittedDate,
+                                SubmissionType = a.SubmissionType,
+                                Status = a.Status,
+                                EmployeeName = employee.EmployeeName,
+                                DepartmentID = employee.DepartmentID,
+                                DepartmentName = department.Name
+                            };
 
                 // Searching
-                //if (!string.IsNullOrEmpty(search))
-                //    query = query.Where(x => x.Name.Contains(search)
-                //        );
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.EmployeeName.Contains(search) || x.Title.Contains(search)
+                        );
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -130,15 +172,30 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            query = fieldName switch
+                            if (fieldName == "department")
                             {
-                                //"name" => query.Where(x => x.Name.Contains(value)),
-                                _ => query
-                            };
+                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
+                                if (fieldName == "department")
+                                    query = query.Where(x => Ids.Contains(x.DepartmentID ?? 0));
+                            }
+                            else
+                                query = fieldName switch
+                                {
+                                    "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                    "title" => query.Where(x => x.Title.Contains(value)),
+                                    "status" => query.Where(x => x.Status.Contains(value)),
+                                    _ => query
+                                };
                         }
                     }
                 }
-
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                        query = query.Where(x => (x.SubmittedDate.Value.Date >= startDate.Date && x.SubmittedDate.Value.Date <= endDate.Date));
+                }
                 // Sorting
                 if (!string.IsNullOrEmpty(sort))
                 {

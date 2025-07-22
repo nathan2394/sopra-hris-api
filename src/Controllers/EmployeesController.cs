@@ -42,6 +42,27 @@ public class EmployeesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpGet("listemployee")]
+    public async Task<IActionResult> GetList(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
+    {
+        try
+        {
+            var total = 0;
+            var result = await _service.GetList(limit, page, total, search, sort, filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
