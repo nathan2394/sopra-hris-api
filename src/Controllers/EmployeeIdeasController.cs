@@ -160,18 +160,23 @@ public class EmployeeIdeasController : ControllerBase
                 return BadRequest("format files are not allowed.");
 
             // Save the file to a folder
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeIdeasFiles");
             var customFileName = $"{Guid.NewGuid()}_{DateTime.Now.Ticks}{Path.GetExtension(file.FileName)}";
 
-            var filePath = Path.Combine(folderPath, customFileName);
+            var today = DateTime.Now;
+            var datePath = Path.Combine(today.Year.ToString(), today.Month.ToString("D2"), today.Day.ToString("D2"));
+
+            var baseFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeIdeasFiles");
+            var folderPath = Path.Combine(baseFolderPath, datePath);
+
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
 
+            var filePath = Path.Combine(folderPath, customFileName);
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
-            var relativeFilePath = Path.Combine("EmployeeIdeasFiles", customFileName);
+            var relativeFilePath = Path.Combine("EmployeeIdeasFiles", datePath, customFileName).Replace("\\", "/");
             return Ok(new { AttachmentPath = relativeFilePath });
         }
         catch (Exception ex)

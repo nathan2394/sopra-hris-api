@@ -243,6 +243,12 @@ namespace sopra_hris_api
                 FileProvider = new PhysicalFileProvider(attachmentDirectory),
                 RequestPath = "/AttachmentFiles" // URL prefix for static files
             });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
+                RequestPath = "/EmployeeIdeasFiles"
+            });
             app.UseEndpoints(x => x.MapControllers());
         }
     }
