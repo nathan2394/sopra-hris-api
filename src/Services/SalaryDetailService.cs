@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.Security.Claims;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
-using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
+using sopra_hris_api.src.Helpers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
-using System.Data;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace sopra_hris_api.src.Services.API
@@ -16,11 +17,14 @@ namespace sopra_hris_api.src.Services.API
     public class SalaryDetailService : IServiceSalaryDetailsAsync<SalaryDetails>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SalaryDetailService(EFContext context)
+        public SalaryDetailService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<ListResponse<SalaryDetails>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
@@ -132,7 +136,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
                 // Prepare the SQL stored procedure call
                 var parameters = new List<SqlParameter>();
                 int month = DateTime.Now.Month;
@@ -160,10 +164,10 @@ namespace sopra_hris_api.src.Services.API
                 }
                 parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = month });
                 parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
-
+                parameters.Add(new SqlParameter("@UserID", SqlDbType.Int) { Value = UserID });
                 // Get Data
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @UserID", parameters.ToArray())
                   .ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
