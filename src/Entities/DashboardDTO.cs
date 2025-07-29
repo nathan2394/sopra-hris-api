@@ -59,5 +59,55 @@ namespace sopra_hris_api.src.Entities
             public int Rejected { get; set; }
             public int Pending { get; set; }
         }
+        [Keyless]
+        public class DashboardDetaillOVT
+        {
+            public long EmployeeID { get; set; }
+            public string Nik { get; set; }
+            public string EmployeeName { get; set; }
+            public DateTime StartWorkingDate {  get; set; }
+            public DateTime TransDate { get; set; }
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
+            public Single? OVT { get; set; }
+        }
+        [Keyless]
+        public class DashboardDetaillMeals
+        {
+            public long EmployeeID { get; set; }
+            public string Nik { get; set; }
+            public string EmployeeName { get; set; }
+            public DateTime StartWorkingDate { get; set; }
+            public DateTime TransDate { get; set; }
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }            
+        }
+        [Keyless]
+        public class DashboardDetaillAbsent
+        {
+            public long EmployeeID { get; set; }
+            public string Nik { get; set; }
+            public string EmployeeName { get; set; }
+            public DateTime StartWorkingDate { get; set; }
+            public DateTime TransDate { get; set; }
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
+            public string Unattendance { get; set; }
+        }
+        [Keyless]
+        public class DashboardDetaillLate
+        {
+            public long EmployeeID { get; set; }
+            public string Nik { get; set; }
+            public string EmployeeName { get; set; }
+            public DateTime StartWorkingDate { get; set; }
+            public DateTime TransDate { get; set; }
+            public long DepartmentID { get; set; }
+            public string Department { get; set; }
+            public DateTime StartTime { get; set; }
+            public DateTime EndTime { get; set; }
+            public DateTime? ActualStartTime { get; set; }
+            public DateTime? ActualEndTime { get; set; }
+        }
     }
 }

@@ -21,6 +21,10 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<DashboardDTO.DashboardAttendanceSummary>> GetAttendanceSummary(string filter, string date);
         Task<ListResponseTemplate<DashboardDTO.DashboardBudgetOvertimes>> GetBudgetOvertimes(string filter, string date);
         Task<ListResponseTemplate<DashboardDTO.DashboardApproval>> GetApproval(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardDetaillOVT>> GetDetailOVT(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardDetaillLate>> GetDetailLate(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardDetaillMeals>> GetDetailMeals(string filter, string date);
+        Task<ListResponseTemplate<DashboardDTO.DashboardDetaillAbsent>> GetDetaillAbsent(string filter, string date);
     }
     public interface IServiceUploadAsync<T>
     {

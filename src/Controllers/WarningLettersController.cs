@@ -13,9 +13,9 @@ namespace sopra_hris_api.Controllers;
 [Authorize]
 public class WarningLettersController : ControllerBase
 {
-    private readonly IServiceAsync<Division> _service;
+    private readonly IServiceAsync<WarningLetters> _service;
 
-    public WarningLettersController(IServiceAsync<Division> service)
+    public WarningLettersController(IServiceAsync<WarningLetters> service)
     {
         _service = service;
     }
@@ -51,7 +51,7 @@ public class WarningLettersController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Division>(result);
+            var response = new Response<WarningLetters>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -69,14 +69,14 @@ public class WarningLettersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Division obj)
+    public async Task<IActionResult> Create([FromBody] WarningLetters obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
-            var response = new Response<Division>(result);
+            var response = new Response<WarningLetters>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -95,14 +95,14 @@ public class WarningLettersController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Division obj)
+    public async Task<IActionResult> Edit([FromBody] WarningLetters obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj);
-            var response = new Response<Division>(result);
+            var response = new Response<WarningLetters>(result);
             return Ok(response);
         }
         catch (Exception ex)

@@ -121,4 +121,84 @@ public class DashboardController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpGet("DetaillAbsent")]
+    public async Task<IActionResult> GetDetaillAbsent(string filter = "", string date = "")
+    {
+        try
+        {
+            var result = await _service.GetDetaillAbsent(filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("DetailMeals")]
+    public async Task<IActionResult> GetDetailMeals(string filter = "", string date = "")
+    {
+        try
+        {
+            var result = await _service.GetDetailMeals(filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("DetailLate")]
+    public async Task<IActionResult> GetDetailLate(string filter = "", string date = "")
+    {
+        try
+        {
+            var result = await _service.GetDetailLate(filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("DetailOVT")]
+    public async Task<IActionResult> GetDetailOVT(string filter = "", string date = "")
+    {
+        try
+        {
+            var result = await _service.GetDetailOVT(filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
 }

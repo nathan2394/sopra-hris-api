@@ -114,11 +114,26 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.PKWTContracts where a.IsDeleted == false select a;
+                var query = from a in _context.PKWTContracts
+                            join e in _context.Employees on a.EmployeeID equals e.EmployeeID
+                            where a.IsDeleted == false
+                            select new PKWTContracts
+                            {
+                                PWKTID = a.PWKTID,
+                                EmployeeID = e.EmployeeID,
+                                PKWTNo = a.PKWTNo,
+                                StartDate = a.StartDate,
+                                EndDate = a.EndDate,
+                                ContractType = a.ContractType,
+                                LaidOffDate = a.LaidOffDate,
+                                LaidOffEndDate = a.LaidOffEndDate,
+                                Remarks = a.Remarks,
+                                EmployeeName = e.EmployeeName
+                            };
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.PKWTNo.Contains(search)
+                    query = query.Where(x => x.PKWTNo.Contains(search) || x.EmployeeName.Contains(search)
                         );
 
                 // Filtering
@@ -135,10 +150,21 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "pkwtno" => query.Where(x => x.PKWTNo.Contains(value)),
+                                "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                "type" => query.Where(x => x.ContractType.Contains(value)),
                                 _ => query
                             };
                         }
                     }
+                }
+
+                DateTime queryDate = DateTime.Now;
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    DateTime.TryParse(date, out queryDate);
+                    query = query.Where(x => queryDate.Date >= x.StartDate.Date && queryDate.Date <= x.EndDate.Date);
                 }
 
                 // Sorting
@@ -154,6 +180,8 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "pkwtno" => query.OrderByDescending(x => x.PKWTNo),
+                            "name" => query.OrderByDescending(x => x.EmployeeName),
+                            "type" => query.OrderByDescending(x => x.ContractType),
                             _ => query
                         };
                     }
@@ -162,6 +190,8 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "pkwtno" => query.OrderBy(x => x.PKWTNo),
+                            "name" => query.OrderBy(x => x.EmployeeName),
+                            "type" => query.OrderBy(x => x.ContractType),
                             _ => query
                         };
                     }

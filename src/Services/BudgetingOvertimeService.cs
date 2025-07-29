@@ -73,19 +73,16 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var budgeting_old = await _context.BudgetingOvertimes.FirstOrDefaultAsync(x => x.IsDeleted == false && x.BudgetYear == data.BudgetYear && x.BudgetMonth == data.BudgetMonth && x.DepartmentID == data.DepartmentID);
-                if (budgeting_old == null)
-                {
-                    var sequence = await _context.BudgetingOvertimes.Where(x => x.BudgetMonth == data.BudgetMonth && x.BudgetYear == data.BudgetYear).CountAsync();
-                    data.VoucherNo = string.Concat("BoT/", new DateTime(data.BudgetYear, 1, 1).ToString("yy"), new DateTime(DateTime.Now.Year, data.BudgetMonth, 1).ToString("MM"), (sequence + 1).ToString("D3"));
-                    data.IsApproved1 = null;
-                    data.ApprovalNotes = null;
-                    data.ApprovedBy1 = null;
-                    data.ApprovedDate1 = null;
+                var sequence = await _context.BudgetingOvertimes.Where(x => x.BudgetMonth == data.BudgetMonth && x.BudgetYear == data.BudgetYear).CountAsync();
+                data.VoucherNo = string.Concat("BoT/", new DateTime(data.BudgetYear, 1, 1).ToString("yy"), new DateTime(DateTime.Now.Year, data.BudgetMonth, 1).ToString("MM"), (sequence + 1).ToString("D3"));
+                data.IsApproved1 = null;
+                data.ApprovalNotes = null;
+                data.ApprovedBy1 = null;
+                data.ApprovedDate1 = null;               
 
-                    await _context.BudgetingOvertimes.AddAsync(data);
-                    long BudgetingOvertimesID = await _context.SaveChangesAsync();
-                    var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
+                await _context.BudgetingOvertimes.AddAsync(data);
+                long BudgetingOvertimesID = await _context.SaveChangesAsync();
+                var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
         SELECT DISTINCT u.Email, u.Name
         FROM (
             SELECT DISTINCT o.DepartmentID, o.IsApproved1
@@ -99,11 +96,11 @@ namespace sopra_hris_api.src.Services.API
         WHERE m.IsDeleted = 0 
           AND t.IsApproved1 IS NULL", new SqlParameter("VoucherNo", data.VoucherNo)).FirstOrDefaultAsync();
 
-                    if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
-                    {
-                        var departments = await _context.Departments.FirstOrDefaultAsync(x => x.DepartmentID == data.DepartmentID);
-                        string subject = $"Pengajuan Budget Lembur {new DateTime(DateTime.Now.Year, data.BudgetMonth, 1):MMMM} {data.BudgetYear} - {data.VoucherNo}";
-                        string body = $@"<!DOCTYPE html>
+                if (mailto != null && !string.IsNullOrEmpty(mailto?.Email))
+                {
+                    var departments = await _context.Departments.FirstOrDefaultAsync(x => x.DepartmentID == data.DepartmentID);
+                    string subject = $"Pengajuan Budget Lembur {new DateTime(DateTime.Now.Year, data.BudgetMonth, 1):MMMM} {data.BudgetYear} - {data.VoucherNo}";
+                    string body = $@"<!DOCTYPE html>
                                     <html>
                                       <body>
                                         <p>Dear <strong>{mailto.Name}</strong>,</p>
@@ -119,13 +116,11 @@ namespace sopra_hris_api.src.Services.API
                                         <p>Terima kasih atas perhatian.</p>
                                       </body>
                                     </html>";
-                        Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
-                    }
-                    await dbTrans.CommitAsync();
-
-                    return data;
+                    Utility.sendMail(String.Join(";", mailto.Email), "", subject, body);
                 }
-                return budgeting_old;
+                await dbTrans.CommitAsync();
+
+                return data;
             }
             catch (Exception ex)
             {
@@ -188,6 +183,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.ApprovedBy1 = data.ApprovedBy1;
                 obj.ApprovalNotes = data.ApprovalNotes;
                 obj.VoucherNo = data.VoucherNo;
+                obj.DivisionID = data.DivisionID;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -224,6 +220,8 @@ namespace sopra_hris_api.src.Services.API
                 var query = from u in _context.BudgetingOvertimes
                             join d in _context.Departments on u.DepartmentID equals d.DepartmentID into deptGroup
                             from d in deptGroup.DefaultIfEmpty()
+                            join di in _context.Divisions on u.DivisionID equals di.DivisionID into divGroup
+                            from di in divGroup.DefaultIfEmpty()
                             where u.IsDeleted == false && (!u.IsApproved1.HasValue)
                             select new BudgetingOvertimes
                             {
@@ -239,7 +237,9 @@ namespace sopra_hris_api.src.Services.API
                                 TotalOvertimeAmount = u.TotalOvertimeAmount,
                                 TotalOvertimeHours = u.TotalOvertimeHours,
                                 RemainingHours = u.RemainingHours,
-                                ApprovalNotes = u.ApprovalNotes
+                                ApprovalNotes = u.ApprovalNotes,
+                                DivisionID = di.DivisionID,
+                                DivisionName = di != null ? di.Name : null
                             };
                 if (RoleID == 8)//releaser
                 {
@@ -276,11 +276,13 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            if (fieldName == "department")
+                            if (fieldName == "department" || fieldName == "division")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
-                                 if (fieldName == "department")
+                                if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
                             }
                             if (fieldName == "month")
                             {
@@ -291,12 +293,6 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 Int32.TryParse(value, out year);
                                 query = query.Where(x => x.BudgetYear == year);
-                            }
-                            if (fieldName == "department")
-                            {
-                                var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
-                                if (fieldName == "department")
-                                    query = query.Where(x => Ids.Contains(x.DepartmentID));
                             }
 
                             query = fieldName switch
@@ -376,6 +372,8 @@ namespace sopra_hris_api.src.Services.API
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from b in _context.BudgetingOvertimes
                             join d in _context.Departments on b.DepartmentID equals d.DepartmentID
+                            join di in _context.Divisions on b.DivisionID equals di.DivisionID into divGroup
+                            from di in divGroup.DefaultIfEmpty()
                             where b.IsDeleted == false
                             select new BudgetingOvertimes
                             {
@@ -391,12 +389,14 @@ namespace sopra_hris_api.src.Services.API
                                 ApprovedDate1 = b.ApprovedDate1,
                                 IsApproved1 = b.IsApproved1,
                                 VoucherNo = b.VoucherNo,
-                                RemainingHours = b.RemainingHours
+                                RemainingHours = b.RemainingHours,
+                                DivisionID = b.DivisionID,
+                                DivisionName = di != null ? di.Name : null
                             };
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.DepartmentName.Contains(search)
+                    query = query.Where(x => x.DepartmentName.Contains(search) || x.DivisionName.Contains(search)
                         );
 
                 int month = DateTime.Now.Month;
@@ -424,15 +424,17 @@ namespace sopra_hris_api.src.Services.API
                                 query = query.Where(x => x.BudgetYear.Equals(year));
                             }
 
-                            if (fieldName == "department")
+                            if (fieldName == "department" || fieldName == "division")
                             {
                                 var Ids = value.Split(',').Select(v => long.Parse(v.Trim())).ToList();
                                 if (fieldName == "department")
                                     query = query.Where(x => Ids.Contains(x.DepartmentID));
+                                else if (fieldName == "division")
+                                    query = query.Where(x => Ids.Contains(x.DivisionID ?? 0));
                             }
                             query = fieldName switch
                             {
-                                "name" => query.Where(x => x.DepartmentName.Contains(value)),
+                                "voucher" => query.Where(x => x.VoucherNo.Contains(value)),
                                 _ => query
                             };
                         }
@@ -458,7 +460,8 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderByDescending(x => x.DepartmentName),
+                            "voucher" => query.OrderByDescending(x => x.VoucherNo),
+                            "department" => query.OrderByDescending(x => x.DepartmentName),
                             _ => query
                         };
                     }
@@ -466,7 +469,8 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderBy(x => x.DepartmentName),
+                            "voucher" => query.OrderBy(x => x.VoucherNo),
+                            "department" => query.OrderBy(x => x.DepartmentName),
                             _ => query
                         };
                     }

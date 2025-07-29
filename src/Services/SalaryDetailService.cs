@@ -164,10 +164,11 @@ namespace sopra_hris_api.src.Services.API
                 }
                 parameters.Add(new SqlParameter("@Month", SqlDbType.Int) { Value = month });
                 parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = year });
-                parameters.Add(new SqlParameter("@UserID", SqlDbType.Int) { Value = UserID });
+                parameters.Add(new SqlParameter("@IsFlag", SqlDbType.Int) { Value = 0 });
+                parameters.Add(new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID });
                 // Get Data
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
-                  "EXEC usp_SalaryDetails @Month, @Year, @UserID", parameters.ToArray())
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag, @UserID", parameters.ToArray())
                   .ToListAsync();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);

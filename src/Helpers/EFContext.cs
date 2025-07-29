@@ -82,6 +82,10 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<DashboardAttendanceNormalAbnormal> DashboardAttendanceNormalAbnormal { get; set; }
         public virtual DbSet<DashboardAttendanceByShift> DashboardAttendanceByShift { get; set; }
         public virtual DbSet<DashboardApproval> DashboardApproval { get; set; }
+        public virtual DbSet<DashboardDetaillOVT> DashboardDetaillOVT { get; set; }
+        public virtual DbSet<DashboardDetaillMeals> DashboardDetaillMeals { get; set; }
+        public virtual DbSet<DashboardDetaillAbsent> DashboardDetaillAbsent { get; set; }
+        public virtual DbSet<DashboardDetaillLate> DashboardDetaillLate { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

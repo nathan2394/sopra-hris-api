@@ -148,12 +148,28 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.EmployeeName.Contains(value)),
+                                "employeeid" => query.Where(x => x.EmployeeID.Equals(value)),
+                                "type" => query.Where(x => x.WarningType.Contains(value)),
                                 _ => query
                             };
                         }
                     }
                 }
 
+                DateTime dateNow = DateTime.Now;
+                DateTime StartDate = new DateTime(dateNow.AddMonths(-1).Year, dateNow.AddMonths(-1).Month, 24);
+                DateTime EndDate = new DateTime(dateNow.Year, dateNow.Month, 23);
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                    {
+                        StartDate = startDate;
+                        EndDate = endDate;
+                    }
+                    query = query.Where(x => x.WarningDate.Date >= StartDate.Date && x.WarningDate.Date <= EndDate.Date);
+                }
+                
                 // Sorting
                 if (!string.IsNullOrEmpty(sort))
                 {
@@ -167,6 +183,7 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "name" => query.OrderByDescending(x => x.EmployeeName),
+                            "type" => query.OrderByDescending(x => x.WarningType),
                             _ => query
                         };
                     }
@@ -175,6 +192,7 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "name" => query.OrderBy(x => x.EmployeeName),
+                            "type" => query.OrderBy(x => x.WarningType),
                             _ => query
                         };
                     }
