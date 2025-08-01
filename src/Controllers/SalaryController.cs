@@ -329,4 +329,26 @@ public class SalaryController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpPost("CalculateEmployeeSalary")]
+    public async Task<IActionResult> SetCalculateEmployeeSalary([FromBody] CalculateEmployeeSalary request)
+    {
+        try
+        {
+            long userID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.SetCalculateEmployeeSalary(request, userID);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "SalaryController");
+            return BadRequest(new { message });
+        }
+    }
 }

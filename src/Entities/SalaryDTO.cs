@@ -75,6 +75,7 @@ namespace sopra_hris_api.src.Entities
         public long? HKS { get; set; }
         public long? HKA { get; set; }
         public long? ATT { get; set; }
+        public long? ATT_LS { get; set; }
         public long? MEAL { get; set; }
         public long? ABSENT { get; set; }
         public decimal? OVT { get; set; }
@@ -95,6 +96,10 @@ namespace sopra_hris_api.src.Entities
         public decimal? ULembur { get; set; }
         public decimal? UMasaKerja { get; set; }
         public decimal? BPJS { get; set; }
+        public decimal? UTLongShift { get; set; }
+        public decimal? UTKehadiran { get; set; }
+        public decimal? UTSPV { get; set; }
+        public decimal? UKaizen { get; set; }
         public decimal? Rapel { get; set; }
         public decimal? OtherAllowances { get; set; }
         public decimal? OtherDeductions { get; set; }
@@ -152,5 +157,12 @@ namespace sopra_hris_api.src.Entities
         public string Type { get; set; }
         public decimal Amount { get; set; }
         public decimal AmountPerDay { get; set; }
+    }
+    [Keyless]
+    public class CalculateEmployeeSalary
+    {
+        public long Month { get; set; }
+        public long Year { get; set; }
+        public bool IsOutSource { get; set; }
     }
 }

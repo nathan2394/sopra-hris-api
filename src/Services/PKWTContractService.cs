@@ -159,12 +159,19 @@ namespace sopra_hris_api.src.Services.API
                     }
                 }
 
-                DateTime queryDate = DateTime.Now;
+                DateTime dateNow = DateTime.Now;
+                DateTime StartDate = new DateTime(dateNow.Year, dateNow.Month, 24);
+                DateTime EndDate = new DateTime(dateNow.AddMonths(1).Year, dateNow.AddMonths(1).Month, 23);
                 // Date Filtering
                 if (!string.IsNullOrEmpty(date))
                 {
-                    DateTime.TryParse(date, out queryDate);
-                    query = query.Where(x => queryDate.Date >= x.StartDate.Date && queryDate.Date <= x.EndDate.Date);
+                    var dateRange = date.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (dateRange.Length == 2 && DateTime.TryParse(dateRange[0], out var startDate) && DateTime.TryParse(dateRange[1], out var endDate))
+                    {
+                        StartDate = startDate;
+                        EndDate = endDate;
+                    }
+                    query = query.Where(x => x.EndDate.Date >= StartDate.Date && x.EndDate.Date <= EndDate.Date);
                 }
 
                 // Sorting

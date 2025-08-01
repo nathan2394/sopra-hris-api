@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using Azure.Core;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
-using sopra_hris_api.src.Helpers;
 using sopra_hris_api.src.Entities;
-using System.Linq;
-using Microsoft.Data.SqlClient;
-using System.Data;
-using System.Globalization;
+using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -592,6 +593,60 @@ namespace sopra_hris_api.src.Services.API
                 await dbTrans.CommitAsync();
 
                 return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+        public async Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> SetCalculateEmployeeSalary(CalculateEmployeeSalary request, long UserID)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync($"EXEC usp_CalculateEmployeeSalary @Month = {request.Month}, @Year = {request.Year}, @IsOutSource ={request.IsOutSource}, @UserID = {UserID}");
+
+                await dbTrans.CommitAsync();
+
+                var parameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@Month", SqlDbType.Int) { Value = request.Month },
+                    new SqlParameter("@Year", SqlDbType.Int) { Value = request.Year },
+                    new SqlParameter("@IsFlag", SqlDbType.Int) { Value = 1 },
+                    new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID }
+                };
+                var salaryDataList = await _context.SalaryDetailReportsDTO.FromSqlRaw(
+                  "EXEC usp_SalaryDetails @Month, @Year, @IsFlag, @UserID", parameters.ToArray())
+                  .ToListAsync();
+
+                var salaryPayrollSummary = await _context.SalaryPayrollSummaryDTO.FromSqlRaw($@"select d.Name [DepartmentName]
+	                    , SUM(s.Netto) [AmountTransfer]
+	                    , COUNT(e.EmployeeID) [CountEmployee]
+	                    , CONVERT(decimal,SUM(s.Netto))/COUNT(e.EmployeeID) [AVGAmountEmployee]
+                    from Salary s
+                    inner join Employees e on e.EmployeeID=s.EmployeeID
+                    left join Departments d on d.DepartmentID=e.DepartmentID
+                    where s.IsDeleted=0
+	                    and s.Month={request.Month}
+	                    and s.Year={request.Year}
+                    group by d.Name").ToListAsync();
+
+                var salaryPayrollSummaryTotal = await _context.SalaryPayrollSummaryTotalDTO.FromSqlRaw($@"select SUM(s.Netto) [AmountTransfer]
+	                    , COUNT(e.EmployeeID) [CountEmployee]
+	                    , CONVERT(decimal,SUM(s.Netto))/COUNT(e.EmployeeID) [AVGAmountEmployee]
+                    from Salary s
+                    inner join Employees e on e.EmployeeID=s.EmployeeID
+                    where s.IsDeleted=0
+	                    and s.Month={request.Month}
+	                    and s.Year={request.Year}").ToListAsync();
+
+                return new ListResponseUploadTemplate<SalaryDetailReportsDTO>(salaryDataList, salaryPayrollSummary, salaryPayrollSummaryTotal);
             }
             catch (Exception ex)
             {

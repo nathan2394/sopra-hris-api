@@ -107,6 +107,7 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<SalaryPayrollBankDTO>> GetGenerateBankAsync(string filter);
         Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, long UserID);
         Task<ListResponseTemplate<SalaryCalculatorModel>> SetCalculator(SalaryCalculatorTemplate request);
+        Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> SetCalculateEmployeeSalary(CalculateEmployeeSalary request, long UserID);
     }
     public interface IServiceSalaryDetailsAsync<T>
     {
