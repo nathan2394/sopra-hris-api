@@ -142,6 +142,7 @@ namespace sopra_hris_api
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IServiceAsync<Users>, UserService>();
             services.AddScoped<IServiceAsync<Company>, CompanyService>();
+            services.AddScoped<IServiceAsync<Blogs>, BlogService>();
             services.AddScoped<IServiceAsync<Configurations>, ConfigurationService>();
             services.AddScoped<IServiceAsync<Division>, DivisionService>();
             services.AddScoped<IServiceAsync<DivisionDetails>, DivisionDetailService>();
@@ -241,7 +242,7 @@ namespace sopra_hris_api
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(attachmentDirectory),
-                RequestPath = "/AttachmentFiles" // URL prefix for static files
+                RequestPath = "/AttachmentFiles",
             });
 
             app.UseStaticFiles(new StaticFileOptions
@@ -249,6 +250,19 @@ namespace sopra_hris_api
                 FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
                 RequestPath = "/EmployeeIdeasFiles"
             });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
+                RequestPath = "/ApplicationsFiles"
+            });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
+                RequestPath = "/ContractsFiles"
+            });
+            
             app.UseEndpoints(x => x.MapControllers());
         }
     }

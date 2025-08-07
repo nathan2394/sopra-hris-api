@@ -86,6 +86,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.ContractType = data.ContractType;
                 obj.EmployeeID = data.EmployeeID;
                 obj.Remarks = data.Remarks;
+                obj.ContractsURL = data.ContractsURL;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -128,7 +129,8 @@ namespace sopra_hris_api.src.Services.API
                                 LaidOffDate = a.LaidOffDate,
                                 LaidOffEndDate = a.LaidOffEndDate,
                                 Remarks = a.Remarks,
-                                EmployeeName = e.EmployeeName
+                                EmployeeName = e.EmployeeName,
+                                ContractsURL = a.ContractsURL
                             };
 
                 // Searching

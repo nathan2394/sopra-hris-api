@@ -59,6 +59,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Unattendances> Unattendances { get; set; }
         public DbSet<PKWTContracts> PKWTContracts { get; set; }
         public DbSet<Jobs> Jobs { get; set; }
+        public DbSet<Blogs> Blogs { get; set; }
         public DbSet<Candidates> Candidates { get; set; }
         public DbSet<Applicants> Applicants { get; set; }
         public DbSet<WarningLetters> WarningLetters { get; set; }

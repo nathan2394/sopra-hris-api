@@ -10,11 +10,11 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CandidatesController : ControllerBase
+public class BlogsController : ControllerBase
 {
-    private readonly IServiceAsync<Candidates> _service;
+    private readonly IServiceAsync<Blogs> _service;
 
-    public CandidatesController(IServiceAsync<Candidates> service)
+    public BlogsController(IServiceAsync<Blogs> service)
     {
         _service = service;
     }
@@ -40,7 +40,6 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -50,7 +49,7 @@ public class CandidatesController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Candidates>(result);
+            var response = new Response<Blogs>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -62,20 +61,20 @@ public class CandidatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CandidatesController");
+            Trace.WriteLine(message, "BlogsController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Candidates obj)
+    public async Task<IActionResult> Create([FromBody] Blogs obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
-            var response = new Response<Candidates>(result);
+            var response = new Response<Blogs>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -87,21 +86,21 @@ public class CandidatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CandidatesController");
+            Trace.WriteLine(message, "BlogsController");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Candidates obj)
+    public async Task<IActionResult> Edit([FromBody] Blogs obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj);
-            var response = new Response<Candidates>(result);
+            var response = new Response<Blogs>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -113,7 +112,7 @@ public class CandidatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CandidatesController");
+            Trace.WriteLine(message, "BlogsController");
             return BadRequest(new { message });
         }
     }
@@ -137,62 +136,7 @@ public class CandidatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "CandidatesController");
-            return BadRequest(new { message });
-        }
-    }
-    [HttpPost]
-    [Route("upload")]
-    public async Task<IActionResult> UploadFile(IFormFile file)
-    {
-        try
-        {
-            long MaxFileSize = 2 * 1024 * 1024;
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("No file uploaded.");
-            }
-
-            if (file.Length > MaxFileSize)
-            {
-                return BadRequest($"File size exceeds the allowed limit of {MaxFileSize / (1024 * 1024)}MB.");
-            }
-
-            var allowedExtensions = new[] { ".pdf" };
-            var fileExtension = Path.GetExtension(file.FileName).ToLower();
-
-            if (!allowedExtensions.Contains(fileExtension))
-                return BadRequest("format files are not allowed.");
-
-            // Save the file to a folder
-            var customFileName = $"{Guid.NewGuid()}_{DateTime.Now.Ticks}{Path.GetExtension(file.FileName)}";
-
-            var today = DateTime.Now;
-            var datePath = Path.Combine(today.Year.ToString(), today.Month.ToString("D2"), today.Day.ToString("D2"));
-
-            var baseFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "ApplicationsFiles");
-            var folderPath = Path.Combine(baseFolderPath, datePath);
-
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            var filePath = Path.Combine(folderPath, customFileName);
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            var relativeFilePath = Path.Combine("ApplicationsFiles", datePath, customFileName).Replace("\\", "/");
-            return Ok(new { AttachmentPath = relativeFilePath });
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
+            Trace.WriteLine(message, "BlogsController");
             return BadRequest(new { message });
         }
     }

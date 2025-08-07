@@ -17,6 +17,7 @@ namespace sopra_hris_api.Entities
         public DateTime? LaidOffDate { get; set; }
         public DateTime? LaidOffEndDate { get; set; }
         public string? Remarks { get; set; }
+        public string? ContractsURL { get; set; }
         [NotMapped]
         public string? EmployeeName { get; set; }
     }
