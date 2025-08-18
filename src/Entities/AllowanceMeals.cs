@@ -33,7 +33,7 @@ namespace sopra_hris_api.Entities
         public string NIK { get; set; }
         public string EmployeeName { get; set; }
         public DateTime TransDate { get; set; }
-        public bool? Meal { get; set; }        
+        public int? Meal { get; set; }        
         public long DepartmentID { get; set; }
         public string? DepartmentName { get; set; }
         public long? DivisionID { get; set; }

@@ -371,13 +371,13 @@ namespace sopra_hris_api.src.Services.API
                 DataTable dataTypeTable = new DataTable();
                 dataTypeTable.Columns.Add("EmployeeId", typeof(long));                
                 dataTypeTable.Columns.Add("TransDate", typeof(DateTime));
-                dataTypeTable.Columns.Add("Meal", typeof(bool));
+                dataTypeTable.Columns.Add("Meal", typeof(int));
                 foreach (DataRow row in data.Rows)
                 {
                     long employeeId = Convert.ToInt64(row["EmployeeID"]);
                     DateTime transDate = Convert.ToDateTime(row["TransDate"]);
                     filterDate = transDate;
-                    bool meal = Convert.ToBoolean(row["Meal"]);
+                    int meal = Convert.ToInt32(row["Meal"]);
                     dataTypeTable.Rows.Add(employeeId, transDate, meal);
                 }
 

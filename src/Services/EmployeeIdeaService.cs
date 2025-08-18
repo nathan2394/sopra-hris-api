@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
@@ -10,11 +11,14 @@ namespace sopra_hris_api.src.Services.API
     public class EmployeeIdeaService : IServiceAsync<EmployeeIdeas>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public EmployeeIdeaService(EFContext context)
+        public EmployeeIdeaService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<EmployeeIdeas> CreateAsync(EmployeeIdeas data)
         {
@@ -122,6 +126,9 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from a in _context.EmployeeIdeas
                             join user in _context.Users on a.SubmittedByUserID equals user.UserID into userJoin
@@ -155,7 +162,9 @@ namespace sopra_hris_api.src.Services.API
                                 DepartmentID = employee.DepartmentID,
                                 DepartmentName = department.Name
                             };
-
+                if (RoleID == 2 || RoleID == 5)
+                    query = query.Where(x => x.SubmittedByUserID == UserID);
+                
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.EmployeeName.Contains(search) || x.Title.Contains(search)
@@ -184,6 +193,7 @@ namespace sopra_hris_api.src.Services.API
                                     "name" => query.Where(x => x.EmployeeName.Contains(value)),
                                     "title" => query.Where(x => x.Title.Contains(value)),
                                     "status" => query.Where(x => x.Status.Contains(value)),
+                                    "submittedby" => query.Where(x => x.SubmittedByUserID.Equals(value)),
                                     _ => query
                                 };
                         }

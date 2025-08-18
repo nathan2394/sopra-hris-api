@@ -134,23 +134,33 @@ public class AllowanceMealsController : ControllerBase
                 for (int row = 2; row <= totalRows; row++)
                 {
                     DataRow dr = dt.NewRow();
+                    bool isRowValid = true;
                     for (int col = 1; col <= totalColumns; col++)
                     {
+                        string cellValue = worksheet.Cells[row, col].Text.Trim();
+                        if (string.IsNullOrEmpty(cellValue))
+                        {
+                            isRowValid = false;
+                            break;
+                        }
+
                         string columnName = dt.Columns[col - 1].ColumnName;
 
                         // Handle "meal" column
                         if (columnName.Equals("meal", StringComparison.OrdinalIgnoreCase))
                         {
-                            var mealCell = worksheet.Cells[row, col].Text.Trim();
-                            bool mealValue = mealCell == "1";
+                            int mealValue = 0;
+                            int.TryParse(cellValue, out mealValue);
                             dr[col - 1] = mealValue;
                         }
                         else
                         {
-                            dr[col - 1] = worksheet.Cells[row, col].Text.Trim();
+                            dr[col - 1] = cellValue;
                         }
                     }
-                    dt.Rows.Add(dr);
+
+                    if (isRowValid)
+                        dt.Rows.Add(dr);
                 }
             }
             var UserID = Convert.ToInt64(User.FindFirstValue("id"));
