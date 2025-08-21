@@ -140,4 +140,59 @@ public class BlogsController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpPost]
+    [Route("upload")]
+    public async Task<IActionResult> UploadFile(IFormFile file)
+    {
+        try
+        {
+            long MaxFileSize = 2 * 1024 * 1024;
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
+
+            if (file.Length > MaxFileSize)
+            {
+                return BadRequest($"File size exceeds the allowed limit of {MaxFileSize / (1024 * 1024)}MB.");
+            }
+
+            var allowedExtensions = new[] { ".pdf" };
+            var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(fileExtension))
+                return BadRequest("format files are not allowed.");
+
+            // Save the file to a folder
+            var customFileName = $"{Guid.NewGuid()}_{DateTime.Now.Ticks}{Path.GetExtension(file.FileName)}";
+
+            var today = DateTime.Now;
+            var datePath = Path.Combine(today.Year.ToString(), today.Month.ToString("D2"), today.Day.ToString("D2"));
+
+            var baseFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "BlogsFiles");
+            var folderPath = Path.Combine(baseFolderPath, datePath);
+
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var filePath = Path.Combine(folderPath, customFileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            var relativeFilePath = Path.Combine("BlogsFiles", datePath, customFileName).Replace("\\", "/");
+            return Ok(new { AttachmentPath = relativeFilePath });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
 }

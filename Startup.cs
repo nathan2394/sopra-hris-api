@@ -239,6 +239,18 @@ namespace sopra_hris_api
             if (!Directory.Exists(attachmentIdeasDirectory))
                 Directory.CreateDirectory(attachmentIdeasDirectory);
 
+            var attachmentApplicationsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ApplicationsFiles");
+            if (!Directory.Exists(attachmentApplicationsDirectory))
+                Directory.CreateDirectory(attachmentApplicationsDirectory);
+
+            var attachmentContractsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ContractsFiles");
+            if (!Directory.Exists(attachmentContractsDirectory))
+                Directory.CreateDirectory(attachmentContractsDirectory);
+
+            var attachmentBlogsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "BlogsFiles");
+            if (!Directory.Exists(attachmentBlogsDirectory))
+                Directory.CreateDirectory(attachmentBlogsDirectory);
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(attachmentDirectory),
@@ -253,16 +265,22 @@ namespace sopra_hris_api
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
+                FileProvider = new PhysicalFileProvider(attachmentApplicationsDirectory),
                 RequestPath = "/ApplicationsFiles"
             });
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(attachmentIdeasDirectory),
+                FileProvider = new PhysicalFileProvider(attachmentContractsDirectory),
                 RequestPath = "/ContractsFiles"
             });
-            
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(attachmentBlogsDirectory),
+                RequestPath = "/BlogsFiles"
+            });
+
             app.UseEndpoints(x => x.MapControllers());
         }
     }

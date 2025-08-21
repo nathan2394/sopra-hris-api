@@ -25,6 +25,7 @@ namespace sopra_hris_api.src.Entities
         public int HKS { get; set; }
         public int HKA { get; set; }
         public int ATT { get; set; }
+        public int ATT_LS { get; set; }
         public int Meals { get; set; }
         public int Late { get; set; }
         public int LateCount { get; set; }
