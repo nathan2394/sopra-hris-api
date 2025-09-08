@@ -79,6 +79,7 @@ namespace sopra_hris_api.src.Services.API
                 if (obj == null) return null;
 
                 obj.Name = data.Name;
+                obj.IsOutSource = data.IsOutSource;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;

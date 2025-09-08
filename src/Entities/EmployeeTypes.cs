@@ -10,5 +10,6 @@ namespace sopra_hris_api.Entities
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long EmployeeTypeID { get; set; }
         public string Name { get; set; }
+        public bool? IsOutSource { get; set; }
     }
 }

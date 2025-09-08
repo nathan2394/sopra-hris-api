@@ -12,41 +12,37 @@ namespace sopra_hris_api.Entities
 
         public string FullName { get; set; }
 
-        public string Gender { get; set; }
+        public string? Gender { get; set; }
 
-        public string PlaceOfBirth { get; set; }
+        public string? PlaceOfBirth { get; set; }
 
         public DateTime? DateOfBirth { get; set; }
 
-        public string Religion { get; set; }
+        public string? Religion { get; set; }
 
-        public string MaritalStatus { get; set; }
+        public string? MaritalStatus { get; set; }
 
-        public string NoKTP { get; set; }
+        public string? NoKTP { get; set; }
 
-        public string NoSIM { get; set; }
+        public string? NoSIM { get; set; }
 
-        public string BloodType { get; set; }
+        public string? BloodType { get; set; }
 
         public int? HeightCM { get; set; }
 
         public int? WeightKG { get; set; }
 
-        public string Address { get; set; }
+        public string? Address { get; set; }
 
-        public string HomePhoneNumber { get; set; }
+        public string? HomePhoneNumber { get; set; }
 
         public string MobilePhoneNumber { get; set; }
 
         public string Email { get; set; }
 
-        public long? JobID { get; set; }
+        public string? Password { get; set; }
+        public DateTime? ConsentSignedAt { get; set; }
         [NotMapped]
-        public string? JobTitle { get; set; }
-
         public long? CandidateID { get; set; }
-
-        public string Status { get; set; }
-
     }
 }

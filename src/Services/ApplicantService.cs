@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
+using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
@@ -11,22 +13,88 @@ namespace sopra_hris_api.src.Services.API
     public class ApplicantService : IServiceAsync<Applicants>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ApplicantService(EFContext context)
+        public ApplicantService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         public async Task<Applicants> CreateAsync(Applicants data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.Applicants.AddAsync(data);
-                await _context.SaveChangesAsync();
+                string company = "";
+                string jobtitle = "";
+                string password = "";
+                var candidates = await _context.Candidates.FirstOrDefaultAsync(x => x.IsDeleted == false && x.CandidateID == data.CandidateID);
+                if (candidates != null)
+                {
+                    var jobs = await _context.Jobs.FirstOrDefaultAsync(x => x.JobID == candidates.JobID);
+                    if (jobs != null)
+                    {
+                        company = jobs.CompanyID == 2 ? "PT Trass Anugrah Makmur" : "PT Solusi Prima Packaging";
+                        jobtitle = jobs.JobTitle;
+                    }
+                }
+                var check_Applicant = await _context.Applicants.FirstOrDefaultAsync(x => x.IsDeleted == false && x.Email == data.Email);
+                if (check_Applicant == null)
+                {
+                    password = string.Concat(data.Email.Length >= 4 ? data.Email.Substring(0, 4) : data.Email, data.DateIn.Value.ToString("HHmmss"));
+                    data.Password = Utility.HashPassword(password);
+                    data.ConsentSignedAt = null;
 
-                await dbTrans.CommitAsync();
+                    await _context.Applicants.AddAsync(data);
+                    await _context.SaveChangesAsync();
 
+
+                    await dbTrans.CommitAsync();
+
+                    try
+                    {
+
+                        string subject = $"Tindak Lanjut Lamaran Anda: Pengisian Biodata untuk Proses Seleksi";
+                        string body = $@"
+                    <!DOCTYPE html>
+<html lang=""id"">
+<head>
+    <meta charset=""UTF-8"">
+    <title>Informasi Akun dan Biodata</title>
+</head>
+<body>
+    <p>Dear, {data.FullName},</p>
+
+    <p>Terima kasih telah melamar untuk posisi <strong>{jobtitle}</strong> di <strong>{company}</strong>. Kami senang menginformasikan bahwa Anda telah lolos ke tahap berikutnya dalam proses seleksi.</p>
+
+    <p>Untuk melanjutkan, kami mohon Anda untuk mengisi biodata melalui link berikut. Kami juga telah membuatkan akun untuk Anda.</p>
+
+    <p><strong>Detail Akun:</strong></p>
+    <ul>
+        <li>Username: {data.Email}</li>
+        <li>Password: {password}</li>
+    </ul>
+
+    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/"">click here</a></p>
+
+    <p>Jika Anda membutuhkan bantuan atau memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
+
+    <p>Kami menantikan data biodata Anda dan proses selanjutnya.</p>
+
+    <p>Terima kasih</p>
+</body>
+</html>";
+                        Utility.sendMail(String.Join(";", data.Email), "", subject, body);
+
+                    }
+                    catch (Exception ex) { }
+                }
+                else
+                    data = check_Applicant;
+
+                data.Password = "";
                 return data;
             }
             catch (Exception ex)
@@ -79,9 +147,21 @@ namespace sopra_hris_api.src.Services.API
                 var obj = await _context.Applicants.FirstOrDefaultAsync(x => x.ApplicantID == data.ApplicantID && x.IsDeleted == false);
                 if (obj == null) return null;
 
-                obj.JobID = data.JobID;
-                obj.CandidateID = data.CandidateID;
-                obj.Status = data.Status;
+                obj.FullName = data.FullName;
+                obj.Gender = data.Gender;
+                obj.PlaceOfBirth = data.PlaceOfBirth;
+                obj.DateOfBirth = data.DateOfBirth;
+                obj.Religion = data.Religion;
+                obj.MaritalStatus = data.MaritalStatus;
+                obj.NoKTP = data.NoKTP;
+                obj.NoSIM = data.NoSIM;
+                obj.BloodType = data.BloodType;
+                obj.HeightCM = data.HeightCM;
+                obj.WeightKG = data.WeightKG;
+                obj.Address = data.Address;
+                obj.HomePhoneNumber = data.HomePhoneNumber;
+                obj.MobilePhoneNumber = data.MobilePhoneNumber;
+                obj.ConsentSignedAt = data.ConsentSignedAt;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -111,16 +191,11 @@ namespace sopra_hris_api.src.Services.API
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from a in _context.Applicants
-                            join c in _context.Candidates on a.CandidateID equals c.CandidateID
-                            join j in _context.Jobs on a.JobID equals j.JobID
                             where a.IsDeleted == false
                             select new Applicants
                             {
                                 ApplicantID = a.ApplicantID,
-                                CandidateID = a.CandidateID,
-                                JobID = a.JobID,
-                                JobTitle = j.JobTitle,
-                                Status = a.Status,
+                                Password = "",
                                 FullName = a.FullName,
                                 Gender = a.Gender,
                                 Address = a.Address,
@@ -140,7 +215,7 @@ namespace sopra_hris_api.src.Services.API
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.FullName.Contains(search) || x.JobTitle.Contains(search)
+                    query = query.Where(x => x.FullName.Contains(search) || x.Email.Contains(search) || x.MobilePhoneNumber.Contains(search)
                         );
 
                 // Filtering
@@ -157,9 +232,8 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.FullName.Contains(value)),
-                                "jobtitle" => query.Where(x => x.JobTitle.Contains(value)),
-                                "jobid" => query.Where(x => x.JobID.Equals(value)),
-                                "status" => query.Where(x => x.Status.Contains(value)),
+                                "phoneno" => query.Where(x => x.MobilePhoneNumber.Contains(value)),
+                                "email" => query.Where(x => x.Email.Contains(value)),
                                 _ => query
                             };
                         }
@@ -179,8 +253,6 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "name" => query.OrderByDescending(x => x.FullName),
-                            "jobtitle" => query.OrderByDescending(x => x.JobTitle),
-                            "status" => query.OrderByDescending(x => x.Status),
                             _ => query
                         };
                     }
@@ -189,8 +261,6 @@ namespace sopra_hris_api.src.Services.API
                         query = orderBy.ToLower() switch
                         {
                             "name" => query.OrderBy(x => x.FullName),
-                            "jobtitle" => query.OrderBy(x => x.JobTitle),
-                            "status" => query.OrderBy(x => x.Status),
                             _ => query
                         };
                     }
@@ -231,7 +301,26 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.Applicants.AsNoTracking().FirstOrDefaultAsync(x => x.ApplicantID == id && x.IsDeleted == false);
+                return await _context.Applicants.Select(a => new Applicants
+                {
+                    ApplicantID = a.ApplicantID,
+                    Password = "",
+                    FullName = a.FullName,
+                    Gender = a.Gender,
+                    Address = a.Address,
+                    BloodType = a.BloodType,
+                    DateOfBirth = a.DateOfBirth,
+                    HeightCM = a.HeightCM,
+                    Email = a.Email,
+                    HomePhoneNumber = a.HomePhoneNumber,
+                    MobilePhoneNumber = a.MobilePhoneNumber,
+                    Religion = a.Religion,
+                    PlaceOfBirth = a.PlaceOfBirth,
+                    MaritalStatus = a.MaritalStatus,
+                    NoKTP = a.NoKTP,
+                    NoSIM = a.NoSIM,
+                    WeightKG = a.WeightKG,
+                }).AsNoTracking().FirstOrDefaultAsync(x => x.ApplicantID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {

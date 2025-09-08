@@ -1,13 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
+using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Helpers;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class JobService : IServiceAsync<Jobs>
+    public class JobService : IServiceJobsAsync<Jobs>
     {
         private readonly EFContext _context;
 
@@ -111,7 +114,6 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-
 
         public async Task<ListResponse<Jobs>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
@@ -223,6 +225,82 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        public async Task<Dictionary<string, object>> GetFilters(string filter)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                if (string.IsNullOrEmpty(filter))
+                {
+                    return new Dictionary<string, object>();
+                }
+
+                var filterParts = filter.Split(':');
+                if (filterParts.Length != 2 || filterParts[0].Trim().ToLower() != "type")
+                {
+                    // Jika format tidak sesuai, kembalikan daftar kosong
+                    return new Dictionary<string, object>();
+                }
+                var filterType = filterParts[1].Trim().ToLower();
+
+                IQueryable<string> query;
+
+                // Tentukan query berdasarkan tipe filter
+                switch (filterType)
+                {
+                    case "jobtype":
+                        query = _context.Jobs
+                                        .Where(j => j.IsDeleted == false)
+                                        .Select(j => j.JobType)
+                                        .Distinct();
+                        break;
+                    case "department":
+                        query = _context.Jobs
+                                        .Where(j => j.IsDeleted == false)
+                                        .Select(j => j.Department)
+                                        .Distinct();
+                        break;
+                    case "location":
+                        query = _context.Jobs
+                                        .Where(j => j.IsDeleted == false)
+                                        .Select(j => j.Location)
+                                        .Distinct();
+                        break;
+                    default:
+                        // Jika tipe filter tidak sesuai, kembalikan daftar kosong
+                        return new Dictionary<string, object>();
+                }
+
+                // Get Data
+                var data = await query.ToListAsync();
+
+                var result = new Dictionary<string, object>
+                {
+                    { filterType, data }
+                };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public Task<bool> SaveOTPToDatabase(string Name, string Email, int CompanyID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> VerifyOTP(string email, string inputOtp)
+        {
+            throw new NotImplementedException();
         }
     }
 }

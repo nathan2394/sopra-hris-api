@@ -30,6 +30,10 @@ namespace sopra_hris_api.Helpers
                 return config;
             }
         }
+        public static void SetConfiguration(IConfiguration configuration)
+        {
+            config = configuration;
+        }
         public static int? TryParseNullableInt(string value)
         {
             if (string.IsNullOrEmpty(value) || value == "-")

@@ -466,6 +466,7 @@ namespace sopra_hris_api.src.Services.API
                 var type = "";
                 int month = DateTime.Now.Month;
                 int year = DateTime.Now.Year;
+                bool? isOutsource = null;
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
                 {
@@ -478,21 +479,33 @@ namespace sopra_hris_api.src.Services.API
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
 
-                            if (fieldName == "type")
-                                type = value;
-                            else if (fieldName == "month")
-                                Int32.TryParse(value, out month);
-                            else if (fieldName == "year")
-                                Int32.TryParse(value, out year);
+                            switch (fieldName)
+                            {
+                                case "type":
+                                    type = value;
+                                    break;
+                                case "month":
+                                    Int32.TryParse(value, out month);
+                                    break;
+                                case "year":
+                                    Int32.TryParse(value, out year);
+                                    break;
+                                case "isoutsource":
+                                    if (bool.TryParse(value, out var parsedOutsource))
+                                        isOutsource = parsedOutsource;
+                                    break;
+                            }
                         }
                     }
                 }
 
                 var query = (from salary in _context.Salary
                              join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
+                             join empType in _context.EmployeeTypes on employee.EmployeeTypeID equals empType.EmployeeTypeID
                              join department in _context.Departments on employee.DepartmentID equals department.DepartmentID into departmentGroup
                              from department in departmentGroup.DefaultIfEmpty()
-                             where salary.IsDeleted == false && salary.Month == month && salary.Year == year
+                             where salary.IsDeleted == false && salary.Month == month && salary.Year == year && 
+                             (isOutsource == null || empType.IsOutSource == isOutsource)
                              select new SalaryPayrollBankDTO
                              {
                                  SalaryID = salary.SalaryID,

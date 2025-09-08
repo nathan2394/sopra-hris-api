@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
+using sopra_hris_api.Services;
 using sopra_hris_api.src.Services;
 
 namespace sopra_hris_api.Controllers;
@@ -12,9 +13,9 @@ namespace sopra_hris_api.Controllers;
 [Route("[controller]")]
 public class CandidatesController : ControllerBase
 {
-    private readonly IServiceAsync<Candidates> _service;
+    private readonly IServiceJobsAsync<Candidates> _service;
 
-    public CandidatesController(IServiceAsync<Candidates> service)
+    public CandidatesController(IServiceJobsAsync<Candidates> service)
     {
         _service = service;
     }
@@ -72,6 +73,25 @@ public class CandidatesController : ControllerBase
     {
         try
         {
+            if (obj.OTPCode == null)
+            {
+                return BadRequest(new { message = "OTP Code is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(obj.CandidateName) ||
+                string.IsNullOrWhiteSpace(obj.Email) ||
+                string.IsNullOrWhiteSpace(obj.PhoneNumber) ||
+                string.IsNullOrWhiteSpace(obj.ResumeURL))
+            {
+                return BadRequest(new { message = "CandidateName, Email, PhoneNumber, and ResumeUrl are required." });
+            }
+
+            var checkotp = await _service.VerifyOTP(obj.Email, obj.OTPCode);
+            if (checkotp)
+                obj.OtpVerify = true;
+            else
+                return BadRequest("Invalid OTP or OTP has expired.");
+
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
@@ -90,7 +110,6 @@ public class CandidatesController : ControllerBase
             Trace.WriteLine(message, "CandidatesController");
             return BadRequest(new { message });
         }
-
     }
 
     [HttpPut]
@@ -193,6 +212,40 @@ public class CandidatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("SendEmailAndGenerateOTP")]
+    public async Task<IActionResult> SendEmailAndGenerateOTP(string Name, string Email, int CompanyID)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            // Send OTP via Email
+            bool emailSent = await _service.SaveOTPToDatabase(Name, Email, CompanyID);
+            if (emailSent)
+            {
+                return Ok("OTP has been sent to your email.");
+            }
+            else
+            {
+                return StatusCode(500, "Failed to send OTP email.");
+            }
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "CandidatesController");
             return BadRequest(new { message });
         }
     }

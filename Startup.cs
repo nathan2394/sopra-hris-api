@@ -1,28 +1,31 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Mail;
 using System.Text;
-using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Services;
-using sopra_hris_api.src.Helpers;
-using sopra_hris_api.src.Services.API;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using sopra_hris_api.src.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.FileProviders;
 using sopra_hris_api.src.Entities;
+using sopra_hris_api.src.Helpers;
+using sopra_hris_api.src.Services;
+using sopra_hris_api.src.Services.API;
+using Utility = sopra_hris_api.Helpers.Utility;
 
 namespace sopra_hris_api
 {
@@ -46,6 +49,9 @@ namespace sopra_hris_api
             //Utility.ConnectSQL(Configuration["SQL:Server"], Configuration["SQL:Database"], Configuration["SQL:UserID"], Configuration["SQL:Password"]);
 
             services.AddDbContextPool<EFContext>(opt => opt.UseSqlServer(connectionString["ConnectionString"]));
+
+            services.AddSingleton<IConfiguration>(Configuration);
+            Utility.SetConfiguration(Configuration);
 
             //context accesscor
             services.AddHttpContextAccessor();
@@ -181,8 +187,8 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<SupervisorBenefit>, SupervisorBenefitService>();
             services.AddScoped<IServiceAsync<EmployeeMonthlyReward>, EmployeeMonthlyRewardService>();
             services.AddScoped<IServiceAsync<AttendanceIncentive>, AttendanceIncentiveService>();
-            services.AddScoped<IServiceAsync<Jobs>, JobService>();
-            services.AddScoped<IServiceAsync<Candidates>, CandidateService>();
+            services.AddScoped<IServiceJobsAsync<Jobs>, JobService>();
+            services.AddScoped<IServiceJobsAsync<Candidates>, CandidateService>();
             services.AddScoped<IServiceAsync<Applicants>, ApplicantService>();
             services.AddScoped<IServiceAsync<ApplicantFamilys>, ApplicantFamilyService>();
             services.AddScoped<IServiceAsync<ApplicantOtherInfo>, ApplicantOtherInfoService>();

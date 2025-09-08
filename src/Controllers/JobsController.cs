@@ -12,9 +12,9 @@ namespace sopra_hris_api.Controllers;
 [Route("[controller]")]
 public class JobsController : ControllerBase
 {
-    private readonly IServiceAsync<Jobs> _service;
+    private readonly IServiceJobsAsync<Jobs> _service;
 
-    public JobsController(IServiceAsync<Jobs> service)
+    public JobsController(IServiceJobsAsync<Jobs> service)
     {
         _service = service;
     }
@@ -138,6 +138,26 @@ public class JobsController : ControllerBase
                 inner = inner.InnerException;
             }
             Trace.WriteLine(message, "JobsController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpGet("filters")]
+    public async Task<IActionResult> GetFilter(string filter = "type:location")
+    {
+        try
+        {
+            var result = await _service.GetFilters(filter);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
             return BadRequest(new { message });
         }
     }

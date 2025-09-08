@@ -14,6 +14,18 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
     }
+    public interface IServiceJobsAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<Dictionary<string, object>> GetFilters(string filter);
+        Task<bool> SaveOTPToDatabase(string Name, string Email, int CompanyID);
+        Task<bool> VerifyOTP(string email, string inputOtp);
+    }
     public interface IServiceDashboardAsync<T>
     {
         Task<ListResponseTemplate<DashboardDTO.DashboardAttendanceByShift>> GetAttendanceByShift(string filter, string date);

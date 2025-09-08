@@ -197,18 +197,34 @@ LEFT JOIN EmployeeShifts b
     ON b.EmployeeID = a.EmployeeID 
     AND b.IsDeleted = 0 
     AND CONVERT(DATE, b.TransDate) = @queryDate
+LEFT JOIN EmployeeTransferShifts c
+	ON c.EmployeeID= a.EmployeeID
+	AND c.IsDeleted=0 AND c.IsApproved1 = 1 AND c.IsApproved2 = 1
+	AND CONVERT(date,c.TransDate) = @queryDate
 WHERE a.EmployeeID = @id 
   AND (
     -- If there is a shift record
     (b.EmployeeShiftID IS NOT NULL AND (
         -- For night shift (ID = 3), handle overnight shift times
-        (b.ShiftID = 3 AND (
+        (b.ShiftID in (3,12) AND (
             (CAST(a.ClockIn AS TIME) >= '18:00:00' AND CONVERT(DATE, a.ClockIn) = @queryDate)
             OR
             (CAST(a.ClockIn AS TIME) < '10:00:00' AND CONVERT(DATE, a.ClockIn) = DATEADD(DAY, 1, @queryDate))
         ))
         -- For other shifts, match normal day
-        OR (b.ShiftID <> 3 AND CONVERT(DATE, a.ClockIn) = @queryDate)
+        OR (b.ShiftID not in (3,12) AND CONVERT(DATE, a.ClockIn) = @queryDate)
+    ))
+    OR
+    -- If there is a transfer shift record
+    (c.EmployeeTransferShiftID IS NOT NULL AND (
+        -- For night shift (ID = 3), handle overnight shift times
+        (c.ShiftToID in (3,12) AND (
+            (CAST(a.ClockIn AS TIME) >= '18:00:00' AND CONVERT(DATE, a.ClockIn) = @queryDate)
+            OR
+            (CAST(a.ClockIn AS TIME) < '10:00:00' AND CONVERT(DATE, a.ClockIn) = DATEADD(DAY, 1, @queryDate))
+        ))
+        -- For other shifts, match normal day
+        OR (c.ShiftToID not in (3,12) AND CONVERT(DATE, a.ClockIn) = @queryDate)
     ))
     -- If there is no shift record, just use the date
     OR (b.EmployeeShiftID IS NULL AND CONVERT(DATE, a.ClockIn) = @queryDate)

@@ -72,6 +72,13 @@ public class ApplicantsController : ControllerBase
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(obj.FullName) ||
+                string.IsNullOrWhiteSpace(obj.Email) ||
+                string.IsNullOrWhiteSpace(obj.MobilePhoneNumber) ||
+                obj.CandidateID == null || obj.CandidateID == 0)
+            {
+                return BadRequest(new { message = "Name, Email, PhoneNumber are required." });
+            }
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
