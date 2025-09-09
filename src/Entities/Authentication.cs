@@ -19,4 +19,12 @@ namespace sopra_hris_api.Entities
         public string PhoneNumber { get; set; }
         public string Code { get; set; }
     }
+    public class ApplicantUsers
+    {
+        public long ApplicantID { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string MobilePhoneNumber { get; set; }
+        public string Password { get; set; }
+    }
 }

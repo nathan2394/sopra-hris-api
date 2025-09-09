@@ -395,6 +395,58 @@ namespace sopra_hris_api.Services
             return number;
         }
 
+        public async Task<ApplicantUsers> AuthenticateCandidate(string Email, string Password)
+        {
+            try
+            {
+                var user = await context.Applicants.Where(x => x.Email == Email && x.IsDeleted == false).Select(x => new ApplicantUsers
+                {
+                    ApplicantID = x.ApplicantID,
+                    FullName = x.FullName,
+                    Password = x.Password,
+                    MobilePhoneNumber = x.MobilePhoneNumber,
+                    Email = x.Email
+                }).AsNoTracking().FirstOrDefaultAsync();
+
+                if (user == null)
+                    return null;
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                return null;
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
+
+        public string GenerateTokenCandidate(ApplicantUsers user, int Duration)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var secret = config.GetSection("AppSettings")["Secret"];
+            var key = Encoding.ASCII.GetBytes(secret);
+            var claims = new ClaimsIdentity(new[]
+            {
+                new Claim("id", user.ApplicantID.ToString()),
+              });
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = claims,
+                Expires = DateTime.UtcNow.AddDays(Duration),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
         // Define a class to represent the token response
         public class TokenResponse
         {

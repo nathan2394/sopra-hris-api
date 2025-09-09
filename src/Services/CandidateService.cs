@@ -123,11 +123,6 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public Task<ListResponse<Candidates>> GetAllApprovalAsync(int limit, int page, int total, string search, string sort, string filter, string date)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<ListResponse<Candidates>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -162,7 +157,8 @@ namespace sopra_hris_api.src.Services.API
                                 CompanyID = j.CompanyID,
                                 Location = j.Location,
                                 Department = j.Department,
-                                JobType = j.JobType
+                                JobType = j.JobType,
+                                PortfolioLink = c.PortfolioLink
                             };
 
                 // Searching 
@@ -188,6 +184,7 @@ namespace sopra_hris_api.src.Services.API
                                 "jobid" => query.Where(x => x.JobID.Equals(value)),
                                 "phonenumber" => query.Where(x => x.PhoneNumber.Contains(value)),
                                 "email" => query.Where(x => x.Email.Contains(value)),
+                                "status" => query.Where(x => x.Status.Contains(value)),
                                 "department" => query.Where(x => x.Department.Contains(value)),
                                 "location" => query.Where(x => x.Location.Contains(value)),
                                 "jobtype" => query.Where(x => x.JobType.Contains(value)),
@@ -267,7 +264,39 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.Candidates.AsNoTracking().FirstOrDefaultAsync(x => x.CandidateID == id && x.IsDeleted == false);
+              var result=  from c in _context.Candidates
+                join j in _context.Jobs on c.JobID equals j.JobID
+                where c.IsDeleted == false && c.CandidateID == id 
+                select new Candidates
+                {
+                    CandidateID = c.CandidateID,
+                    CandidateName = c.CandidateName,
+                    JobID = c.JobID,
+                    JobTitle = j.JobTitle,
+                    Email = c.Email,
+                    PhoneNumber = c.PhoneNumber,
+                    ResumeURL = c.ResumeURL,
+                    Remarks = c.Remarks,
+                    ApplicationDate = c.ApplicationDate,
+                    ApplicantID = c.ApplicantID,
+                    IsScreening = c.IsScreening,
+                    ScreeningBy = c.ScreeningBy,
+                    ScreeningNotes = c.ScreeningNotes,
+                    IsAssessment = c.IsAssessment,
+                    AssessmentDate = c.AssessmentDate,
+                    AssessmentResult = c.AssessmentResult,
+                    IsInterview = c.IsInterview,
+                    InterviewDate = c.InterviewDate,
+                    InterviewResult = c.InterviewResult,
+                    Status = c.Status,
+                    OtpVerify = c.OtpVerify,
+                    CompanyID = j.CompanyID,
+                    Location = j.Location,
+                    Department = j.Department,
+                    JobType = j.JobType,
+                    PortfolioLink = c.PortfolioLink
+                };
+                return await result.AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {

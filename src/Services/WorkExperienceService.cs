@@ -142,7 +142,7 @@ namespace sopra_hris_api.src.Services.API
                             query = fieldName switch
                             {
                                 "name" => query.Where(x => x.CompanyName.Contains(value)),
-                                "applicant" => query.Where(x => x.ApplicantID.Equals(value)),
+                                "applicant" => long.TryParse(value, out var applicantId) ? query.Where(x => x.ApplicantID == applicantId) : query,
                                 _ => query
                             };
                         }

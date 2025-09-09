@@ -301,7 +301,7 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                return await _context.Applicants.Select(a => new Applicants
+                return await _context.Applicants.Where(x => x.ApplicantID == id && x.IsDeleted == false).Select(a => new Applicants
                 {
                     ApplicantID = a.ApplicantID,
                     Password = "",
@@ -320,7 +320,7 @@ namespace sopra_hris_api.src.Services.API
                     NoKTP = a.NoKTP,
                     NoSIM = a.NoSIM,
                     WeightKG = a.WeightKG,
-                }).AsNoTracking().FirstOrDefaultAsync(x => x.ApplicantID == id && x.IsDeleted == false);
+                }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {

@@ -96,6 +96,8 @@ namespace sopra_hris_api.src.Services.API
                 obj.PoliceRecordExplanation = data.PoliceRecordExplanation;
                 obj.HasPermanentPhysicalImpairment = data.HasPermanentPhysicalImpairment;
                 obj.PhysicalImpairmentExplanation = data.PhysicalImpairmentExplanation;
+                obj.ConflictOfInterest = data.ConflictOfInterest;
+                obj.ConflictOfInterestDetails = data.ConflictOfInterestDetails;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -146,7 +148,7 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "applicant" => query.Where(x => x.ApplicantID.Equals(value)),
+                                "applicant" => long.TryParse(value, out var applicantId) ? query.Where(x => x.ApplicantID == applicantId) : query,
                                 _ => query
                             };
                         }

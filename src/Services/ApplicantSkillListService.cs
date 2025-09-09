@@ -8,21 +8,21 @@ using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class OtherReferenceService : IServiceAsync<OtherReferences>
+    public class ApplicantSkillListService : IServiceAsync<ApplicantSkillList>
     {
         private readonly EFContext _context;
 
-        public OtherReferenceService(EFContext context)
+        public ApplicantSkillListService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<OtherReferences> CreateAsync(OtherReferences data)
+        public async Task<ApplicantSkillList> CreateAsync(ApplicantSkillList data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.OtherReferences.AddAsync(data);
+                await _context.ApplicantSkillList.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -46,7 +46,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.OtherReferences.FirstOrDefaultAsync(x => x.OtherReferenceID == id && x.IsDeleted == false);
+                var obj = await _context.ApplicantSkillList.FirstOrDefaultAsync(x => x.SkillListID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
@@ -71,21 +71,18 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<OtherReferences> EditAsync(OtherReferences data)
+        public async Task<ApplicantSkillList> EditAsync(ApplicantSkillList data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.OtherReferences.FirstOrDefaultAsync(x => x.OtherReferenceID == data.OtherReferenceID && x.IsDeleted == false);
+                var obj = await _context.ApplicantSkillList.FirstOrDefaultAsync(x => x.SkillListID == data.SkillListID && x.IsDeleted == false);
                 if (obj == null) return null;
 
                 obj.ApplicantID = data.ApplicantID;
-                obj.ReferenceFullName = data.ReferenceFullName;
-                obj.ReferencePosition = data.ReferencePosition;
-                obj.Relationship = data.Relationship;
-                obj.ReferenceCompanyName = data.ReferenceCompanyName;
-                obj.ReferencePhoneNumber = data.ReferencePhoneNumber;
-                obj.ReferenceAddress = data.ReferenceAddress;
+                obj.SkillName = data.SkillName;
+                obj.SkillStatus = data.SkillStatus;
+                obj.Notes = data.Notes;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -109,18 +106,18 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<OtherReferences>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<ApplicantSkillList>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.OtherReferences
+                var query = from a in _context.ApplicantSkillList
                             where a.IsDeleted == false
                             select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.ReferenceFullName.Contains(search) || x.ReferencePosition.Contains(search)
+                    query = query.Where(x => x.SkillName.Contains(search)
                         );
 
                 // Filtering
@@ -136,10 +133,9 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "name" => query.Where(x => x.ReferenceFullName.Contains(value)),
-                                "position" => query.Where(x => x.ReferencePosition.Contains(value)),
-                                "relation" => query.Where(x => x.Relationship.Contains(value)),
+                                "name" => query.Where(x => x.SkillName.Contains(value)),
                                 "applicant" => long.TryParse(value, out var applicantId) ? query.Where(x => x.ApplicantID == applicantId) : query,
+                                "status" => query.Where(x => x.SkillStatus.Contains(value)),
                                 _ => query
                             };
                         }
@@ -158,9 +154,8 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderByDescending(x => x.ReferenceFullName),
-                            "position" => query.OrderByDescending(x => x.ReferencePosition),
-                            "relation" => query.OrderByDescending(x => x.Relationship),
+                            "name" => query.OrderByDescending(x => x.SkillName),
+                            "status" => query.OrderByDescending(x => x.SkillStatus),
                             _ => query
                         };
                     }
@@ -168,16 +163,15 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderBy(x => x.ReferenceFullName),
-                            "position" => query.OrderBy(x => x.ReferencePosition),
-                            "relation" => query.OrderBy(x => x.Relationship),
+                            "name" => query.OrderBy(x => x.SkillName),
+                            "status" => query.OrderBy(x => x.SkillStatus),
                             _ => query
                         };
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.OtherReferenceID);
+                    query = query.OrderByDescending(x => x.SkillListID);
                 }
 
                 // Get Total Before Limit and Page
@@ -195,7 +189,7 @@ namespace sopra_hris_api.src.Services.API
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
-                return new ListResponse<OtherReferences>(data, total, page);
+                return new ListResponse<ApplicantSkillList>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -207,11 +201,11 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<OtherReferences> GetByIdAsync(long id)
+        public async Task<ApplicantSkillList> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.OtherReferences.AsNoTracking().FirstOrDefaultAsync(x => x.OtherReferenceID == id && x.IsDeleted == false);
+                return await _context.ApplicantSkillList.AsNoTracking().FirstOrDefaultAsync(x => x.SkillListID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {

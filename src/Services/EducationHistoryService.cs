@@ -138,7 +138,7 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 "name" => query.Where(x => x.InstitutionName.Contains(value)),
                                 "level" => query.Where(x => x.EducationLevel.Contains(value)),
-                                "applicant" => query.Where(x => x.ApplicantID.Equals(value)),
+                                "applicant" => long.TryParse(value, out var applicantId) ? query.Where(x => x.ApplicantID == applicantId) : query,
                                 "location" => query.Where(x => x.InstitutionLocation.Contains(value)),
                                 _ => query
                             };

@@ -120,7 +120,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Jobs where a.IsDeleted == false select a;
+                var query = from a in _context.Jobs where a.IsDeleted == false && (a.PublicationDate == null || a.ExpirationDate == null || (a.PublicationDate.Value.Date <= DateTime.Now.Date && a.ExpirationDate.Value.Date >= DateTime.Now.Date)) select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))

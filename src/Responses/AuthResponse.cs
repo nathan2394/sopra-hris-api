@@ -12,6 +12,16 @@ namespace sopra_hris_api.Responses
             Data = user;
         }
     }
+    public class AuthResponseCandidate : Response<ApplicantUsers>
+    {
+        public string Token { get; set; }
+
+        public AuthResponseCandidate(ApplicantUsers user, string token)
+        {
+            Token = token;
+            Data = user;
+        }
+    }
 }
 
 

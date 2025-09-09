@@ -155,4 +155,44 @@ public class AuthController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpPost("loginCandidate")]
+    public async Task<IActionResult> AuthenticateCandidate([FromQuery] string Email, [FromQuery] string Password)
+    {
+        try
+        {
+            var user = await _service.AuthenticateCandidate(Email, Password);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            if (!Utility.VerifyHashedPassword(user.Password, Password))
+                return Unauthorized(new { message = "Incorrect password" });
+
+            //if (!user.IsVerified.HasValue || !user.IsVerified.Value)
+            //{
+            //    var result = await _service.AuthenticateOTP(Email);
+            //    if (result.Success)
+            //        return Ok(new { message = "OTP sent successfully" });
+            //    else
+            //        return BadRequest(new { message = result.Message });
+            //}
+            user.Password = "";
+
+            var token = _service.GenerateTokenCandidate(user, 1);
+            var response = new AuthResponseCandidate(user, token);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AuthController");
+            return BadRequest(new { message });
+        }
+    }
 }

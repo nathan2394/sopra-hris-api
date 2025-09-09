@@ -18,11 +18,11 @@ namespace sopra_hris_api.Entities
 
         public bool? AppliedBeforeAtSopra { get; set; }
 
-        public string AppliedBeforeExplanation { get; set; }
+        public string? AppliedBeforeExplanation { get; set; }
 
         public bool? HasRelativeAtSopra { get; set; }
 
-        public string RelativeAtSopraExplanation { get; set; }
+        public string? RelativeAtSopraExplanation { get; set; }
 
         public bool? AgreesToContactReferences { get; set; }
 
@@ -34,15 +34,16 @@ namespace sopra_hris_api.Entities
 
         public bool? HasSeriousIllnessOrInjury { get; set; }
 
-        public string SeriousIllnessOrInjuryExplanation { get; set; }
+        public string? SeriousIllnessOrInjuryExplanation { get; set; }
 
         public bool? HasPoliceRecord { get; set; }
 
-        public string PoliceRecordExplanation { get; set; }
+        public string? PoliceRecordExplanation { get; set; }
 
         public bool? HasPermanentPhysicalImpairment { get; set; }
 
-        public string PhysicalImpairmentExplanation { get; set; }
-
+        public string? PhysicalImpairmentExplanation { get; set; }
+        public bool? ConflictOfInterest { get; set; }
+        public string? ConflictOfInterestDetails { get; set; }
     }
 }

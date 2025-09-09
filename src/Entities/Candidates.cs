@@ -17,6 +17,7 @@ namespace sopra_hris_api.Entities
         public string PhoneNumber { get; set; }
 
         public string ResumeURL { get; set; }
+        public string? PortfolioLink { get; set; }
         public string? Remarks { get; set; }
         public long JobID { get; set; }
         [NotMapped]
