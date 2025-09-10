@@ -19,8 +19,8 @@ namespace sopra_hris_api.Entities
         public string InstitutionLocation { get; set; }
 
         public string Major { get; set; }
-
-        public int? EndYear { get; set; }
+        public string? StartDate { get; set; }
+        public string? EndDate { get; set; }
 
         public decimal? GPA { get; set; }
 

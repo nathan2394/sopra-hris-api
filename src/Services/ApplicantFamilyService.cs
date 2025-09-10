@@ -85,7 +85,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.Gender = data.Gender;
                 obj.FamilyDateOfBirth = data.FamilyDateOfBirth;
                 obj.FamilyPlaceOfBirth = data.FamilyPlaceOfBirth;
-                obj.ParentEducation = data.ParentEducation;
+                obj.FamilyEducation = data.FamilyEducation;
                 obj.FamilyOccupation = data.FamilyOccupation;
 
                 obj.UserUp = data.UserUp;

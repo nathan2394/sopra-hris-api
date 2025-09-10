@@ -84,7 +84,8 @@ namespace sopra_hris_api.src.Services.API
                 obj.InstitutionName = data.InstitutionName;
                 obj.InstitutionLocation = data.InstitutionLocation;
                 obj.Major = data.Major;
-                obj.EndYear = data.EndYear;
+                obj.StartDate = data.StartDate;
+                obj.EndDate = data.EndDate;
                 obj.GPA = data.GPA;
 
                 obj.UserUp = data.UserUp;

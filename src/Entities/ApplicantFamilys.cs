@@ -22,7 +22,7 @@ namespace sopra_hris_api.Entities
 
         public string FamilyDateOfBirth { get; set; }
 
-        public string ParentEducation { get; set; }
+        public string FamilyEducation { get; set; }
 
         public string FamilyOccupation { get; set; }
 
