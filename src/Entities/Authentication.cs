@@ -27,4 +27,16 @@ namespace sopra_hris_api.Entities
         public string MobilePhoneNumber { get; set; }
         public string Password { get; set; }
     }
+    public class SendOtpRequest
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public int CompanyID { get; set; }
+    }
+
+    public class VerifyOtpRequest
+    {
+        public string Email { get; set; }
+        public string OTPCode { get; set; }
+    }
 }

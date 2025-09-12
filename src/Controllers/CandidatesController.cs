@@ -73,10 +73,10 @@ public class CandidatesController : ControllerBase
     {
         try
         {
-            if (obj.OTPCode == null)
-            {
-                return BadRequest(new { message = "OTP Code is required." });
-            }
+            //if (obj.OTPCode == null)
+            //{
+            //    return BadRequest(new { message = "OTP Code is required." });
+            //}
 
             if (string.IsNullOrWhiteSpace(obj.CandidateName) ||
                 string.IsNullOrWhiteSpace(obj.Email) ||
@@ -86,12 +86,13 @@ public class CandidatesController : ControllerBase
                 return BadRequest(new { message = "CandidateName, Email, PhoneNumber, and ResumeUrl are required." });
             }
 
-            var checkotp = await _service.VerifyOTP(obj.Email, obj.OTPCode);
-            if (checkotp)
-                obj.OtpVerify = true;
-            else
-                return BadRequest("Invalid OTP or OTP has expired.");
+            //var checkotp = await _service.VerifyOTP(obj.Email, obj.OTPCode);
+            //if (checkotp)
+            //    obj.OtpVerify = true;
+            //else
+            //    return BadRequest("Invalid OTP or OTP has expired.");
 
+            obj.OtpVerify = true;
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj);
@@ -216,25 +217,51 @@ public class CandidatesController : ControllerBase
         }
     }
     [HttpPost("SendEmailAndGenerateOTP")]
-    public async Task<IActionResult> SendEmailAndGenerateOTP(string Name, string Email, int CompanyID)
+    public async Task<IActionResult> SendEmailAndGenerateOTP([FromBody] SendOtpRequest request)
     {
         try
         {
-            if (string.IsNullOrEmpty(Email))
-            {
-                return BadRequest("Email is required.");
-            }
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { message = "Email is required." });
 
             // Send OTP via Email
-            bool emailSent = await _service.SaveOTPToDatabase(Name, Email, CompanyID);
-            if (emailSent)
+            bool result = await _service.SaveOTPToDatabase(request.Name, request.Email, request.CompanyID);
+
+            if (result)
+                return Ok(new { message = "OTP has been sent to your email." });
+
+            return StatusCode(500, new { message = "Failed to send OTP email." });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
             {
-                return Ok("OTP has been sent to your email.");
+                message = inner.Message;
+                inner = inner.InnerException;
             }
-            else
-            {
-                return StatusCode(500, "Failed to send OTP email.");
-            }
+            Trace.WriteLine(message, "CandidatesController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("VerifyOTP")]
+    public async Task<IActionResult> VerifyOTP([FromBody] VerifyOtpRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { message = "Email is required." });
+
+            if (string.IsNullOrWhiteSpace(request.OTPCode))
+                return BadRequest(new { message = "OTP Code is required." });
+
+
+            var isValid = await _service.VerifyOTP(request.Email, request.OTPCode);
+            if (!isValid)
+                return BadRequest(new { message = "Invalid OTP or OTP has expired." });
+
+            return Ok(new { message = "Email verified successfully." });
         }
         catch (Exception ex)
         {

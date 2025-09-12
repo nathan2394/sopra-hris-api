@@ -77,7 +77,7 @@ namespace sopra_hris_api.src.Services.API
         <li>Password: {password}</li>
     </ul>
 
-    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/"">click here</a></p>
+    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/id/login"">click here</a></p>
 
     <p>Jika Anda membutuhkan bantuan atau memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
 

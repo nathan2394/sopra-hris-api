@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
@@ -325,21 +326,63 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-                Random random = new Random();
-                string otp = (random.Next(1000, 9999)).ToString();
+                var rateLimitCheckQuery = @"
+            SELECT TOP 1 RequestCount, LastRequestTime
+            FROM OTPVerification
+            WHERE Email = @Email AND IsVerify = 0
+            ORDER BY LastRequestTime DESC";
+
+                int requestCount = 0;
+                DateTime? lastRequestTime = null;
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = rateLimitCheckQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", Email));
+
+                    _context.Database.OpenConnection();
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            requestCount = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+                            lastRequestTime = reader.IsDBNull(1) ? null : reader.GetDateTime(1);
+                        }
+                    }
+                }
+
+                // Validasi rate limit
+                if (lastRequestTime != null && lastRequestTime > DateTime.Now.AddHours(-1))
+                {
+                    if (requestCount >= 5)
+                        return false;
+                }
+
+
+                string otp = new Random().Next(1000, 9999).ToString();
                 DateTime expirationDate = DateTime.Now.AddMinutes(10);
 
-                var result = await _context.Database.ExecuteSqlRawAsync(@"IF EXISTS (SELECT 1 FROM OTPVerification WHERE Email = @Email)
+                var query = @"
+                IF EXISTS (SELECT 1 FROM OTPVerification WHERE Email = @Email AND IsVerify = 0)
                 BEGIN
                     UPDATE OTPVerification
-                    SET OTP = @OTP, ExpirationDate = @ExpirationDate
-                    WHERE Email = @Email
+                    SET OTP = @OTP, ExpirationDate = @ExpirationDate, IsVerify = 0,
+                        RequestCount = ISNULL(RequestCount, 0) + 1,
+                        LastRequestTime = GETDATE()
+                    WHERE Email = @Email AND IsVerify = 0
                 END
                 ELSE
                 BEGIN
-                    INSERT INTO OTPVerification (Email, OTP, ExpirationDate)
-                    VALUES (@Email, @OTP, @ExpirationDate)
-                END", new SqlParameter("Email", Email), new SqlParameter("OTP", otp), new SqlParameter("ExpirationDate", expirationDate));
+                    INSERT INTO OTPVerification (Email, OTP, ExpirationDate, IsVerify, RequestCount, LastRequestTime)
+                    VALUES (@Email, @OTP, @ExpirationDate, 0, 1, GETDATE())
+                END";
+
+                var result = await _context.Database.ExecuteSqlRawAsync(query,
+                    new SqlParameter("@Email", Email),
+                    new SqlParameter("@OTP", otp),
+                    new SqlParameter("@ExpirationDate", expirationDate));
+
                 try
                 {
                     string subject = "Verifikasi OTP untuk Akun Anda";
@@ -393,19 +436,29 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 string query = @"
-                        SELECT CASE 
-                                WHEN OTP = @InputOTP AND ExpirationDate > GETDATE()
-                                THEN 1 
-                                ELSE 0 
-                               END Value
+                        SELECT COUNT(1) Value
                         FROM OTPVerification
-                        WHERE Email = @Email";
+                        WHERE Email = @Email AND OTP = @OTP
+                            AND ExpirationDate > GETDATE()
+                            AND IsVerify = 0";
 
-                var result = await _context.Database
+                var isValid = await _context.Database
                            .SqlQueryRaw<int>(query,
                                           new SqlParameter("@Email", email),
-                                          new SqlParameter("@InputOTP", inputOtp))
+                                          new SqlParameter("@OTP", inputOtp))
                            .FirstOrDefaultAsync();
+
+                if (isValid != 1)
+                    return false;
+
+                string updateQuery = @"
+                    UPDATE OTPVerification
+                    SET IsVerify = 1
+                    WHERE Email = @Email AND OTP = @OTP AND IsVerify = 0";
+
+                var result = await _context.Database.ExecuteSqlRawAsync(updateQuery,
+                    new SqlParameter("@Email", email),
+                    new SqlParameter("@OTP", inputOtp));
                 return result == 1;
             }
             catch (Exception ex)
