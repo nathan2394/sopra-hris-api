@@ -120,7 +120,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.Jobs where a.IsDeleted == false && (a.PublicationDate == null || a.ExpirationDate == null || (a.PublicationDate.Value.Date <= DateTime.Now.Date && a.ExpirationDate.Value.Date >= DateTime.Now.Date)) select a;
+                var query = from a in _context.Jobs where a.IsDeleted == false select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
@@ -150,6 +150,13 @@ namespace sopra_hris_api.src.Services.API
                             };
                         }
                     }
+                }
+
+                // Date Filtering
+                if (!string.IsNullOrEmpty(date))
+                {
+                    DateTime.TryParse(date, out var queryDate);
+                    query = query.Where(x => (x.PublicationDate == null || x.ExpirationDate == null || (x.PublicationDate.Value.Date <= queryDate && x.ExpirationDate.Value.Date >= queryDate)));
                 }
 
                 // Sorting
