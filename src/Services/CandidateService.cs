@@ -100,6 +100,9 @@ namespace sopra_hris_api.src.Services.API
                 obj.IsInterview = data.IsInterview;
                 obj.InterviewDate = data.InterviewDate;
                 obj.InterviewResult = data.InterviewResult;
+                obj.IsOffer = data.IsOffer;
+                obj.OfferDate = data.OfferDate;
+                obj.OfferResult = data.OfferResult;
                 obj.Status = data.Status;
                 obj.ApplicantID = data.ApplicantID;
 
@@ -153,6 +156,9 @@ namespace sopra_hris_api.src.Services.API
                                 IsInterview = c.IsInterview,
                                 InterviewDate = c.InterviewDate,
                                 InterviewResult = c.InterviewResult,
+                                IsOffer = c.IsOffer,
+                                OfferDate = c.OfferDate,
+                                OfferResult = c.OfferResult,
                                 Status = c.Status,
                                 OtpVerify = c.OtpVerify,
                                 CompanyID = j.CompanyID,
@@ -297,6 +303,9 @@ namespace sopra_hris_api.src.Services.API
                     IsInterview = c.IsInterview,
                     InterviewDate = c.InterviewDate,
                     InterviewResult = c.InterviewResult,
+                    IsOffer = c.IsOffer,
+                    OfferDate = c.OfferDate,
+                    OfferResult = c.OfferResult,
                     Status = c.Status,
                     OtpVerify = c.OtpVerify,
                     CompanyID = j.CompanyID,

@@ -42,6 +42,9 @@ namespace sopra_hris_api.Entities
         public bool? IsInterview { get; set; }
         public DateTime? InterviewDate { get; set; }
         public string? InterviewResult { get; set; }
+        public bool? IsOffer { get; set; }
+        public DateTime? OfferDate { get; set; }
+        public string? OfferResult { get; set; }
         public string? Status { get; set; }
         public bool? OtpVerify { get; set; }
         [NotMapped]
