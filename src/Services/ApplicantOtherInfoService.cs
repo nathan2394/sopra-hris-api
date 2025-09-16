@@ -98,6 +98,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.PhysicalImpairmentExplanation = data.PhysicalImpairmentExplanation;
                 obj.ConflictOfInterest = data.ConflictOfInterest;
                 obj.ConflictOfInterestDetails = data.ConflictOfInterestDetails;
+                obj.SourceOfInformation = data.SourceOfInformation;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;

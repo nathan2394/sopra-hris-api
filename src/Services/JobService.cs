@@ -93,6 +93,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.IsActive = data.IsActive;
                 obj.PublicationDate = data.PublicationDate;
                 obj.ExpirationDate = data.ExpirationDate;
+                obj.JobDescription_Id = data.JobDescription_Id;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -124,7 +125,7 @@ namespace sopra_hris_api.src.Services.API
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.JobTitle.Contains(search) || x.JobDescription.Contains(search)
+                    query = query.Where(x => x.JobTitle.Contains(search) || (x.JobDescription.Contains(search) || x.JobDescription_Id.Contains(search))
                         );
 
                 // Filtering

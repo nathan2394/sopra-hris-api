@@ -45,5 +45,6 @@ namespace sopra_hris_api.Entities
         public string? PhysicalImpairmentExplanation { get; set; }
         public bool? ConflictOfInterest { get; set; }
         public string? ConflictOfInterestDetails { get; set; }
+        public string? SourceOfInformation { get; set; }
     }
 }

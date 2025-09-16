@@ -65,7 +65,7 @@ namespace sopra_hris_api.src.Services.API
     <title>Informasi Akun dan Biodata</title>
 </head>
 <body>
-    <p>Dear, {data.FullName},</p>
+    <p>Dear {data.FullName},</p>
 
     <p>Terima kasih telah melamar untuk posisi <strong>{jobtitle}</strong> di <strong>{company}</strong>. Kami senang menginformasikan bahwa Anda telah lolos ke tahap berikutnya dalam proses seleksi.</p>
 
@@ -211,6 +211,7 @@ namespace sopra_hris_api.src.Services.API
                                 NoKTP = a.NoKTP,
                                 NoSIM = a.NoSIM,
                                 WeightKG = a.WeightKG,
+                                ConsentSignedAt = a.ConsentSignedAt,
                             };
 
                 // Searching
@@ -320,6 +321,7 @@ namespace sopra_hris_api.src.Services.API
                     NoKTP = a.NoKTP,
                     NoSIM = a.NoSIM,
                     WeightKG = a.WeightKG,
+                    ConsentSignedAt = a.ConsentSignedAt,
                 }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
