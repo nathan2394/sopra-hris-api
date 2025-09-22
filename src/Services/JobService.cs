@@ -301,11 +301,11 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public Task<bool> SaveOTPToDatabase(string Name, string Email, int CompanyID)
+        public Task<string> SaveOTPToDatabase(string Name, string Email)
         {
             throw new NotImplementedException();
         }
-
+        
         public Task<bool> VerifyOTP(string email, string inputOtp)
         {
             throw new NotImplementedException();

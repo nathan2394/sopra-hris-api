@@ -136,6 +136,37 @@ namespace sopra_hris_api.src.Services.API
 
                 await dbTrans.CommitAsync();
 
+                string JobTitle = await _context.Jobs.Where(x => x.JobID == obj.JobID).Select(x => x.JobTitle).SingleOrDefaultAsync() ?? "";
+
+                if (obj.IsScreening.HasValue && obj.IsScreeningUser.HasValue && !obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
+                {
+                    if (obj.IsScreeningUser.Value)
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Assessment");
+                    if (!obj.IsScreeningUser.Value)
+                        SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
+                }
+                else if (obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
+                {
+                    if (obj.IsAssessment.Value)
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Interview");
+                    if (!obj.IsAssessment.Value)
+                        SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
+                }
+                else if (obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
+                {
+                    if (obj.IsInterview.Value)
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Offering");
+                    if (!obj.IsInterview.Value)
+                        SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
+                }
+                else if (obj.IsOffer.HasValue)
+                {
+                    if (obj.IsOffer.Value)
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "");
+                    if (!obj.IsOffer.Value)
+                        SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
+                }
+
                 return obj;
             }
             catch (Exception ex)
@@ -370,10 +401,34 @@ namespace sopra_hris_api.src.Services.API
             throw new NotImplementedException();
         }
 
-        public async Task<bool> SaveOTPToDatabase(string Name, string Email, int CompanyID)
+        public async Task<string> SaveOTPToDatabase(string Name, string Email)
         {
             try
             {
+                var checkAccountQuery = @"
+            SELECT TOP 1 1
+            FROM Applicants
+            WHERE Email = @Email AND IsDeleted = 0";
+
+                bool userExists = false;
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkAccountQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", Email));
+
+                    _context.Database.OpenConnection();
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        userExists = await reader.ReadAsync();
+                    }
+                }
+
+                // If user doesn't exist, return false or handle the case
+                if (userExists)               
+                    return "Account found.";
+                
                 var rateLimitCheckQuery = @"
             SELECT TOP 1 RequestCount, LastRequestTime
             FROM OTPVerification
@@ -401,13 +456,9 @@ namespace sopra_hris_api.src.Services.API
                 }
 
                 // Validasi rate limit
-                if (lastRequestTime != null && lastRequestTime > DateTime.Now.AddHours(-1))
-                {
-                    if (requestCount >= 5)
-                        return false;
-                }
-
-
+                if (lastRequestTime != null && lastRequestTime > DateTime.Now.AddHours(-1) && requestCount >= 5)
+                    return "Too many OTP requests in the last hour.";
+                
                 string otp = new Random().Next(1000, 9999).ToString();
                 DateTime expirationDate = DateTime.Now.AddMinutes(10);
 
@@ -444,7 +495,7 @@ namespace sopra_hris_api.src.Services.API
 <body>
     <p>Dear {Name},</p>
 
-    <p>Untuk menyelesaikan proses verifikasi akun Anda di <strong>{(CompanyID == 2 ? "PT Trass Anugrah Makmur" : "PT Solusi Prima Packaging")}</strong>, masukkan One-Time Password (OTP) berikut:</p>
+    <p>Untuk menyelesaikan proses verifikasi akun Anda di <strong>SOPRA Group</strong>, masukkan One-Time Password (OTP) berikut:</p>
 
     <p><strong>OTP Anda:</strong> {otp}</p>
 
@@ -460,10 +511,11 @@ namespace sopra_hris_api.src.Services.API
 
                     Utility.sendMail(Email, "", subject, body);
 
-                    return result == 1;
+                    return result == 1 ? "OTP has been sent to your email." : "Failed to send OTP.";
                 }
                 catch (Exception ex)
                 {
+                    return $"Error sending email: {ex.Message}";
                 }
             }
             catch (Exception ex)
@@ -471,12 +523,12 @@ namespace sopra_hris_api.src.Services.API
                 Trace.WriteLine(ex.Message);
                 if (ex.StackTrace != null)
                     Trace.WriteLine(ex.StackTrace);
+                return $"Error: {ex.Message}";
             }
             finally
             {
                 _context.Dispose();
             }
-            return false;
         }
 
         public async Task<bool> VerifyOTP(string email, string inputOtp)
@@ -520,6 +572,34 @@ namespace sopra_hris_api.src.Services.API
                 _context.Dispose();
             }
             return false;
+        }
+
+        public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName)
+        {
+            string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";
+            string body = $@"
+            <p>Dear {candidateName},</p>
+            <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
+            <p>{(!string.IsNullOrEmpty(nextPhaseName) ? $"Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. " : "")}Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut.</p>
+            <p>Selamat dan persiapkan diri Anda dengan baik!</p>
+            <p>Hormat kami,</p>
+            <p>Tim Rekrutmen</p>";
+
+            Utility.sendMail(toEmail, "", subject, body);
+        }
+
+        public void SendRejectionEmail(string toEmail, string candidateName, string jobTitle)
+        {
+            string subject = $"Update Mengenai Lamaran Anda untuk Posisi {jobTitle}";
+            string body = $@"
+            <p>Dear {candidateName},</p>
+            <p>Terima kasih atas waktu dan usaha yang telah Anda berikan dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
+            <p>Setelah melalui pertimbangan yang saksama, kami harus memberitahukan bahwa kami memutuskan untuk melanjutkan dengan kandidat lain yang kualifikasinya lebih sesuai dengan kebutuhan kami saat ini.</p>
+            <p>Kami sangat menghargai minat Anda untuk bergabung dengan perusahaan kami dan kami akan menyimpan data Anda untuk kesempatan di masa depan. Kami doakan yang terbaik untuk karir Anda selanjutnya.</p>
+            <p>Hormat kami,</p>
+            <p>Tim Rekrutmen</p>";
+
+            Utility.sendMail(toEmail, "", subject, body);
         }
     }
 }

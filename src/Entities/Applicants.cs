@@ -1,6 +1,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace sopra_hris_api.Entities
 {
@@ -60,5 +61,12 @@ namespace sopra_hris_api.Entities
 
         public string Password { get; set; }
         public long? UserUp { get; set; }
+    }
+    [Keyless]
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; }
+        public string OTP { get; set; }
+        public string NewPassword { get; set; }
     }
 }

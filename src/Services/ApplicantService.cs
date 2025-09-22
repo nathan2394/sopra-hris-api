@@ -214,7 +214,114 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<string> SendForgotPasswordOTPAsync(string email)
+        {
+            try
+            {
+                // Check if user exists
+                var checkQuery = "SELECT TOP 1 FullName FROM Applicants WHERE Email = @Email AND IsDeleted = 0";
+                string name = null;
 
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", email));
+                    _context.Database.OpenConnection();
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            name = reader.IsDBNull(0) ? null : reader.GetString(0);
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(name))
+                    return "Account not found.";
+
+                // Optional: rate limit (same as before)
+                var rateLimitCheckQuery = @"
+            SELECT TOP 1 RequestCount, LastRequestTime
+            FROM OTPVerification
+            WHERE Email = @Email AND IsVerify = 0
+            ORDER BY LastRequestTime DESC";
+
+                int requestCount = 0;
+                DateTime? lastRequestTime = null;
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = rateLimitCheckQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", email));
+
+                    _context.Database.OpenConnection();
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            requestCount = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+                            lastRequestTime = reader.IsDBNull(1) ? null : reader.GetDateTime(1);
+                        }
+                    }
+                }
+
+                if (lastRequestTime != null && lastRequestTime > DateTime.Now.AddHours(-1) && requestCount >= 5)
+                    return "Too many OTP requests in the last hour.";
+
+                // Generate OTP
+                string otp = new Random().Next(1000, 9999).ToString();
+                DateTime expiration = DateTime.Now.AddMinutes(10);
+
+                var otpQuery = @"
+        IF EXISTS (SELECT 1 FROM OTPVerification WHERE Email = @Email AND IsVerify = 0)
+        BEGIN
+            UPDATE OTPVerification
+            SET OTP = @OTP, ExpirationDate = @ExpirationDate, IsVerify = 0,
+                RequestCount = ISNULL(RequestCount, 0) + 1,
+                LastRequestTime = GETDATE()
+            WHERE Email = @Email AND IsVerify = 0
+        END
+        ELSE
+        BEGIN
+            INSERT INTO OTPVerification (Email, OTP, ExpirationDate, IsVerify, RequestCount, LastRequestTime)
+            VALUES (@Email, @OTP, @ExpirationDate, 0, 1, GETDATE())
+        END";
+
+                await _context.Database.ExecuteSqlRawAsync(otpQuery,
+                    new SqlParameter("@Email", email),
+                    new SqlParameter("@OTP", otp),
+                    new SqlParameter("@ExpirationDate", expiration));
+
+                // Send email
+                string subject = "Reset Password";
+                string body = $@"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+    <meta charset=""UTF-8"">
+    <title>Reset Kata Sandi</title>
+</head>
+<body>
+    <p>Halo {name},</p>
+    <p>Kami menerima permintaan untuk mereset kata sandi akun Anda. Gunakan kode OTP berikut untuk melanjutkan proses reset:</p>
+    <h2>{otp}</h2>
+    <p>OTP ini berlaku selama <strong>10 menit</strong>. Jangan berikan kode ini kepada siapa pun.</p>
+    <p>Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan email ini.</p>
+    <p>Terima kasih</p>
+</body>
+</html>";
+
+                Utility.sendMail(email, "", subject, body);
+
+                return "OTP sent successfully.";
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                return "An error occurred.";
+            }
+        }
         public async Task<ListResponse<Applicants>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -414,34 +521,70 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task SendAdvanceToNextPhaseEmailAsync(string toEmail, string candidateName, string jobTitle, string nextPhaseName)
+        public async Task<string> VerifyOTPAndResetPasswordAsync(ResetPasswordRequest request)
         {
-            string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";
-            string body = $@"
-            <p>Dear {candidateName},</p>
-            <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
-            <p>Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut.</p>
-            <p>Selamat dan persiapkan diri Anda dengan baik!</p>
-            <p>Hormat kami,</p>
-            <p>Tim Rekrutmen</p>";
+            try
+            {
+                // Step 1: Verify OTP
+                var otpQuery = @"
+            SELECT TOP 1 ExpirationDate
+            FROM OTPVerification
+            WHERE Email = @Email AND OTP = @OTP AND IsVerify = 0";
 
-            // Panggil metode pengiriman email Anda di sini
-            // await SendEmailAsync(toEmail, subject, body);
-        }
+                DateTime? expirationDate = null;
 
-        public async Task SendRejectionEmailAsync(string toEmail, string candidateName, string jobTitle)
-        {
-            string subject = $"Update Mengenai Lamaran Anda untuk Posisi {jobTitle}";
-            string body = $@"
-            <p>Dear {candidateName},</p>
-            <p>Terima kasih atas waktu dan usaha yang telah Anda berikan dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
-            <p>Setelah melalui pertimbangan yang saksama, kami harus memberitahukan bahwa kami memutuskan untuk melanjutkan dengan kandidat lain yang kualifikasinya lebih sesuai dengan kebutuhan kami saat ini.</p>
-            <p>Kami sangat menghargai minat Anda untuk bergabung dengan perusahaan kami dan kami akan menyimpan data Anda untuk kesempatan di masa depan. Kami doakan yang terbaik untuk karir Anda selanjutnya.</p>
-            <p>Hormat kami,</p>
-            <p>Tim Rekrutmen</p>";
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = otpQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", request.Email));
+                    command.Parameters.Add(new SqlParameter("@OTP", request.OTP));
+                    _context.Database.OpenConnection();
 
-            // Panggil metode pengiriman email Anda di sini
-            // await SendEmailAsync(toEmail, subject, body);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            expirationDate = reader.IsDBNull(0) ? null : reader.GetDateTime(0);
+                        }
+                    }
+                }
+
+                if (expirationDate == null)
+                    return "Invalid OTP.";
+                if (expirationDate < DateTime.Now)
+                    return "OTP has expired.";
+
+                // Step 2: Mark OTP as used
+                var updateOTP = @"
+            UPDATE OTPVerification
+            SET IsVerify = 1
+            WHERE Email = @Email AND OTP = @OTP";
+
+                await _context.Database.ExecuteSqlRawAsync(updateOTP,
+                    new SqlParameter("@Email", request.Email),
+                    new SqlParameter("@OTP", request.OTP));
+
+                // Step 3: Update Password (assuming hashed password)
+                var passwordHash = Utility.HashPassword(request.NewPassword); // Replace with your hashing method
+
+                var updatePassword = @"
+            UPDATE Applicants
+            SET Password = @Password
+            WHERE Email = @Email AND IsDeleted = 0";
+
+                var rowsAffected = await _context.Database.ExecuteSqlRawAsync(updatePassword,
+                    new SqlParameter("@Password", passwordHash),
+                    new SqlParameter("@Email", request.Email));
+
+                return rowsAffected > 0 ? "Password has been reset successfully." : "Failed to reset password.";
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+                return "An error occurred.";
+            }
         }
     }
 }

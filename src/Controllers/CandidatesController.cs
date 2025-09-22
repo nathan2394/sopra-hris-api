@@ -225,12 +225,14 @@ public class CandidatesController : ControllerBase
                 return BadRequest(new { message = "Email is required." });
 
             // Send OTP via Email
-            bool result = await _service.SaveOTPToDatabase(request.Name, request.Email, request.CompanyID);
+            var result = await _service.SaveOTPToDatabase(request.Name, request.Email);
 
-            if (result)
-                return Ok(new { message = "OTP has been sent to your email." });
+            if (result == "OTP has been sent to your email.")
+                return Ok(new { message = result });
+            else if (result == "Account found.")
+                return StatusCode(409, new { message = result });
 
-            return StatusCode(500, new { message = "Failed to send OTP email." });
+            return StatusCode(500, new { message = result });
         }
         catch (Exception ex)
         {

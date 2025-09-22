@@ -62,7 +62,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -94,7 +93,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -119,7 +117,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -133,6 +130,54 @@ public class ApplicantsController : ControllerBase
             var result = await _service.ChangePasswordAsync(obj);
             var response = new Response<Applicants>(result);
             return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("ForgotPassword")]
+    public async Task<IActionResult> ForgotPassword(string Email)
+    {
+        try
+        {
+            var result = await _service.SendForgotPasswordOTPAsync(Email);
+
+            if (result == "OTP sent successfully.")
+                return Ok(new { message = result });
+
+            return BadRequest(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("ResetPassword")]
+    public async Task<IActionResult> VerifyOTPAndResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            var result = await _service.VerifyOTPAndResetPasswordAsync(request);
+
+            if (result == "Password has been reset successfully.")
+                return Ok(new { message = result });
+
+            return BadRequest(new { message = result });
         }
         catch (Exception ex)
         {
@@ -166,7 +211,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -188,7 +232,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }
@@ -211,7 +254,6 @@ public class ApplicantsController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "ApplicationsController");
             return BadRequest(new { message });
         }
     }

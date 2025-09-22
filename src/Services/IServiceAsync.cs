@@ -25,6 +25,8 @@ namespace sopra_hris_api.src.Services
         Task<bool> DeleteAsync(long id, long userID);
         Task<int> GetCompletionAsync(long id);
         Task<bool> ProfileCompletion(long id, int Percentage);
+        Task<string> SendForgotPasswordOTPAsync(string Email);
+        Task<string> VerifyOTPAndResetPasswordAsync(ResetPasswordRequest request);
     }
     public interface IServiceJobsAsync<T>
     {
@@ -35,7 +37,7 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
         Task<Dictionary<string, object>> GetFilters(string filter);
-        Task<bool> SaveOTPToDatabase(string Name, string Email, int CompanyID);
+        Task<string> SaveOTPToDatabase(string Name, string Email);
         Task<bool> VerifyOTP(string email, string inputOtp);
     }
     public interface IServiceDashboardAsync<T>
