@@ -36,13 +36,20 @@ namespace sopra_hris_api.Entities
         public DateTime? ScreeningDate { get; set; }
         public long? ScreeningBy { get; set; }
         public string? ScreeningNotes { get; set; }
+        public bool? IsScreeningUser { get; set; }
+        public DateTime? ScreeningUserDate { get; set; }
+        public long? ScreeningUserBy { get; set; }
+        public string? ScreeningUserNotes { get; set; }
         public bool? IsAssessment { get; set; }
+        public long? AssessmentBy { get; set; }
         public DateTime? AssessmentDate { get; set; }
         public string? AssessmentResult { get; set; }
         public bool? IsInterview { get; set; }
+        public long? InterviewBy { get; set; }
         public DateTime? InterviewDate { get; set; }
         public string? InterviewResult { get; set; }
         public bool? IsOffer { get; set; }
+        public long? OfferBy { get; set; }
         public DateTime? OfferDate { get; set; }
         public string? OfferResult { get; set; }
         public string? Status { get; set; }

@@ -44,5 +44,21 @@ namespace sopra_hris_api.Entities
         public DateTime? ConsentSignedAt { get; set; }
         [NotMapped]
         public long? CandidateID { get; set; }
+        public int? ProfileCompletion { get; set; }
+        public string? ResumeURL { get; set; }
+    }
+
+    public class ApplicantChangePassword
+    {
+        [Key]
+        public long ApplicantID { get; set; }
+
+        public string FullName { get; set; }
+        public string MobilePhoneNumber { get; set; }
+
+        public string Email { get; set; }
+
+        public string Password { get; set; }
+        public long? UserUp { get; set; }
     }
 }

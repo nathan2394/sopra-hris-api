@@ -29,16 +29,32 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                data.ApplicationDate = data.DateIn;
-                data.Status = "Apply";
-                data.ApplicantID = await _context.Applicants.Where(x => x.Email.ToLower() == data.Email.ToLower() && x.IsDeleted == false).Select(x => x.ApplicantID).FirstOrDefaultAsync();
-               
-                await _context.Candidates.AddAsync(data);
+                var existingCandidate = await _context.Candidates.FirstOrDefaultAsync(x => x.IsDeleted == false && x.JobID == data.JobID && x.Email == data.Email && x.Status == "Applied");
+                if (existingCandidate != null)
+                {
+                    existingCandidate.CandidateName = data.CandidateName;
+                    existingCandidate.PhoneNumber = data.PhoneNumber;
+                    existingCandidate.ResumeURL = data.ResumeURL; 
+                    existingCandidate.PortfolioLink = data.PortfolioLink;
+                    existingCandidate.Remarks = data.Remarks;
+                    existingCandidate.Status = "Applied";
+                    existingCandidate.ApplicationDate = DateTime.Now;
+
+                    existingCandidate.DateUp = DateTime.Now;
+                    existingCandidate.UserUp = data.UserIn;
+                }
+                else
+                {
+                    data.ApplicationDate = data.DateIn;
+                    data.Status = "Applied";
+                    data.ApplicantID = await _context.Applicants.Where(x => x.Email.ToLower() == data.Email.ToLower() && x.IsDeleted == false).Select(x => x.ApplicantID).FirstOrDefaultAsync();
+                    await _context.Candidates.AddAsync(data);
+                }             
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
 
-                return data;
+                return existingCandidate ?? data;
             }
             catch (Exception ex)
             {
@@ -94,13 +110,20 @@ namespace sopra_hris_api.src.Services.API
                 obj.ScreeningDate = data.ScreeningDate;
                 obj.ScreeningBy = data.ScreeningBy;
                 obj.ScreeningNotes = data.ScreeningNotes;
+                obj.IsScreeningUser = data.IsScreeningUser;
+                obj.ScreeningUserDate = data.ScreeningUserDate;
+                obj.ScreeningUserBy = data.ScreeningUserBy;
+                obj.ScreeningUserNotes = data.ScreeningUserNotes;
                 obj.IsAssessment = data.IsAssessment;
+                obj.AssessmentBy = data.AssessmentBy;
                 obj.AssessmentDate = data.AssessmentDate;
                 obj.AssessmentResult = data.AssessmentResult;
                 obj.IsInterview = data.IsInterview;
+                obj.InterviewBy = data.InterviewBy;
                 obj.InterviewDate = data.InterviewDate;
                 obj.InterviewResult = data.InterviewResult;
                 obj.IsOffer = data.IsOffer;
+                obj.OfferBy = data.OfferBy;
                 obj.OfferDate = data.OfferDate;
                 obj.OfferResult = data.OfferResult;
                 obj.Status = data.Status;
@@ -149,14 +172,22 @@ namespace sopra_hris_api.src.Services.API
                                 ApplicantID = c.ApplicantID,
                                 IsScreening = c.IsScreening,
                                 ScreeningBy = c.ScreeningBy,
+                                ScreeningDate = c.ScreeningDate,
                                 ScreeningNotes = c.ScreeningNotes,
+                                IsScreeningUser = c.IsScreeningUser,
+                                ScreeningUserBy = c.ScreeningUserBy,
+                                ScreeningUserDate = c.ScreeningUserDate,
+                                ScreeningUserNotes = c.ScreeningUserNotes,
                                 IsAssessment = c.IsAssessment,
+                                AssessmentBy = c.AssessmentBy,
                                 AssessmentDate = c.AssessmentDate,
                                 AssessmentResult = c.AssessmentResult,
                                 IsInterview = c.IsInterview,
+                                InterviewBy = c.InterviewBy,
                                 InterviewDate = c.InterviewDate,
                                 InterviewResult = c.InterviewResult,
                                 IsOffer = c.IsOffer,
+                                OfferBy = c.OfferBy,
                                 OfferDate = c.OfferDate,
                                 OfferResult = c.OfferResult,
                                 Status = c.Status,
@@ -296,14 +327,22 @@ namespace sopra_hris_api.src.Services.API
                     ApplicantID = c.ApplicantID,
                     IsScreening = c.IsScreening,
                     ScreeningBy = c.ScreeningBy,
+                    ScreeningDate = c.ScreeningDate,
                     ScreeningNotes = c.ScreeningNotes,
+                    IsScreeningUser = c.IsScreeningUser,
+                    ScreeningUserBy = c.ScreeningUserBy,
+                    ScreeningUserDate = c.ScreeningUserDate,
+                    ScreeningUserNotes = c.ScreeningUserNotes,
                     IsAssessment = c.IsAssessment,
+                    AssessmentBy = c.AssessmentBy,
                     AssessmentDate = c.AssessmentDate,
                     AssessmentResult = c.AssessmentResult,
                     IsInterview = c.IsInterview,
+                    InterviewBy = c.InterviewBy,
                     InterviewDate = c.InterviewDate,
                     InterviewResult = c.InterviewResult,
                     IsOffer = c.IsOffer,
+                    OfferBy = c.OfferBy,
                     OfferDate = c.OfferDate,
                     OfferResult = c.OfferResult,
                     Status = c.Status,

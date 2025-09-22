@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
@@ -10,7 +11,7 @@ using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class ApplicantService : IServiceAsync<Applicants>
+    public class ApplicantService : IServiceApplicantAsync<Applicants>
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -39,6 +40,7 @@ namespace sopra_hris_api.src.Services.API
                         company = jobs.CompanyID == 2 ? "PT Trass Anugrah Makmur" : "PT Solusi Prima Packaging";
                         jobtitle = jobs.JobTitle;
                     }
+                    data.ResumeURL = candidates.ResumeURL;
                 }
                 var check_Applicant = await _context.Applicants.FirstOrDefaultAsync(x => x.IsDeleted == false && x.Email == data.Email);
                 if (check_Applicant == null)
@@ -46,50 +48,48 @@ namespace sopra_hris_api.src.Services.API
                     password = string.Concat(data.Email.Length >= 4 ? data.Email.Substring(0, 4) : data.Email, data.DateIn.Value.ToString("HHmmss"));
                     data.Password = Utility.HashPassword(password);
                     data.ConsentSignedAt = null;
-
                     await _context.Applicants.AddAsync(data);
                     await _context.SaveChangesAsync();
 
-
                     await dbTrans.CommitAsync();
 
-                    try
-                    {
+//                    try
+//                    {
 
-                        string subject = $"Tindak Lanjut Lamaran Anda: Pengisian Biodata untuk Proses Seleksi";
-                        string body = $@"
-                    <!DOCTYPE html>
-<html lang=""id"">
-<head>
-    <meta charset=""UTF-8"">
-    <title>Informasi Akun dan Biodata</title>
-</head>
-<body>
-    <p>Dear {data.FullName},</p>
+//                        string subject = $"Tindak Lanjut Lamaran Anda: Pengisian Biodata untuk Proses Seleksi";
+//                        string body = $@"
+//                    <!DOCTYPE html>
+//<html lang=""id"">
+//<head>
+//    <meta charset=""UTF-8"">
+//    <title>Informasi Akun dan Biodata</title>
+//</head>
+//<body>
+//    <p>Dear {data.FullName},</p>
 
-    <p>Terima kasih telah melamar untuk posisi <strong>{jobtitle}</strong> di <strong>{company}</strong>. Kami senang menginformasikan bahwa Anda telah lolos ke tahap berikutnya dalam proses seleksi.</p>
+//    <p>Terima kasih telah melamar untuk posisi <strong>{jobtitle}</strong> di <strong>{company}</strong>. Kami senang menginformasikan bahwa Anda telah lolos ke tahap berikutnya dalam proses seleksi.</p>
 
-    <p>Untuk melanjutkan, kami mohon Anda untuk mengisi biodata melalui link berikut. Kami juga telah membuatkan akun untuk Anda.</p>
+//    <p>Untuk melanjutkan, kami mohon Anda untuk mengisi biodata melalui link berikut. Kami juga telah membuatkan akun untuk Anda.</p>
 
-    <p><strong>Detail Akun:</strong></p>
-    <ul>
-        <li>Username: {data.Email}</li>
-        <li>Password: {password}</li>
-    </ul>
+//    <p><strong>Detail Akun:</strong></p>
+//    <ul>
+//        <li>Username: {data.Email}</li>
+//        <li>Password: {password}</li>
+//    </ul>
 
-    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/id/login"">click here</a></p>
+//    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/id/login"">click here</a></p>
 
-    <p>Jika Anda membutuhkan bantuan atau memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
+//    <p>Jika Anda membutuhkan bantuan atau memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
 
-    <p>Kami menantikan data biodata Anda dan proses selanjutnya.</p>
+//    <p>Kami menantikan data biodata Anda dan proses selanjutnya.</p>
 
-    <p>Terima kasih</p>
-</body>
-</html>";
-                        Utility.sendMail(String.Join(";", data.Email), "", subject, body);
+//    <p>Terima kasih</p>
+//</body>
+//</html>";
+//                        Utility.sendMail(String.Join(";", data.Email), "", subject, body);
 
-                    }
-                    catch (Exception ex) { }
+//                    }
+//                    catch (Exception ex) { }
                 }
                 else
                     data = check_Applicant;
@@ -138,7 +138,38 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
+        public async Task<Applicants> ChangePasswordAsync(ApplicantChangePassword data)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var obj = await _context.Applicants.FirstOrDefaultAsync(x => x.ApplicantID == data.ApplicantID && x.IsDeleted == false);
+                if (obj == null) return null;
+                
+                obj.Password = Utility.HashPassword(data.Password);
+                obj.FullName = data.FullName;
+                obj.MobilePhoneNumber = data.MobilePhoneNumber;
+                
+                obj.UserUp = data.UserUp;
+                obj.DateUp = DateTime.Now;
 
+                await _context.SaveChangesAsync();
+
+                await dbTrans.CommitAsync();
+
+                return obj;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }            
+        }
         public async Task<Applicants> EditAsync(Applicants data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -184,7 +215,6 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-
         public async Task<ListResponse<Applicants>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
@@ -212,6 +242,8 @@ namespace sopra_hris_api.src.Services.API
                                 NoSIM = a.NoSIM,
                                 WeightKG = a.WeightKG,
                                 ConsentSignedAt = a.ConsentSignedAt,
+                                ProfileCompletion = a.ProfileCompletion,
+                                ResumeURL = a.ResumeURL
                             };
 
                 // Searching
@@ -322,6 +354,8 @@ namespace sopra_hris_api.src.Services.API
                     NoSIM = a.NoSIM,
                     WeightKG = a.WeightKG,
                     ConsentSignedAt = a.ConsentSignedAt,
+                    ProfileCompletion = a.ProfileCompletion,
+                    ResumeURL = a.ResumeURL
                 }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
@@ -332,6 +366,82 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        public async Task<int> GetCompletionAsync(long id)
+        {
+            try
+            {
+                var sql = "SELECT ISNULL(ProfileCompletion, 0) Value FROM Applicants WHERE ApplicantID = @ApplicantID";
+                var percentage = await _context.Database.SqlQueryRaw<int>(sql, new SqlParameter("@ApplicantID", id))
+                                                         .FirstOrDefaultAsync();
+                return percentage;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<bool> ProfileCompletion(long id, int Completion)
+        {
+            try
+            {
+                var sql = @"Update Applicants SET ProfileCompletion=@ProfileCompletion WHERE ApplicantID=@ApplicantID";
+                var parameters = new[]
+                {
+            new SqlParameter("@ApplicantID", id),
+            new SqlParameter("@ProfileCompletion", Completion)
+        };
+
+                await _context.Database.ExecuteSqlRawAsync(sql, parameters);
+                var rowsAffected = await _context.Database.ExecuteSqlRawAsync(sql, parameters);
+
+                if (rowsAffected > 0)
+                    return true;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+        public async Task SendAdvanceToNextPhaseEmailAsync(string toEmail, string candidateName, string jobTitle, string nextPhaseName)
+        {
+            string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";
+            string body = $@"
+            <p>Dear {candidateName},</p>
+            <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
+            <p>Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut.</p>
+            <p>Selamat dan persiapkan diri Anda dengan baik!</p>
+            <p>Hormat kami,</p>
+            <p>Tim Rekrutmen</p>";
+
+            // Panggil metode pengiriman email Anda di sini
+            // await SendEmailAsync(toEmail, subject, body);
+        }
+
+        public async Task SendRejectionEmailAsync(string toEmail, string candidateName, string jobTitle)
+        {
+            string subject = $"Update Mengenai Lamaran Anda untuk Posisi {jobTitle}";
+            string body = $@"
+            <p>Dear {candidateName},</p>
+            <p>Terima kasih atas waktu dan usaha yang telah Anda berikan dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
+            <p>Setelah melalui pertimbangan yang saksama, kami harus memberitahukan bahwa kami memutuskan untuk melanjutkan dengan kandidat lain yang kualifikasinya lebih sesuai dengan kebutuhan kami saat ini.</p>
+            <p>Kami sangat menghargai minat Anda untuk bergabung dengan perusahaan kami dan kami akan menyimpan data Anda untuk kesempatan di masa depan. Kami doakan yang terbaik untuk karir Anda selanjutnya.</p>
+            <p>Hormat kami,</p>
+            <p>Tim Rekrutmen</p>";
+
+            // Panggil metode pengiriman email Anda di sini
+            // await SendEmailAsync(toEmail, subject, body);
         }
     }
 }

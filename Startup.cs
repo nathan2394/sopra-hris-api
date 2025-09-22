@@ -189,8 +189,9 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<AttendanceIncentive>, AttendanceIncentiveService>();
             services.AddScoped<IServiceJobsAsync<Jobs>, JobService>();
             services.AddScoped<IServiceJobsAsync<Candidates>, CandidateService>();
-            services.AddScoped<IServiceAsync<Applicants>, ApplicantService>();
+            services.AddScoped<IServiceApplicantAsync<Applicants>, ApplicantService>();
             services.AddScoped<IServiceAsync<ApplicantCertifications>, ApplicantCertificationService>();
+            services.AddScoped<IServiceAsync<ApplicantSocialMedia>, ApplicantSocialMediaService>();
             services.AddScoped<IServiceAsync<ApplicantSkillList>, ApplicantSkillListService>();
             services.AddScoped<IServiceAsync<ApplicantFamilys>, ApplicantFamilyService>();
             services.AddScoped<IServiceAsync<ApplicantOtherInfo>, ApplicantOtherInfoService>();

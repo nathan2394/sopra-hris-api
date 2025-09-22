@@ -14,6 +14,18 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
     }
+    public interface IServiceApplicantAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data);
+        Task<T> EditAsync(T data);
+        Task<T> ChangePasswordAsync(ApplicantChangePassword data);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<int> GetCompletionAsync(long id);
+        Task<bool> ProfileCompletion(long id, int Percentage);
+    }
     public interface IServiceJobsAsync<T>
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,

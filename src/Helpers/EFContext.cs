@@ -64,6 +64,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<Applicants> Applicants { get; set; }
         public DbSet<ApplicantSkillList> ApplicantSkillList { get; set; }
         public DbSet<ApplicantCertifications> ApplicantCertifications { get; set; }
+        public DbSet<ApplicantSocialMedia> ApplicantSocialMedia { get; set; }
         public DbSet<WarningLetters> WarningLetters { get; set; }
         public DbSet<ApplicantOtherInfo> ApplicantOtherInfo { get; set; }
         public DbSet<OtherReferences> OtherReferences { get; set; }
