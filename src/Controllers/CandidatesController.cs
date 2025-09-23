@@ -80,10 +80,9 @@ public class CandidatesController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(obj.CandidateName) ||
                 string.IsNullOrWhiteSpace(obj.Email) ||
-                string.IsNullOrWhiteSpace(obj.PhoneNumber) ||
-                string.IsNullOrWhiteSpace(obj.ResumeURL))
+                string.IsNullOrWhiteSpace(obj.PhoneNumber))
             {
-                return BadRequest(new { message = "CandidateName, Email, PhoneNumber, and ResumeUrl are required." });
+                return BadRequest(new { message = "CandidateName, Email, PhoneNumber are required." });
             }
 
             //var checkotp = await _service.VerifyOTP(obj.Email, obj.OTPCode);

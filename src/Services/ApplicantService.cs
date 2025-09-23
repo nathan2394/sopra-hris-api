@@ -28,71 +28,14 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                string company = "";
-                string jobtitle = "";
                 string password = "";
-                var candidates = await _context.Candidates.FirstOrDefaultAsync(x => x.IsDeleted == false && x.CandidateID == data.CandidateID);
-                if (candidates != null)
-                {
-                    var jobs = await _context.Jobs.FirstOrDefaultAsync(x => x.JobID == candidates.JobID);
-                    if (jobs != null)
-                    {
-                        company = jobs.CompanyID == 2 ? "PT Trass Anugrah Makmur" : "PT Solusi Prima Packaging";
-                        jobtitle = jobs.JobTitle;
-                    }
-                    data.ResumeURL = candidates.ResumeURL;
-                }
-                var check_Applicant = await _context.Applicants.FirstOrDefaultAsync(x => x.IsDeleted == false && x.Email == data.Email);
-                if (check_Applicant == null)
-                {
-                    password = string.Concat(data.Email.Length >= 4 ? data.Email.Substring(0, 4) : data.Email, data.DateIn.Value.ToString("HHmmss"));
-                    data.Password = Utility.HashPassword(password);
-                    data.ConsentSignedAt = null;
-                    await _context.Applicants.AddAsync(data);
-                    await _context.SaveChangesAsync();
+                password = string.Concat(data.Email.Length >= 4 ? data.Email.Substring(0, 4) : data.Email, data.DateIn.Value.ToString("HHmmss"));
+                data.Password = Utility.HashPassword(password);
+                data.ConsentSignedAt = null;
+                await _context.Applicants.AddAsync(data);
+                await _context.SaveChangesAsync();
 
-                    await dbTrans.CommitAsync();
-
-//                    try
-//                    {
-
-//                        string subject = $"Tindak Lanjut Lamaran Anda: Pengisian Biodata untuk Proses Seleksi";
-//                        string body = $@"
-//                    <!DOCTYPE html>
-//<html lang=""id"">
-//<head>
-//    <meta charset=""UTF-8"">
-//    <title>Informasi Akun dan Biodata</title>
-//</head>
-//<body>
-//    <p>Dear {data.FullName},</p>
-
-//    <p>Terima kasih telah melamar untuk posisi <strong>{jobtitle}</strong> di <strong>{company}</strong>. Kami senang menginformasikan bahwa Anda telah lolos ke tahap berikutnya dalam proses seleksi.</p>
-
-//    <p>Untuk melanjutkan, kami mohon Anda untuk mengisi biodata melalui link berikut. Kami juga telah membuatkan akun untuk Anda.</p>
-
-//    <p><strong>Detail Akun:</strong></p>
-//    <ul>
-//        <li>Username: {data.Email}</li>
-//        <li>Password: {password}</li>
-//    </ul>
-
-//    <p><strong>Link Biodata:</strong><a href=""https://portal.solusi-pack.com/id/login"">click here</a></p>
-
-//    <p>Jika Anda membutuhkan bantuan atau memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
-
-//    <p>Kami menantikan data biodata Anda dan proses selanjutnya.</p>
-
-//    <p>Terima kasih</p>
-//</body>
-//</html>";
-//                        Utility.sendMail(String.Join(";", data.Email), "", subject, body);
-
-//                    }
-//                    catch (Exception ex) { }
-                }
-                else
-                    data = check_Applicant;
+                await dbTrans.CommitAsync();
 
                 data.Password = "";
                 return data;
@@ -193,6 +136,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.HomePhoneNumber = data.HomePhoneNumber;
                 obj.MobilePhoneNumber = data.MobilePhoneNumber;
                 obj.ConsentSignedAt = data.ConsentSignedAt;
+                obj.ResumeURL = data.ResumeURL;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
