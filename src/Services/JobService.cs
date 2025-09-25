@@ -19,6 +19,11 @@ namespace sopra_hris_api.src.Services.API
             _context = context;
         }
 
+        public Task<Jobs> CheckIfCandidateExists(long jobId, string email)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<Jobs> CreateAsync(Jobs data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
@@ -217,6 +222,11 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        public Task<ListResponse<CandidateDTO>> GetAllCustomAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<Jobs> GetByIdAsync(long id)

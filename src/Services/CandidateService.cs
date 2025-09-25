@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Data;
+using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,38 +24,25 @@ namespace sopra_hris_api.src.Services.API
             _httpContextAccessor = httpContextAccessor;
         }
         private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
-
+        public async Task<Candidates> CheckIfCandidateExists(long jobId, string email)
+        {
+            return await _context.Candidates
+                .FirstOrDefaultAsync(x => x.IsDeleted == false && x.JobID == jobId && x.Email == email && x.Status == "Applied");
+        }
         public async Task<Candidates> CreateAsync(Candidates data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var existingCandidate = await _context.Candidates.FirstOrDefaultAsync(x => x.IsDeleted == false && x.JobID == data.JobID && x.Email == data.Email && x.Status == "Applied");
-                if (existingCandidate != null)
-                {
-                    existingCandidate.CandidateName = data.CandidateName;
-                    existingCandidate.PhoneNumber = data.PhoneNumber;
-                    existingCandidate.ResumeURL = data.ResumeURL; 
-                    existingCandidate.PortfolioLink = data.PortfolioLink;
-                    existingCandidate.Remarks = data.Remarks;
-                    existingCandidate.Status = "Applied";
-                    existingCandidate.ApplicationDate = DateTime.Now;
-
-                    existingCandidate.DateUp = DateTime.Now;
-                    existingCandidate.UserUp = data.UserIn;
-                }
-                else
-                {
-                    data.ApplicationDate = data.DateIn;
-                    data.Status = "Applied";
-                    data.ApplicantID = await _context.Applicants.Where(x => x.Email.ToLower() == data.Email.ToLower() && x.IsDeleted == false).Select(x => x.ApplicantID).FirstOrDefaultAsync();
-                    await _context.Candidates.AddAsync(data);
-                }             
+                data.ApplicationDate = data.DateIn;
+                data.Status = "Applied";
+                data.ApplicantID = await _context.Applicants.Where(x => x.Email.ToLower() == data.Email.ToLower() && x.IsDeleted == false).Select(x => x.ApplicantID).FirstOrDefaultAsync();
+                await _context.Candidates.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
 
-                return existingCandidate ?? data;
+                return data;
             }
             catch (Exception ex)
             {
@@ -177,6 +165,118 @@ namespace sopra_hris_api.src.Services.API
 
                 await dbTrans.RollbackAsync();
 
+                throw;
+            }
+        }
+        public async Task<ListResponse<CandidateDTO>> GetAllCustomAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        {
+            try
+            {
+                var offset = page * limit;
+                var sortParts = string.IsNullOrEmpty(sort) ? new string[0] : sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var sortBy = sortParts.Length > 0 ? sortParts[0].ToLower() : null;
+                var sortOrder = sortParts.Length > 1 && sortParts[1].ToLower() == "desc" ? "DESC" : "ASC";
+
+                var parameters = new SqlParameter[]
+{
+    new SqlParameter("@CandidateID", SqlDbType.BigInt) { Value = 0 },
+    new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+    new SqlParameter("@JobTitle", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+    new SqlParameter("@JobID", SqlDbType.Int) { Value = DBNull.Value },
+    new SqlParameter("@MobilePhoneNumber", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+    new SqlParameter("@Email", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+    new SqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+    new SqlParameter("@Department", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
+    new SqlParameter("@Location", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
+    new SqlParameter("@JobType", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+    new SqlParameter("@ApplicantID", SqlDbType.BigInt) { Value = DBNull.Value },
+    new SqlParameter("@StartDate", SqlDbType.Date) { Value = DBNull.Value },
+    new SqlParameter("@EndDate", SqlDbType.Date) { Value = DBNull.Value },
+    new SqlParameter("@Limit", SqlDbType.Int) { Value = 1000 },
+    new SqlParameter("@Offset", SqlDbType.Int) { Value = 0 },
+    new SqlParameter("@SortBy", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+    new SqlParameter("@SortOrder", SqlDbType.NVarChar, 4) { Value = "ASC" }
+};
+
+                // Apply filters from 'filter' string
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    var filters = filter.Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var f in filters)
+                    {
+                        var parts = f.Split(":", StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length == 2)
+                        {
+                            var key = parts[0].ToLower();
+                            var val = parts[1];
+
+                            switch (key)
+                            {
+                                case "candidateid":
+                                    if (long.TryParse(val, out var id))
+                                        parameters.First(p => p.ParameterName == "@CandidateID").Value = id;
+                                    break;
+                                case "name":
+                                    parameters.First(p => p.ParameterName == "@FullName").Value = val;
+                                    break;
+                                case "jobtitle":
+                                    parameters.First(p => p.ParameterName == "@JobTitle").Value = val;
+                                    break;
+                                case "jobid":
+                                    if (int.TryParse(val, out var jobId))
+                                        parameters.First(p => p.ParameterName == "@JobID").Value = jobId;
+                                    break;
+                                case "phonenumber":
+                                    parameters.First(p => p.ParameterName == "@MobilePhoneNumber").Value = val;
+                                    break;
+                                case "email":
+                                    parameters.First(p => p.ParameterName == "@Email").Value = val;
+                                    break;
+                                case "status":
+                                    parameters.First(p => p.ParameterName == "@Status").Value = val;
+                                    break;
+                                case "department":
+                                    parameters.First(p => p.ParameterName == "@Department").Value = val;
+                                    break;
+                                case "location":
+                                    parameters.First(p => p.ParameterName == "@Location").Value = val;
+                                    break;
+                                case "jobtype":
+                                    parameters.First(p => p.ParameterName == "@JobType").Value = val;
+                                    break;
+                                case "applicant":
+                                    if (long.TryParse(val, out var appId))
+                                        parameters.First(p => p.ParameterName == "@ApplicantID").Value = appId;
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // Apply date filter
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var dates = date.Split("|");
+                    if (dates.Length == 2 && DateTime.TryParse(dates[0], out var startDate) && DateTime.TryParse(dates[1], out var endDate))
+                    {
+                        parameters.First(p => p.ParameterName == "@StartDate").Value = startDate;
+                        parameters.First(p => p.ParameterName == "@EndDate").Value = endDate;
+                    }
+                }
+
+                var data = await _context.CandidateDTO
+    .FromSqlRaw("EXEC GetCandidateFullProfile @CandidateID, @FullName, @JobTitle, @JobID, @MobilePhoneNumber, @Email, @Status, @Department, @Location, @JobType, @ApplicantID, @StartDate, @EndDate, @Limit, @Offset, @SortBy, @SortOrder", parameters)
+    .ToListAsync();
+
+
+                total = data.Count; // Optional: or you can call a separate COUNT SP
+
+                return new ListResponse<CandidateDTO>(data, total, page);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                Trace.WriteLine(ex.StackTrace);
                 throw;
             }
         }

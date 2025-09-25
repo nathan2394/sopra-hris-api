@@ -73,8 +73,7 @@ public class ApplicantsController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(obj.FullName) ||
                 string.IsNullOrWhiteSpace(obj.Email) ||
-                string.IsNullOrWhiteSpace(obj.MobilePhoneNumber) ||
-                obj.CandidateID == null || obj.CandidateID == 0)
+                string.IsNullOrWhiteSpace(obj.MobilePhoneNumber))
             {
                 return BadRequest(new { message = "Name, Email, PhoneNumber are required." });
             }
@@ -167,12 +166,37 @@ public class ApplicantsController : ControllerBase
             return BadRequest(new { message });
         }
     }
-    [HttpPost("ResetPassword")]
-    public async Task<IActionResult> VerifyOTPAndResetPassword([FromBody] ResetPasswordRequest request)
+    [HttpPost("VerifyOTP")]
+    public async Task<IActionResult> VerifyOTP([FromBody] VerifyResetPasswordRequest request)
     {
         try
         {
-            var result = await _service.VerifyOTPAndResetPasswordAsync(request);
+            var result = await _service.VerifyOTPResetAsync(request);
+
+            if (result == "Password has been reset successfully.")
+                return Ok(new { message = result,  });
+
+            return BadRequest(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "ApplicationsController");
+            return BadRequest(new { message });
+        }
+    }
+    [HttpPost("ResetPassword")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            var result = await _service.ResetPasswordAsync(request);
 
             if (result == "Password has been reset successfully.")
                 return Ok(new { message = result });

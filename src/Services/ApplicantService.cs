@@ -8,6 +8,7 @@ using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Helpers;
+using static System.Net.WebRequestMethods;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -28,13 +29,16 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                string password = "";
-                password = string.Concat(data.Email.Length >= 4 ? data.Email.Substring(0, 4) : data.Email, data.DateIn.Value.ToString("HHmmss"));
-                data.Password = Utility.HashPassword(password);
+                data.Password = Utility.HashPassword(data.Password);
                 data.ConsentSignedAt = null;
                 await _context.Applicants.AddAsync(data);
                 await _context.SaveChangesAsync();
 
+                var candidatesToUpdate = await _context.Candidates.Where(c => c.Email == data.Email && c.IsDeleted == false && (c.ApplicantID == null || c.ApplicantID == 0)).ToListAsync();
+
+                candidatesToUpdate.ForEach(x => x.ApplicantID = data.ApplicantID);
+
+                await _context.SaveChangesAsync();
                 await dbTrans.CommitAsync();
 
                 data.Password = "";
@@ -465,7 +469,7 @@ namespace sopra_hris_api.src.Services.API
                 throw;
             }
         }
-        public async Task<string> VerifyOTPAndResetPasswordAsync(ResetPasswordRequest request)
+        public async Task<string> VerifyOTPResetAsync(VerifyResetPasswordRequest request)
         {
             try
             {
@@ -498,18 +502,75 @@ namespace sopra_hris_api.src.Services.API
                 if (expirationDate < DateTime.Now)
                     return "OTP has expired.";
 
+                string otp = new Random().Next(1000, 9999).ToString();
+                DateTime expiration = DateTime.Now.AddMinutes(10);
+
                 // Step 2: Mark OTP as used
                 var updateOTP = @"
-            UPDATE OTPVerification
-            SET IsVerify = 1
-            WHERE Email = @Email AND OTP = @OTP";
+                    UPDATE OTPVerification
+                    SET IsVerify = 1
+                    WHERE Email = @Email AND OTP = @OTP AND IsVerify=0
+
+                    INSERT INTO OTPVerification (Email, OTP, ExpirationDate, IsVerify, RequestCount, LastRequestTime)
+                    VALUES (@Email, @NewOTP, @ExpirationDate, 0, 1, GETDATE())";
+
+                var rowsAffected = await _context.Database.ExecuteSqlRawAsync(updateOTP,
+                    new SqlParameter("@Email", request.Email),
+                    new SqlParameter("@OTP", request.OTP),
+                    new SqlParameter("@NewOTP", otp),
+                    new SqlParameter("@ExpirationDate", expiration));
+
+                return rowsAffected > 0 ? $"Code: {otp}" : "Failed to reset password.";
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+                return "An error occurred.";
+            }
+        }
+        public async Task<string> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            try
+            {
+                var otpQuery = @"
+            SELECT TOP 1 ExpirationDate
+            FROM OTPVerification
+            WHERE Email = @Email AND OTP = @OTP AND IsVerify = 0 ORDER BY ExpirationDate DESC";
+
+                DateTime? expirationDate = null;
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = otpQuery;
+                    command.Parameters.Add(new SqlParameter("@Email", request.Email));
+                    command.Parameters.Add(new SqlParameter("@OTP", request.OTP));
+                    _context.Database.OpenConnection();
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            expirationDate = reader.IsDBNull(0) ? null : reader.GetDateTime(0);
+                        }
+                    }
+                }
+
+                if (expirationDate == null)
+                    return "Invalid OTP.";
+                if (expirationDate < DateTime.Now)
+                    return "OTP has expired.";
+                var passwordHash = Utility.HashPassword(request.NewPassword);
+
+                var updateOTP = @"
+                    UPDATE OTPVerification
+                    SET IsVerify = 1
+                    WHERE Email = @Email AND OTP = @OTP AND IsVerify=0";
 
                 await _context.Database.ExecuteSqlRawAsync(updateOTP,
                     new SqlParameter("@Email", request.Email),
                     new SqlParameter("@OTP", request.OTP));
-
-                // Step 3: Update Password (assuming hashed password)
-                var passwordHash = Utility.HashPassword(request.NewPassword); // Replace with your hashing method
 
                 var updatePassword = @"
             UPDATE Applicants

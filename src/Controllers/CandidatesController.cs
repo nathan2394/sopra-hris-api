@@ -41,6 +41,27 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpGet("Custom")]
+    public async Task<IActionResult> GetCustom(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
+    {
+        try
+        {
+            var total = 0;
+            var result = await _service.GetAllCustomAsync(limit, page, total, search, sort, filter, date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            return BadRequest(new { message });
+        }
+    }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
@@ -94,6 +115,11 @@ public class CandidatesController : ControllerBase
             obj.OtpVerify = true;
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
 
+            // Check if the candidate has already applied
+            var existingCandidate = await _service.CheckIfCandidateExists(obj.JobID, obj.Email);
+            if (existingCandidate != null)
+                return BadRequest(new { message = "Failed because you have already applied." });
+            
             var result = await _service.CreateAsync(obj);
             var response = new Response<Candidates>(result);
             return Ok(response);

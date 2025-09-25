@@ -63,6 +63,12 @@ namespace sopra_hris_api.Entities
         public long? UserUp { get; set; }
     }
     [Keyless]
+    public class VerifyResetPasswordRequest
+    {
+        public string Email { get; set; }
+        public string OTP { get; set; }
+    }
+    [Keyless]
     public class ResetPasswordRequest
     {
         public string Email { get; set; }

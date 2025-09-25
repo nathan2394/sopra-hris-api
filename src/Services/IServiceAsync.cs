@@ -26,10 +26,12 @@ namespace sopra_hris_api.src.Services
         Task<int> GetCompletionAsync(long id);
         Task<bool> ProfileCompletion(long id, int Percentage);
         Task<string> SendForgotPasswordOTPAsync(string Email);
-        Task<string> VerifyOTPAndResetPasswordAsync(ResetPasswordRequest request);
+        Task<string> ResetPasswordAsync(ResetPasswordRequest request);
+        Task<string> VerifyOTPResetAsync(VerifyResetPasswordRequest request);
     }
     public interface IServiceJobsAsync<T>
     {
+        Task<ListResponse<CandidateDTO>> GetAllCustomAsync(int limit, int page, int total, string search, string sort, string filter, string date);
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
         string filter, string date);
         Task<T> GetByIdAsync(long id);
@@ -39,6 +41,7 @@ namespace sopra_hris_api.src.Services
         Task<Dictionary<string, object>> GetFilters(string filter);
         Task<string> SaveOTPToDatabase(string Name, string Email);
         Task<bool> VerifyOTP(string email, string inputOtp);
+        Task<T> CheckIfCandidateExists(long jobId, string email);
     }
     public interface IServiceDashboardAsync<T>
     {
