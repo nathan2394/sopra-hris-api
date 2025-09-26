@@ -126,7 +126,12 @@ namespace sopra_hris_api.src.Services.API
 
                 string JobTitle = await _context.Jobs.Where(x => x.JobID == obj.JobID).Select(x => x.JobTitle).SingleOrDefaultAsync() ?? "";
 
-                if (obj.IsScreening.HasValue && obj.IsScreeningUser.HasValue && !obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
+                if (obj.IsScreening.HasValue && !obj.IsScreeningUser.HasValue && !obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
+                {
+                    if (!obj.IsScreening.Value)
+                        SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
+                }
+                else if (obj.IsScreeningUser.HasValue && !obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
                 {
                     if (obj.IsScreeningUser.Value)
                         SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Assessment");
