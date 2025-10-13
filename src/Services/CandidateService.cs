@@ -183,25 +183,25 @@ namespace sopra_hris_api.src.Services.API
                 var sortOrder = sortParts.Length > 1 && sortParts[1].ToLower() == "desc" ? "DESC" : "ASC";
 
                 var parameters = new SqlParameter[]
-{
-    new SqlParameter("@CandidateID", SqlDbType.BigInt) { Value = 0 },
-    new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
-    new SqlParameter("@JobTitle", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
-    new SqlParameter("@JobID", SqlDbType.Int) { Value = DBNull.Value },
-    new SqlParameter("@MobilePhoneNumber", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
-    new SqlParameter("@Email", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
-    new SqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
-    new SqlParameter("@Department", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
-    new SqlParameter("@Location", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
-    new SqlParameter("@JobType", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
-    new SqlParameter("@ApplicantID", SqlDbType.BigInt) { Value = DBNull.Value },
-    new SqlParameter("@StartDate", SqlDbType.Date) { Value = DBNull.Value },
-    new SqlParameter("@EndDate", SqlDbType.Date) { Value = DBNull.Value },
-    new SqlParameter("@Limit", SqlDbType.Int) { Value = 1000 },
-    new SqlParameter("@Offset", SqlDbType.Int) { Value = 0 },
-    new SqlParameter("@SortBy", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
-    new SqlParameter("@SortOrder", SqlDbType.NVarChar, 4) { Value = "ASC" }
-};
+                {
+                    new SqlParameter("@CandidateID", SqlDbType.BigInt) { Value = 0 },
+                    new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+                    new SqlParameter("@JobTitle", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+                    new SqlParameter("@JobID", SqlDbType.Int) { Value = DBNull.Value },
+                    new SqlParameter("@MobilePhoneNumber", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+                    new SqlParameter("@Email", SqlDbType.NVarChar, 200) { Value = DBNull.Value },
+                    new SqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+                    new SqlParameter("@Department", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
+                    new SqlParameter("@Location", SqlDbType.NVarChar, 100) { Value = DBNull.Value },
+                    new SqlParameter("@JobType", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+                    new SqlParameter("@ApplicantID", SqlDbType.BigInt) { Value = DBNull.Value },
+                    new SqlParameter("@StartDate", SqlDbType.Date) { Value = DBNull.Value },
+                    new SqlParameter("@EndDate", SqlDbType.Date) { Value = DBNull.Value },
+                    new SqlParameter("@Limit", SqlDbType.Int) { Value = 1000 },
+                    new SqlParameter("@Offset", SqlDbType.Int) { Value = 0 },
+                    new SqlParameter("@SortBy", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
+                    new SqlParameter("@SortOrder", SqlDbType.NVarChar, 4) { Value = "ASC" }
+                };
 
                 // Apply filters from 'filter' string
                 if (!string.IsNullOrEmpty(filter))
@@ -685,7 +685,11 @@ namespace sopra_hris_api.src.Services.API
             string body = $@"
             <p>Dear {candidateName},</p>
             <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
-            <p>{(!string.IsNullOrEmpty(nextPhaseName) ? $"Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. " : "")}Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut.</p>
+            <p>
+                {(!string.IsNullOrEmpty(nextPhaseName)
+                        ? $"Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut."
+                        : "Kami ingin memberitahukan bahwa Anda telah melewati seluruh proses seleksi dan tim rekrutmen kami akan menghubungi Anda untuk proses selanjutnya.")}
+            </p>
             <p>Selamat dan persiapkan diri Anda dengan baik!</p>
             <p>Hormat kami,</p>
             <p>Tim Rekrutmen</p>";

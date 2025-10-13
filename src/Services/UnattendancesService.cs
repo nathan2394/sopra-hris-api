@@ -82,13 +82,13 @@ namespace sopra_hris_api.src.Services.API
                     await _context.Unattendances.AddAsync(data);
                     long UnattendanceID = await _context.SaveChangesAsync();
 
-                    await _context.Database.ExecuteSqlRawAsync(@"if exists (select 1 from EmployeeLeaveQuotas where EmployeeID=@EmployeeID and Year=@Year AND LeaveTypeID=2)
+                    await _context.Database.ExecuteSqlRawAsync(@"if exists (select 1 from EmployeeLeaveQuotas where EmployeeID=@EmployeeID and Year=@Year AND LeaveTypeID=@UnattendanceTypeID)
                                 begin
                                 update EmployeeLeaveQuotas
                                 set UsedQuota=ISNULL(UsedQuota,0)+@Duration,DateUp=GETDATE(),UserUp=@UserID
                                 where EmployeeID=@EmployeeID and Year=@Year AND LeaveTypeID=2
                                 end", new SqlParameter("EmployeeID", data.EmployeeID), new SqlParameter("Year", data.StartDate.Year)
-                                , new SqlParameter("Duration", duration), new SqlParameter("UserID", data.UserIn));
+                                , new SqlParameter("Duration", duration), new SqlParameter("UserID", data.UserIn), new SqlParameter("UnattendanceTypeID", data.UnattendanceTypeID));
 
                     var mailto = await _context.Set<EmailDTO>().FromSqlRaw(@"
         SELECT DISTINCT u.Email, u.Name

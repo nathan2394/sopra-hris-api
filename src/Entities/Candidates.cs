@@ -114,22 +114,39 @@ namespace sopra_hris_api.Entities
 
         public decimal? ExpectedSalary { get; set; }
         public string? AvailabilityToStart { get; set; }
+        public string? SourceOfInformation { get; set; }
 
         // Education
         public string? InstitutionName { get; set; }
         public string? EducationLevel { get; set; }
         public string? LastGraduationDate { get; set; }
+        public string? Major { get; set; }
+        public string? FirstEnrollmentDate { get; set; }
+        public decimal? GPA { get; set; }
 
         // Work Experience
         public string? CompanyName { get; set; }
         public string? LastPosition { get; set; }
         public DateTime? EmploymentStartDate { get; set; }
         public DateTime? EmploymentEndDate { get; set; }
-
         public string? JobDescription { get; set; }
         public decimal? LastSalary { get; set; }
         public string? ReasonForLeaving { get; set; }
-        public string? SourceOfInformation { get; set; }
-    }
 
+        // Certificate
+        public string? CertificateName { get; set; }
+        public string? IssuingOrganization { get; set; }
+        public DateTime? IssueDate { get; set; }
+        public DateTime? ExpirationDate { get; set; }
+        public string? CredentialURL { get; set; }
+
+        // ApplicantSkillList
+        public string? ApplicantSkillList { get; set; }
+
+        // OrganizationalHistory
+        public string? OrganizationName { get; set; }
+        public string? OrganizationPosition { get; set; }
+        public string? LocationCity { get; set; }
+        public int? PeriodYearOrganization { get; set; }
+    }
 }
