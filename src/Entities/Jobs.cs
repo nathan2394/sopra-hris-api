@@ -16,7 +16,6 @@ namespace sopra_hris_api.Entities
 
         public string JobDescription { get; set; }
         public string? JobDescription_Id { get; set; }
-
         public string JobType { get; set; }
         public string Department { get; set; }
         public string Location { get; set; }
@@ -24,13 +23,10 @@ namespace sopra_hris_api.Entities
         public decimal? SalaryMin { get; set; }
 
         public decimal? SalaryMax { get; set; }
-
         public string Tags { get; set; }
-
         public bool? IsActive { get; set; }
-
         public DateTime? PublicationDate { get; set; }
         public DateTime? ExpirationDate { get; set; }
-
+        public string? PsychotestLink { get; set; }
     }
 }

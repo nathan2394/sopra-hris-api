@@ -23,6 +23,8 @@ namespace sopra_hris_api.Entities
         [NotMapped]
         public string? JobTitle { get; set; }
         [NotMapped]
+        public string? PsychotestLink { get; set; }
+        [NotMapped]
         public string? JobType { get; set; }
         [NotMapped]
         public string? Department { get; set; }
@@ -72,6 +74,7 @@ namespace sopra_hris_api.Entities
         public string? Department { get; set; }
         public string? JobType { get; set; }
         public long? CompanyID { get; set; }
+        public string? PsychotestLink { get; set; }
 
         public bool? IsScreening { get; set; }
         public bool? IsScreeningUser { get; set; }

@@ -90,6 +90,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.Department = data.Department;
                 obj.JobTitle = data.JobTitle;
                 obj.JobDescription = data.JobDescription;
+                obj.PsychotestLink = data.PsychotestLink;
                 obj.JobType = data.JobType;
                 obj.Location = data.Location;
                 obj.SalaryMin = data.SalaryMin;

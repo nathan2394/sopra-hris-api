@@ -134,14 +134,17 @@ namespace sopra_hris_api.src.Services.API
                 else if (obj.IsScreeningUser.HasValue && !obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
                 {
                     if (obj.IsScreeningUser.Value)
-                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Assessment");
+                    {
+                        var jobs = await _context.Jobs.Where(x => x.JobID == obj.JobID).FirstOrDefaultAsync();
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Assessment", jobs.PsychotestLink ?? "", data.AssessmentDate);
+                    }
                     if (!obj.IsScreeningUser.Value)
                         SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
                 }
                 else if (obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
                 {
                     if (obj.IsAssessment.Value)
-                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Interview");
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Interview", "", data.InterviewDate);
                     if (!obj.IsAssessment.Value)
                         SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
                 }
@@ -332,7 +335,8 @@ namespace sopra_hris_api.src.Services.API
                                 Location = j.Location,
                                 Department = j.Department,
                                 JobType = j.JobType,
-                                PortfolioLink = c.PortfolioLink
+                                PortfolioLink = c.PortfolioLink,
+                                PsychotestLink = j.PsychotestLink
                             };
 
                 // Searching 
@@ -446,49 +450,50 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
-              var result=  from c in _context.Candidates
-                join j in _context.Jobs on c.JobID equals j.JobID
-                where c.IsDeleted == false && c.CandidateID == id 
-                select new Candidates
-                {
-                    CandidateID = c.CandidateID,
-                    CandidateName = c.CandidateName,
-                    JobID = c.JobID,
-                    JobTitle = j.JobTitle,
-                    Email = c.Email,
-                    PhoneNumber = c.PhoneNumber,
-                    ResumeURL = c.ResumeURL,
-                    Remarks = c.Remarks,
-                    ApplicationDate = c.ApplicationDate,
-                    ApplicantID = c.ApplicantID,
-                    IsScreening = c.IsScreening,
-                    ScreeningBy = c.ScreeningBy,
-                    ScreeningDate = c.ScreeningDate,
-                    ScreeningNotes = c.ScreeningNotes,
-                    IsScreeningUser = c.IsScreeningUser,
-                    ScreeningUserBy = c.ScreeningUserBy,
-                    ScreeningUserDate = c.ScreeningUserDate,
-                    ScreeningUserNotes = c.ScreeningUserNotes,
-                    IsAssessment = c.IsAssessment,
-                    AssessmentBy = c.AssessmentBy,
-                    AssessmentDate = c.AssessmentDate,
-                    AssessmentResult = c.AssessmentResult,
-                    IsInterview = c.IsInterview,
-                    InterviewBy = c.InterviewBy,
-                    InterviewDate = c.InterviewDate,
-                    InterviewResult = c.InterviewResult,
-                    IsOffer = c.IsOffer,
-                    OfferBy = c.OfferBy,
-                    OfferDate = c.OfferDate,
-                    OfferResult = c.OfferResult,
-                    Status = c.Status,
-                    OtpVerify = c.OtpVerify,
-                    CompanyID = j.CompanyID,
-                    Location = j.Location,
-                    Department = j.Department,
-                    JobType = j.JobType,
-                    PortfolioLink = c.PortfolioLink
-                };
+                var result = from c in _context.Candidates
+                             join j in _context.Jobs on c.JobID equals j.JobID
+                             where c.IsDeleted == false && c.CandidateID == id
+                             select new Candidates
+                             {
+                                 CandidateID = c.CandidateID,
+                                 CandidateName = c.CandidateName,
+                                 JobID = c.JobID,
+                                 JobTitle = j.JobTitle,
+                                 Email = c.Email,
+                                 PhoneNumber = c.PhoneNumber,
+                                 ResumeURL = c.ResumeURL,
+                                 Remarks = c.Remarks,
+                                 ApplicationDate = c.ApplicationDate,
+                                 ApplicantID = c.ApplicantID,
+                                 IsScreening = c.IsScreening,
+                                 ScreeningBy = c.ScreeningBy,
+                                 ScreeningDate = c.ScreeningDate,
+                                 ScreeningNotes = c.ScreeningNotes,
+                                 IsScreeningUser = c.IsScreeningUser,
+                                 ScreeningUserBy = c.ScreeningUserBy,
+                                 ScreeningUserDate = c.ScreeningUserDate,
+                                 ScreeningUserNotes = c.ScreeningUserNotes,
+                                 IsAssessment = c.IsAssessment,
+                                 AssessmentBy = c.AssessmentBy,
+                                 AssessmentDate = c.AssessmentDate,
+                                 AssessmentResult = c.AssessmentResult,
+                                 IsInterview = c.IsInterview,
+                                 InterviewBy = c.InterviewBy,
+                                 InterviewDate = c.InterviewDate,
+                                 InterviewResult = c.InterviewResult,
+                                 IsOffer = c.IsOffer,
+                                 OfferBy = c.OfferBy,
+                                 OfferDate = c.OfferDate,
+                                 OfferResult = c.OfferResult,
+                                 Status = c.Status,
+                                 OtpVerify = c.OtpVerify,
+                                 CompanyID = j.CompanyID,
+                                 Location = j.Location,
+                                 Department = j.Department,
+                                 JobType = j.JobType,
+                                 PortfolioLink = c.PortfolioLink,
+                                 PsychotestLink = j.PsychotestLink
+                             };
                 return await result.AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)
@@ -679,21 +684,56 @@ namespace sopra_hris_api.src.Services.API
             return false;
         }
 
-        public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName)
+        public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName, string PsychotestLink = "", DateTime? TaskDate = null)
         {
-            string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";
+            string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";       
             string body = $@"
-            <p>Dear {candidateName},</p>
-            <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>
-            <p>
-                {(!string.IsNullOrEmpty(nextPhaseName)
-                        ? $"Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>. Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut."
-                        : "Kami ingin memberitahukan bahwa Anda telah melewati seluruh proses seleksi dan tim rekrutmen kami akan menghubungi Anda untuk proses selanjutnya.")}
-            </p>
-            <p>Selamat dan persiapkan diri Anda dengan baik!</p>
-            <p>Hormat kami,</p>
-            <p>Tim Rekrutmen</p>";
+        <p>Dear {candidateName},</p>
+        <p>Terima kasih atas partisipasi Anda dalam proses seleksi untuk posisi <strong>{jobTitle}</strong>.</p>";
 
+            // Next phase message
+            if (!string.IsNullOrEmpty(nextPhaseName))
+            {
+                body += $@"
+        <p>Kami ingin memberitahukan bahwa Anda telah berhasil lolos ke tahap selanjutnya, yaitu <strong>{nextPhaseName}</strong>.</p>";
+
+                // Additional info for specific phases
+                if (nextPhaseName.Equals("Assessment", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrEmpty(PsychotestLink))
+                    {
+                        body += $@"<p>Silakan akses link berikut untuk mengikuti psikotes: <a href='{PsychotestLink}' target='_blank'>click here</a></p>";
+                    }
+
+                    if (TaskDate.HasValue)
+                    {
+                        body += $@"<p>Deadline: <strong>{TaskDate.Value:dd MMMM yyyy}</strong></p>";
+                    }
+                }
+                else if (nextPhaseName.Equals("Interview", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (TaskDate.HasValue)
+                    {
+                        body += $@"<p>Jadwal interview Anda: <strong>{TaskDate.Value:dd MMMM yyyy HH:mm}</strong></p>";
+                    }
+                }
+                else
+                {
+                    body += "<p>Tim rekrutmen kami akan segera menghubungi Anda untuk penjadwalan lebih lanjut.</p>";
+                }
+            }
+            else
+            {
+                body += @"<p>Kami ingin memberitahukan bahwa Anda telah melewati seluruh proses seleksi dan tim rekrutmen kami akan menghubungi Anda untuk proses selanjutnya.</p>";
+            }
+
+            // Closing
+            body += @"
+        <p>Selamat dan persiapkan diri Anda dengan baik!</p>
+        <p>Hormat kami,</p>
+        <p>Tim Rekrutmen</p>";
+
+            // Send email
             Utility.sendMail(toEmail, "", subject, body);
         }
 
