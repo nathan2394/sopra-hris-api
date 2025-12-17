@@ -345,6 +345,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                _context.Database.SetCommandTimeout(300);
                 DataTable employeeShiftTypeTable = new DataTable();
                 employeeShiftTypeTable.Columns.Add("EmployeeId", typeof(long));
                 employeeShiftTypeTable.Columns.Add("ShiftCode", typeof(string));

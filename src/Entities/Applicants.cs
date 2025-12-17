@@ -47,6 +47,7 @@ namespace sopra_hris_api.Entities
         public long? CandidateID { get; set; }
         public int? ProfileCompletion { get; set; }
         public string? ResumeURL { get; set; }
+        public bool? HasWorkExperience { get; set; }
     }
 
     public class ApplicantChangePassword

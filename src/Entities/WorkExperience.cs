@@ -33,6 +33,7 @@ namespace sopra_hris_api.Entities
         public string ReasonForLeaving { get; set; }
 
         public bool? CanBeContacted { get; set; }
+        public bool? IsCurrentJob { get; set; }
 
     }
 }

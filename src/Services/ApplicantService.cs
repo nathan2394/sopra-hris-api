@@ -8,7 +8,6 @@ using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Helpers;
-using static System.Net.WebRequestMethods;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -141,6 +140,7 @@ namespace sopra_hris_api.src.Services.API
                 obj.MobilePhoneNumber = data.MobilePhoneNumber;
                 obj.ConsentSignedAt = data.ConsentSignedAt;
                 obj.ResumeURL = data.ResumeURL;
+                obj.HasWorkExperience = data.HasWorkExperience;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -298,7 +298,8 @@ namespace sopra_hris_api.src.Services.API
                                 WeightKG = a.WeightKG,
                                 ConsentSignedAt = a.ConsentSignedAt,
                                 ProfileCompletion = a.ProfileCompletion,
-                                ResumeURL = a.ResumeURL
+                                ResumeURL = a.ResumeURL,
+                                HasWorkExperience = a.HasWorkExperience
                             };
 
                 // Searching
@@ -410,7 +411,8 @@ namespace sopra_hris_api.src.Services.API
                     WeightKG = a.WeightKG,
                     ConsentSignedAt = a.ConsentSignedAt,
                     ProfileCompletion = a.ProfileCompletion,
-                    ResumeURL = a.ResumeURL
+                    ResumeURL = a.ResumeURL,
+                    HasWorkExperience = a.HasWorkExperience
                 }).AsNoTracking().FirstOrDefaultAsync();
             }
             catch (Exception ex)

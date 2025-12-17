@@ -1,8 +1,4 @@
-﻿using System.Data;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using Azure.Core;
+﻿using Azure.Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
@@ -10,21 +6,29 @@ using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Data;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class SalaryService : IServiceSalaryAsync<Salary>
     {
         private readonly EFContext _context;
-
-        public SalaryService(EFContext context)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public SalaryService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
         public async Task<ListResponse<Salary>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = (from salary in _context.Salary
                              join employee in _context.Employees on salary.EmployeeID equals employee.EmployeeID
@@ -133,7 +137,17 @@ namespace sopra_hris_api.src.Services.API
                     page = 0;
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
-
+                data = data
+                    .Select(e =>
+                    {
+                        e.BasicSalary = Utility.MaskSalary(RoleID, e.BasicSalary ?? 0);
+                        e.Netto = Utility.MaskSalary(RoleID, e.Netto ?? 0);
+                        e.AllowanceTotal = Utility.MaskSalary(RoleID, e.AllowanceTotal ?? 0);
+                        e.DeductionTotal = Utility.MaskSalary(RoleID, e.DeductionTotal ?? 0);
+                        e.PaidSalary = Utility.MaskSalary(RoleID, e.PaidSalary ?? 0);
+                        return e;
+                    })
+                    .ToList();
                 return new ListResponse<Salary>(data, total, page);
             }
             catch (Exception ex)
@@ -410,7 +424,7 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 var type = "";
                 int month = DateTime.Now.Month;
                 int year = DateTime.Now.Year;
@@ -445,6 +459,41 @@ namespace sopra_hris_api.src.Services.API
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw(
                   "EXEC usp_SalaryDetails @Month, @Year, @IsFlag, @UserID", parameters.ToArray())
                   .ToListAsync();
+
+                data = data
+                .Select(e =>
+                {
+                    e.BasicSalary = Utility.MaskSalary(RoleID, e.BasicSalary);
+                    e.PaidSalary = Utility.MaskSalary(RoleID, e.PaidSalary ?? 0);
+                    e.UHMakan = Utility.MaskSalary(RoleID, e.UHMakan ?? 0);
+                    e.UHTransport = Utility.MaskSalary(RoleID, e.UHTransport ?? 0);
+                    e.UHKhusus = Utility.MaskSalary(RoleID, e.UHKhusus ?? 0);
+                    e.UHOperational = Utility.MaskSalary(RoleID, e.UHOperational ?? 0);
+                    e.UHLembur = Utility.MaskSalary(RoleID, e.UHLembur ?? 0);
+                    e.UMakan = Utility.MaskSalary(RoleID, e.UMakan ?? 0);
+                    e.UTransport = Utility.MaskSalary(RoleID, e.UTransport ?? 0);
+                    e.UJabatan = Utility.MaskSalary(RoleID, e.UJabatan ?? 0);
+                    e.UFunctional = Utility.MaskSalary(RoleID, e.UFunctional ?? 0);
+                    e.UTKhusus = Utility.MaskSalary(RoleID, e.UTKhusus ?? 0);
+                    e.UTOperational = Utility.MaskSalary(RoleID, e.UTOperational ?? 0);
+                    e.ULembur = Utility.MaskSalary(RoleID, e.ULembur ?? 0);
+                    e.UMasaKerja = Utility.MaskSalary(RoleID, e.UMasaKerja ?? 0);
+                    e.BPJS = Utility.MaskSalary(RoleID, e.BPJS ?? 0);
+                    e.UTLongShift = Utility.MaskSalary(RoleID, e.UTLongShift ?? 0);
+                    e.UTKehadiran = Utility.MaskSalary(RoleID, e.UTKehadiran ?? 0);
+                    e.UTSPV = Utility.MaskSalary(RoleID, e.UTSPV ?? 0);
+                    e.UKaizen = Utility.MaskSalary(RoleID, e.UKaizen ?? 0);
+                    e.Rapel = Utility.MaskSalary(RoleID, e.Rapel ?? 0);
+                    e.OtherAllowances = Utility.MaskSalary(RoleID, e.OtherAllowances ?? 0);
+                    e.OtherDeductions = Utility.MaskSalary(RoleID, e.OtherDeductions ?? 0);
+                    e.AllowanceTotal = Utility.MaskSalary(RoleID, e.AllowanceTotal ?? 0);
+                    e.DeductionTotal = Utility.MaskSalary(RoleID, e.DeductionTotal ?? 0);
+                    e.THP = Utility.MaskSalary(RoleID, e.THP ?? 0);
+                    e.Netto = Utility.MaskSalary(RoleID, e.Netto ?? 0);
+
+                    return e;
+                })
+                .ToList();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
@@ -538,6 +587,7 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
                 var data = await _context.SalaryDetailReportsDTO.FromSqlRaw($@"exec usp_SalaryDetailsByEmpID @EmployeeID,@Month,@Year, @UserID",
@@ -545,6 +595,41 @@ namespace sopra_hris_api.src.Services.API
                     new SqlParameter("@Month", SqlDbType.BigInt) { Value = Month },
                     new SqlParameter("@Year", SqlDbType.BigInt) { Value = Year },
                     new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID }).ToListAsync();
+
+                data = data
+                .Select(e =>
+                {
+                    e.BasicSalary = Utility.MaskSalary(RoleID, e.BasicSalary);
+                    e.PaidSalary = Utility.MaskSalary(RoleID, e.PaidSalary ?? 0);
+                    e.UHMakan = Utility.MaskSalary(RoleID, e.UHMakan ?? 0);
+                    e.UHTransport = Utility.MaskSalary(RoleID, e.UHTransport ?? 0);
+                    e.UHKhusus = Utility.MaskSalary(RoleID, e.UHKhusus ?? 0);
+                    e.UHOperational = Utility.MaskSalary(RoleID, e.UHOperational ?? 0);
+                    e.UHLembur = Utility.MaskSalary(RoleID, e.UHLembur ?? 0);
+                    e.UMakan = Utility.MaskSalary(RoleID, e.UMakan ?? 0);
+                    e.UTransport = Utility.MaskSalary(RoleID, e.UTransport ?? 0);
+                    e.UJabatan = Utility.MaskSalary(RoleID, e.UJabatan ?? 0);
+                    e.UFunctional = Utility.MaskSalary(RoleID, e.UFunctional ?? 0);
+                    e.UTKhusus = Utility.MaskSalary(RoleID, e.UTKhusus ?? 0);
+                    e.UTOperational = Utility.MaskSalary(RoleID, e.UTOperational ?? 0);
+                    e.ULembur = Utility.MaskSalary(RoleID, e.ULembur ?? 0);
+                    e.UMasaKerja = Utility.MaskSalary(RoleID, e.UMasaKerja ?? 0);
+                    e.BPJS = Utility.MaskSalary(RoleID, e.BPJS ?? 0);
+                    e.UTLongShift = Utility.MaskSalary(RoleID, e.UTLongShift ?? 0);
+                    e.UTKehadiran = Utility.MaskSalary(RoleID, e.UTKehadiran ?? 0);
+                    e.UTSPV = Utility.MaskSalary(RoleID, e.UTSPV ?? 0);
+                    e.UKaizen = Utility.MaskSalary(RoleID, e.UKaizen ?? 0);
+                    e.Rapel = Utility.MaskSalary(RoleID, e.Rapel ?? 0);
+                    e.OtherAllowances = Utility.MaskSalary(RoleID, e.OtherAllowances ?? 0);
+                    e.OtherDeductions = Utility.MaskSalary(RoleID, e.OtherDeductions ?? 0);
+                    e.AllowanceTotal = Utility.MaskSalary(RoleID, e.AllowanceTotal ?? 0);
+                    e.DeductionTotal = Utility.MaskSalary(RoleID, e.DeductionTotal ?? 0);
+                    e.THP = Utility.MaskSalary(RoleID, e.THP ?? 0);
+                    e.Netto = Utility.MaskSalary(RoleID, e.Netto ?? 0);
+
+                    return e;
+                })
+                .ToList();
 
                 return new ListResponseTemplate<SalaryDetailReportsDTO>(data);
             }
@@ -562,10 +647,29 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var data = await _context.MasterEmployeePayroll.FromSqlRaw($@"exec usp_GetMasterSalaryByEmpID @EmployeeID",
                     new SqlParameter("@EmployeeID", SqlDbType.BigInt) { Value = EmployeeID }).ToListAsync();
 
+                data = data
+                .Select(e =>
+                {
+                    e.BasicSalary = Utility.MaskSalary(RoleID, e.BasicSalary);
+                    e.Netto = Utility.MaskSalary(RoleID, e.Netto ?? 0);
+                    e.UMakan = Utility.MaskSalary(RoleID, e.UMakan ?? 0);
+                    e.UTransport = Utility.MaskSalary(RoleID, e.UTransport ?? 0);
+                    e.UJabatan = Utility.MaskSalary(RoleID, e.UJabatan ?? 0);
+                    e.UFunctional = Utility.MaskSalary(RoleID, e.UFunctional ?? 0);
+                    e.UTKhusus = Utility.MaskSalary(RoleID, e.UTKhusus ?? 0);
+                    e.UTOperational = Utility.MaskSalary(RoleID, e.UTOperational ?? 0);
+                    e.UMasaKerja = Utility.MaskSalary(RoleID, e.UMasaKerja ?? 0);
+                    e.ULembur = Utility.MaskSalary(RoleID, e.ULembur ?? 0);
+                    e.BPJS = Utility.MaskSalary(RoleID, e.BPJS ?? 0);
+                    e.THP = Utility.MaskSalary(RoleID, e.THP ?? 0);
+                    return e;
+                })
+                .ToList();
                 return new ListResponseTemplate<MasterEmployeePayroll>(data);
             }
             catch (Exception ex)

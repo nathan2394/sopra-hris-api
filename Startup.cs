@@ -204,6 +204,12 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<WorkExperience>, WorkExperienceService>();
             services.AddScoped<IServiceAsync<WarningLetters>, WarningLetterService>();
             services.AddScoped<IServiceDashboardAsync<DashboardDTO>, DashboardService>();
+            services.AddScoped<IServiceAsync<TestResponses>, TestResponseService>();
+            services.AddScoped<IServiceAsync<TestSessions>, TestSessionService>();
+            services.AddScoped<TestSessionService>();
+            services.AddScoped<IServiceAsync<QuestionCategories>, QuestionCategorieService>();
+            services.AddScoped<IServiceAsync<Questions>, QuestionService>();
+            services.AddScoped<IServiceAsync<AnswerOptions>, AnswerOptionService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -219,7 +225,7 @@ namespace sopra_hris_api
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
-            app.UseCors();
+            //app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();

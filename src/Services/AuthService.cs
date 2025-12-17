@@ -252,7 +252,8 @@ namespace sopra_hris_api.Services
 				//new Claim("name", user.Name),
 				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
                 new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
-                new Claim("groupid", (user?.GroupID ?? 0).ToString())
+                new Claim("groupid", (user?.GroupID ?? 0).ToString()),
+                new Claim("companyid", (user?.CompanyID?? 0).ToString())
               });
 
             var tokenDescriptor = new SecurityTokenDescriptor

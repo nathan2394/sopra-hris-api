@@ -58,6 +58,17 @@ namespace sopra_hris_api.Entities
         public bool? OtpVerify { get; set; }
         [NotMapped]
         public string? OTPCode { get; set; }
+        public string? InterviewMethod { get; set; }
+        public string? InterviewLink { get; set; }
+        public string? InterviewLocation { get; set; }
+        public decimal? FitScore { get; set; }
+        public string? GradeLevel { get; set; }
+        public string? AIRecommendationSummary { get; set; }
+        public string? AssessmentTestLink { get; set; }
+        public decimal? TechnicalTestScore { get; set; }
+        public decimal? CognitiveTestScore { get; set; }
+        public decimal? BehaviourTestScore { get; set; }
+        public decimal? TotalTestScore { get; set; }
     }
     public class CandidateDTO
     {
@@ -114,10 +125,17 @@ namespace sopra_hris_api.Entities
         public string? Address { get; set; }
         public DateTime? ConsentSignedAt { get; set; }
         public int? ProfileCompletion { get; set; }
-
+        public bool? HasWorkExperience { get; set; }
         public decimal? ExpectedSalary { get; set; }
         public string? AvailabilityToStart { get; set; }
         public string? SourceOfInformation { get; set; }
+        public decimal? FitScore { get; set; }
+        public string? GradeLevel { get; set; }
+        public string? AIRecommendationSummary { get; set; }
+        public decimal? TechnicalTestScore { get; set; }
+        public decimal? CognitiveTestScore { get; set; }
+        public decimal? BehaviourTestScore { get; set; }
+        public decimal? TotalTestScore { get; set; }
 
         // Education
         public string? InstitutionName { get; set; }
@@ -135,6 +153,7 @@ namespace sopra_hris_api.Entities
         public string? JobDescription { get; set; }
         public decimal? LastSalary { get; set; }
         public string? ReasonForLeaving { get; set; }
+        public bool? IsCurrentJob { get; set; }
 
         // Certificate
         public string? CertificateName { get; set; }
@@ -151,5 +170,8 @@ namespace sopra_hris_api.Entities
         public string? OrganizationPosition { get; set; }
         public string? LocationCity { get; set; }
         public int? PeriodYearOrganization { get; set; }
+        public string? InterviewMethod { get; set; }
+        public string? InterviewLink { get; set; }
+        public string? InterviewLocation { get; set; }
     }
 }

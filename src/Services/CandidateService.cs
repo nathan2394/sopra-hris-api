@@ -116,6 +116,13 @@ namespace sopra_hris_api.src.Services.API
                 obj.OfferResult = data.OfferResult;
                 obj.Status = data.Status;
                 obj.ApplicantID = data.ApplicantID;
+                obj.InterviewMethod = data.InterviewMethod;
+                obj.InterviewLink = data.InterviewLink;
+                obj.InterviewLocation = data.InterviewLocation;
+                obj.FitScore = data.FitScore;
+                obj.GradeLevel = data.GradeLevel;
+                obj.AIRecommendationSummary = data.AIRecommendationSummary;
+                obj.AssessmentTestLink = data.AssessmentTestLink;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -144,7 +151,7 @@ namespace sopra_hris_api.src.Services.API
                 else if (obj.IsAssessment.HasValue && !obj.IsInterview.HasValue && !obj.IsOffer.HasValue)
                 {
                     if (obj.IsAssessment.Value)
-                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Interview", "", data.InterviewDate);
+                        SendAdvanceToNextPhaseEmail(obj.Email, obj.CandidateName, JobTitle, "Interview", "", data.InterviewDate, data.InterviewMethod, data.InterviewLink, data.InterviewLocation);
                     if (!obj.IsAssessment.Value)
                         SendRejectionEmail(obj.Email, obj.CandidateName, JobTitle);
                 }
@@ -336,7 +343,14 @@ namespace sopra_hris_api.src.Services.API
                                 Department = j.Department,
                                 JobType = j.JobType,
                                 PortfolioLink = c.PortfolioLink,
-                                PsychotestLink = j.PsychotestLink
+                                PsychotestLink = j.PsychotestLink,
+                                InterviewLink = c.InterviewLink,
+                                InterviewLocation = c.InterviewLocation,
+                                InterviewMethod = c.InterviewMethod,
+                                FitScore = c.FitScore,
+                                GradeLevel = c.GradeLevel,
+                                AIRecommendationSummary = c.AIRecommendationSummary,
+                                AssessmentTestLink = c.AssessmentTestLink
                             };
 
                 // Searching 
@@ -492,7 +506,14 @@ namespace sopra_hris_api.src.Services.API
                                  Department = j.Department,
                                  JobType = j.JobType,
                                  PortfolioLink = c.PortfolioLink,
-                                 PsychotestLink = j.PsychotestLink
+                                 PsychotestLink = j.PsychotestLink,
+                                 InterviewLink = c.InterviewLink,
+                                 InterviewLocation = c.InterviewLocation,
+                                 InterviewMethod = c.InterviewMethod,
+                                 GradeLevel = c.GradeLevel,
+                                 FitScore = c.FitScore,
+                                 AIRecommendationSummary = c.AIRecommendationSummary,
+                                 AssessmentTestLink = c.AssessmentTestLink
                              };
                 return await result.AsNoTracking().FirstOrDefaultAsync();
             }
@@ -684,7 +705,7 @@ namespace sopra_hris_api.src.Services.API
             return false;
         }
 
-        public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName, string PsychotestLink = "", DateTime? TaskDate = null)
+        public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName, string PsychotestLink = "", DateTime? TaskDate = null, string interviewMethod = "", string interviewLink = "", string interviewLocation = "")
         {
             string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";       
             string body = $@"
@@ -715,6 +736,24 @@ namespace sopra_hris_api.src.Services.API
                     if (TaskDate.HasValue)
                     {
                         body += $@"<p>Jadwal interview Anda: <strong>{TaskDate.Value:dd MMMM yyyy HH:mm}</strong></p>";
+                    }
+                    if (!string.IsNullOrEmpty(interviewMethod))
+                    {
+                        if (interviewMethod.Equals("Online", StringComparison.OrdinalIgnoreCase))
+                        {
+                            body += $@"
+<p>Interview akan dilaksanakan secara <strong>Online</strong>.</p>
+<p>Silakan bergabung melalui link berikut pada waktu yang telah ditentukan:
+<br><a href='{interviewLink}' target='_blank'>click here</a></p>";
+                        }
+                        else if (interviewMethod.Equals("Offline", StringComparison.OrdinalIgnoreCase))
+                        {
+                            body += $@"
+<p>Interview akan dilaksanakan secara <strong>Offline</strong>.</p>
+<p>Lokasi interview:
+<br><strong>{interviewLocation}</strong></p>
+<p>Kami sarankan untuk hadir 10-15 menit lebih awal.</p>";
+                        }
                     }
                 }
                 else

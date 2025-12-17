@@ -1,28 +1,27 @@
-﻿using System;
-using System.Diagnostics;
-using Microsoft.EntityFrameworkCore;
-using sopra_hris_api.Entities;
+﻿using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
+using System.Diagnostics;
+using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
-    public class WorkExperienceService : IServiceAsync<WorkExperience>
+    public class AnswerOptionService : IServiceAsync<AnswerOptions>
     {
         private readonly EFContext _context;
 
-        public WorkExperienceService(EFContext context)
+        public AnswerOptionService(EFContext context)
         {
             _context = context;
         }
 
-        public async Task<WorkExperience> CreateAsync(WorkExperience data)
+        public async Task<AnswerOptions> CreateAsync(AnswerOptions data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.WorkExperience.AddAsync(data);
+                await _context.AnswerOptions.AddAsync(data);
                 await _context.SaveChangesAsync();
 
                 await dbTrans.CommitAsync();
@@ -46,7 +45,7 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.WorkExperience.FirstOrDefaultAsync(x => x.ExperienceID == id && x.IsDeleted == false);
+                var obj = await _context.AnswerOptions.FirstOrDefaultAsync(x => x.AnswerID == id && x.IsDeleted == false);
                 if (obj == null) return false;
 
                 obj.IsDeleted = true;
@@ -71,27 +70,18 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<WorkExperience> EditAsync(WorkExperience data)
+        public async Task<AnswerOptions> EditAsync(AnswerOptions data)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
-                var obj = await _context.WorkExperience.FirstOrDefaultAsync(x => x.ExperienceID == data.ExperienceID && x.IsDeleted == false);
+                var obj = await _context.AnswerOptions.FirstOrDefaultAsync(x => x.AnswerID == data.AnswerID && x.IsDeleted == false);
                 if (obj == null) return null;
 
-                obj.ApplicantID = data.ApplicantID;
-                obj.CompanyName = data.CompanyName;
-                obj.Industry = data.Industry;
-                obj.CompanyAddress = data.CompanyAddress;
-                obj.CompanyPhoneNumber = data.CompanyPhoneNumber;
-                obj.JobDescription = data.JobDescription;
-                obj.LastPosition = data.LastPosition;
-                obj.EmploymentStartDate = data.EmploymentStartDate;
-                obj.EmploymentEndDate = data.EmploymentEndDate;
-                obj.LastSalary = data.LastSalary;
-                obj.ReasonForLeaving = data.ReasonForLeaving;
-                obj.CanBeContacted = data.CanBeContacted;
-                obj.IsCurrentJob = data.IsCurrentJob;
+                obj.AnswerText = data.AnswerText;
+                obj.QuestionID = data.QuestionID;
+                obj.IsCorrect = data.IsCorrect;
+
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
 
@@ -114,18 +104,16 @@ namespace sopra_hris_api.src.Services.API
         }
 
 
-        public async Task<ListResponse<WorkExperience>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
+        public async Task<ListResponse<AnswerOptions>> GetAllAsync(int limit, int page, int total, string search, string sort, string filter, string date)
         {
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.WorkExperience
-                            where a.IsDeleted == false
-                            select a;
+                var query = from a in _context.AnswerOptions where a.IsDeleted == false select a;
 
                 // Searching
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.CompanyName.Contains(search)
+                    query = query.Where(x => x.AnswerText.Contains(search)
                         );
 
                 // Filtering
@@ -141,8 +129,8 @@ namespace sopra_hris_api.src.Services.API
                             var value = searchList[1].Trim();
                             query = fieldName switch
                             {
-                                "name" => query.Where(x => x.CompanyName.Contains(value)),
-                                "applicant" => long.TryParse(value, out var applicantId) ? query.Where(x => x.ApplicantID == applicantId) : query,
+                                "question" => query.Where(x => x.QuestionID.Equals(value)),
+                                "name" => query.Where(x => x.AnswerText.Contains(value)),
                                 _ => query
                             };
                         }
@@ -161,7 +149,6 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderByDescending(x => x.CompanyName),
                             _ => query
                         };
                     }
@@ -169,14 +156,13 @@ namespace sopra_hris_api.src.Services.API
                     {
                         query = orderBy.ToLower() switch
                         {
-                            "name" => query.OrderBy(x => x.CompanyName),
                             _ => query
                         };
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(x => x.ExperienceID);
+                    query = query.OrderByDescending(x => x.AnswerID);
                 }
 
                 // Get Total Before Limit and Page
@@ -194,7 +180,7 @@ namespace sopra_hris_api.src.Services.API
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
-                return new ListResponse<WorkExperience>(data, total, page);
+                return new ListResponse<AnswerOptions>(data, total, page);
             }
             catch (Exception ex)
             {
@@ -206,11 +192,11 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
-        public async Task<WorkExperience> GetByIdAsync(long id)
+        public async Task<AnswerOptions> GetByIdAsync(long id)
         {
             try
             {
-                return await _context.WorkExperience.AsNoTracking().FirstOrDefaultAsync(x => x.ExperienceID == id && x.IsDeleted == false);
+                return await _context.AnswerOptions.AsNoTracking().FirstOrDefaultAsync(x => x.AnswerID == id && x.IsDeleted == false);
             }
             catch (Exception ex)
             {

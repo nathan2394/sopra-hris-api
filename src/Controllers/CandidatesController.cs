@@ -186,6 +186,47 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpPut("{id}/FitScoreAndGradeLevel")]
+    public async Task<IActionResult> UpdateFitScoreAndGradeLevel(long id, string GradeLevel, decimal FitScore, string AIRecommendationSummary)
+    {
+        try
+        {
+            if (FitScore <= 0 && string.IsNullOrWhiteSpace(GradeLevel) && string.IsNullOrWhiteSpace(AIRecommendationSummary))
+                return BadRequest(new { message = "At least FitScore or GradeLevel or AIRecommendationSummary must be provided." });
+
+            var candidate = await _service.GetByIdAsync(id);
+            if (candidate == null)
+                return BadRequest(new { message = "Invalid candidate ID." });
+
+            if (FitScore > 0)
+                candidate.FitScore = FitScore;
+
+            if (!string.IsNullOrWhiteSpace(GradeLevel))
+                candidate.GradeLevel = GradeLevel;
+
+            if (!string.IsNullOrWhiteSpace(AIRecommendationSummary))
+                candidate.AIRecommendationSummary = AIRecommendationSummary;
+
+            candidate.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
+
+            var result = await _service.EditAsync(candidate);
+            var response = new Response<Candidates>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "CandidatesController");
+            return BadRequest(new { message });
+        }
+    }
+
     [HttpPost]
     [Route("upload")]
     public async Task<IActionResult> UploadFile(IFormFile file)

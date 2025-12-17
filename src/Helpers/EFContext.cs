@@ -73,6 +73,11 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<OrganizationalHistory> OrganizationalHistory { get; set; }
         public DbSet<EducationHistory> EducationHistory { get; set; }
         public DbSet<ApplicantFamilys> ApplicantFamilys { get; set; }
+        public DbSet<TestResponses> TestResponses { get; set; }
+        public DbSet<TestSessions> TestSessions { get; set; }
+        public DbSet<AnswerOptions> AnswerOptions { get; set; }
+        public DbSet<Questions> Questions { get; set; }
+        public DbSet<QuestionCategories> QuestionCategories { get; set; }
         public virtual DbSet<MasterEmployeePayroll> MasterEmployeePayroll { get; set; }
         public virtual DbSet<SalaryDetailReportsDTO> SalaryDetailReportsDTO { get; set; }
         public virtual DbSet<SalaryPayrollSummaryDTO> SalaryPayrollSummaryDTO { get; set; }

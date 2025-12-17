@@ -54,16 +54,11 @@ namespace sopra_hris_api.Helpers
 
             return null;
         }
-        public static string MaskSalary(decimal salary)
+        public static decimal MaskSalary(long RoleID, decimal Salary)
         {
-            string salaryStr = salary.ToString("0");
-
-            // Ensure salary has at least 3 digits
-            if (salaryStr.Length < 3)
-                return "***" + salaryStr;
-
-            string lastThreeDigits = salaryStr.Substring(salaryStr.Length - 3);
-            return "***" + lastThreeDigits;
+            if (RoleID != 1 && RoleID != 2 && RoleID != 3 && RoleID != 4 && RoleID != 5 && RoleID != 8)
+                return 0;
+            return Salary;
         }
         public static string Secret { get { return Configuration.GetSection("AppSettings:Secret").Value; } }
         public static DateTime getCurrentTimestamps()

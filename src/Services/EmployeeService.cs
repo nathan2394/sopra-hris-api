@@ -5,6 +5,7 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using System.Data;
 using System.Security.Claims;
+using sopra_hris_api.Helpers;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -248,7 +249,7 @@ namespace sopra_hris_api.src.Services.API
                                 TKStatus = a.TKStatus,
                                 PayrollType = a.PayrollType,
                             };
-                                
+                
                 // Searching
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.EmployeeName.Contains(search)
@@ -340,6 +341,14 @@ namespace sopra_hris_api.src.Services.API
                     return await GetAllAsync(limit, page, total, search, sort, filter, date);
                 }
 
+                data = data
+                    .Select(e =>
+                    {
+                        e.BasicSalary = Utility.MaskSalary(RoleID, e.BasicSalary ?? 0);
+                        return e;
+                    })
+                    .ToList();
+                
                 return new ListResponse<Employees>(data, total, page);
             }
             catch (Exception ex)
@@ -507,6 +516,7 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 var query = from a in _context.Employees
                             join employeeType in _context.EmployeeTypes
                                 on a.EmployeeTypeID equals employeeType.EmployeeTypeID into employeeTypeGroup
@@ -595,6 +605,9 @@ namespace sopra_hris_api.src.Services.API
                 var data = await query.AsNoTracking().FirstOrDefaultAsync();
 
                 if (data == null) return null;
+
+                data.BasicSalary = Utility.MaskSalary(RoleID, data.BasicSalary ?? 0);
+               
                 return data;
             }
             catch (Exception ex)
