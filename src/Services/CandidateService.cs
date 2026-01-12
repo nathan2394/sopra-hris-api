@@ -373,7 +373,7 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 "name" => query.Where(x => x.CandidateName.Contains(value)),
                                 "jobtitle" => query.Where(x => x.JobTitle.Contains(value)),
-                                "jobid" => query.Where(x => x.JobID.Equals(value)),
+                                "jobid" => long.TryParse(value, out var JobID) ? query.Where(x => x.JobID == JobID) : query,
                                 "phonenumber" => query.Where(x => x.PhoneNumber.Contains(value)),
                                 "email" => query.Where(x => x.Email.Contains(value)),
                                 "status" => query.Where(x => x.Status.Contains(value)),
@@ -704,7 +704,98 @@ namespace sopra_hris_api.src.Services.API
             }
             return false;
         }
+        public async Task<CandidateSummaryEmailListResponse> GetDailySummaryEmailAsync(string date = "")
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
+                DateTime summaryDate = string.IsNullOrEmpty(date) ? DateTime.Now.Date : DateTime.Parse(date).Date;
+
+                // Query summary data using LINQ
+                var summary = await (from c in _context.Candidates
+                                     join j in _context.Jobs on c.JobID equals j.JobID
+                                     join a in _context.Applicants on c.ApplicantID equals a.ApplicantID
+                                     where c.IsDeleted == false
+                                       && c.DateUp.Value.Date == summaryDate
+                                       && a.IsDeleted == false
+                                       && a.ProfileCompletion == 10
+                                       && a.ConsentSignedAt != null
+                                     group new { c, j } by new { j.JobTitle, c.Status, j.Location } into grp
+                                     select new CandidateSummaryResponse
+                                     {
+                                         JobTitle = grp.Key.JobTitle,
+                                         Status = grp.Key.Status,
+                                         KandidatCount = grp.Count(),
+                                         Location = grp.Key.Location
+                                     })
+                    .OrderBy(x => x.JobTitle)
+                    .ThenBy(x => x.Status)
+                    .ToListAsync();
+
+                // Query job users data
+                var jobUsersData = await (from c in _context.Candidates
+                                          join j in _context.Jobs on c.JobID equals j.JobID
+                                          join a in _context.Applicants on c.ApplicantID equals a.ApplicantID
+                                          where c.IsDeleted == false
+                                            && c.DateUp.Value.Date == summaryDate
+                                            && a.IsDeleted == false
+                                            && a.ProfileCompletion == 10
+                                            && a.ConsentSignedAt != null
+                                          select new { j.JobTitle, j.JobUsers })
+                    .Distinct()
+                    .ToListAsync();
+
+                var userEmails = new List<CandidateSummaryUserEmailResponse>();
+
+                foreach (var jobData in jobUsersData)
+                {
+                    if (string.IsNullOrEmpty(jobData.JobUsers))
+                        continue;
+
+                    // Parse JobUsers string (comma-separated UserIDs)
+                    var userIdStrings = jobData.JobUsers.Split(',')
+                        .Select(x => x.Trim())
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .ToList();
+
+                    foreach (var userIdStr in userIdStrings)
+                    {
+                        if (long.TryParse(userIdStr, out var userId))
+                        {
+                            var user = await _context.Users
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(u => u.IsDeleted == false && u.UserID == userId);
+
+                            if (user != null && !string.IsNullOrEmpty(user.Email))
+                            {
+                                userEmails.Add(new CandidateSummaryUserEmailResponse
+                                {
+                                    Name = user.Name,
+                                    Email = user.Email,
+                                    JobTitle = jobData.JobTitle
+                                });
+                            }
+                        }
+                    }
+                }
+
+                var sortedUserEmails = userEmails
+                    .OrderBy(x => x.Email)
+                    .ThenBy(x => x.JobTitle)
+                    .ToList();
+
+                return new CandidateSummaryEmailListResponse(summary, sortedUserEmails);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
         public void SendAdvanceToNextPhaseEmail(string toEmail, string candidateName, string jobTitle, string nextPhaseName, string PsychotestLink = "", DateTime? TaskDate = null, string interviewMethod = "", string interviewLink = "", string interviewLocation = "")
         {
             string subject = $"Selamat! Anda Lolos ke Tahap Selanjutnya untuk Posisi {jobTitle}";       
@@ -724,6 +815,12 @@ namespace sopra_hris_api.src.Services.API
                     if (!string.IsNullOrEmpty(PsychotestLink))
                     {
                         body += $@"<p>Silakan akses link berikut untuk mengikuti psikotes: <a href='{PsychotestLink}' target='_blank'>click here</a></p>";
+                    }
+
+                    if (jobTitle == "Backend Engineer")
+                    {
+                        body += @"<p>Silahkan akses link berikut untuk mengikut technical test 1: <a href='https://forms.gle/Quo3SSF9RwsxRJFZ7' target='_blank'>click here</a></p>";
+                        body += @"<p>Silahkan akses link berikut untuk mengikut technical test 2: <a href='https://forms.gle/drfGUFPh2zGSwjiW7' target='_blank'>click here</a></p>";
                     }
 
                     if (TaskDate.HasValue)

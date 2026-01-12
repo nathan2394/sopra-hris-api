@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Diagnostics;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -49,10 +50,104 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
+        //public async Task<TestSessionWithQuestionsResponse> GetQuestionsForSessionAsync(long sessionId)
+        //{
+        //    try
+        //    {
+        //        var session = await _context.TestSessions
+        //            .AsNoTracking()
+        //            .FirstOrDefaultAsync(x => x.SessionID == sessionId && x.IsDeleted == false);
+
+        //        if (session == null)
+        //            return null;
+
+        //        var response = new TestSessionWithQuestionsResponse
+        //        {
+        //            SessionID = session.SessionID,
+        //            CandidateID = session.CandidateID,
+        //            StartTime = session.StartTime,
+        //        };
+
+        //        // Get all question categories with their total questions
+        //        var categories = await _context.QuestionCategories
+        //            .AsNoTracking()
+        //            .Where(x => x.IsDeleted == false)
+        //            .ToListAsync();
+
+        //        var random = new Random();
+
+        //        // For each category, get questions and answers
+        //        foreach (var category in categories)
+        //        {
+        //            var questions = await _context.Questions
+        //                .AsNoTracking()
+        //                .Where(x => x.CategoryID == category.CategoryID && x.IsDeleted == false)
+        //                .ToListAsync();
+
+        //            if (questions.Count == 0)
+        //                continue;
+
+        //            // Get questions per section from QuestionCategories.TotalQuestions
+        //            int questionsPerSection = category.TotalQuestions ?? 10;
+
+        //            // Randomize questions within the section and limit
+        //            var randomizedQuestions = questions.OrderBy(x => random.Next()).Take(questionsPerSection).ToList();
+
+        //            var sectionDTO = new QuestionSectionDTO
+        //            {
+        //                CategoryID = category.CategoryID,
+        //                CategoryName = category.CategoryName,
+        //                Description = category.Description,
+        //                Duration = category.Duration,
+        //                TotalQuestions = category.TotalQuestions,
+        //                TestType = category.TestType,
+        //            };
+
+        //            foreach (var question in randomizedQuestions)
+        //            {
+        //                // Get all answers for this question
+        //                var answers = await _context.AnswerOptions
+        //                    .AsNoTracking()
+        //                    .Where(x => x.QuestionID == question.QuestionID && x.IsDeleted == false)
+        //                    .ToListAsync();
+
+        //                // Shuffle answers for this question
+        //                var shuffledAnswers = answers.OrderBy(x => random.Next()).ToList();
+
+        //                var questionDTO = new QuestionWithAnswersDTO
+        //                {
+        //                    QuestionID = question.QuestionID,
+        //                    QuestionText = question.QuestionText,
+        //                    Answers = shuffledAnswers.Select(x => new AnswerOptionDTO
+        //                    {
+        //                        AnswerID = x.AnswerID,
+        //                        AnswerText = x.AnswerText
+        //                    }).ToList()
+        //                };
+
+        //                sectionDTO.Questions.Add(questionDTO);
+        //            }                                       
+
+        //            response.Sections.Add(sectionDTO);
+        //        }
+
+        //        return response;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.WriteLine(ex.Message);
+        //        if (ex.StackTrace != null)
+        //            Trace.WriteLine(ex.StackTrace);
+
+        //        throw;
+        //    }
+        //}
+
         public async Task<TestSessionWithQuestionsResponse> GetQuestionsForSessionAsync(long sessionId)
         {
             try
             {
+                // 1️⃣ Ambil session (validasi awal)
                 var session = await _context.TestSessions
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.SessionID == sessionId && x.IsDeleted == false);
@@ -60,74 +155,68 @@ namespace sopra_hris_api.src.Services.API
                 if (session == null)
                     return null;
 
+                // 2️⃣ Panggil Stored Procedure
+                var rawData = await _context.SessionQuestionRaw
+                    .FromSqlRaw(
+                        "EXEC usp_GenerateSessionQuestions @SessionID",
+                        new SqlParameter("@SessionID", sessionId)
+                    )
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if (!rawData.Any())
+                    return null;
+
+                // 3️⃣ Build response
                 var response = new TestSessionWithQuestionsResponse
                 {
                     SessionID = session.SessionID,
                     CandidateID = session.CandidateID,
-                    StartTime = session.StartTime,
+                    StartTime = session.StartTime
                 };
 
-                // Get all question categories with their total questions
-                var categories = await _context.QuestionCategories
-                    .AsNoTracking()
-                    .Where(x => x.IsDeleted == false)
-                    .ToListAsync();
+                // 4️⃣ Group per Section (Category)
+                var sectionGroups = rawData
+                    .GroupBy(x => new { x.CategoryID, x.CategoryName, x.Duration })
+                    .OrderBy(g => g.Key.CategoryID);
 
-                var random = new Random();
-
-                // For each category, get questions and answers
-                foreach (var category in categories)
+                foreach (var sectionGroup in sectionGroups)
                 {
-                    var questions = await _context.Questions
-                        .AsNoTracking()
-                        .Where(x => x.CategoryID == category.CategoryID && x.IsDeleted == false)
-                        .ToListAsync();
-
-                    if (questions.Count == 0)
-                        continue;
-
-                    // Get questions per section from QuestionCategories.TotalQuestions
-                    int questionsPerSection = category.TotalQuestions ?? 10;
-
-                    // Randomize questions within the section and limit
-                    var randomizedQuestions = questions.OrderBy(x => random.Next()).Take(questionsPerSection).ToList();
-
-                    var sectionDTO = new QuestionSectionDTO
+                    var section = new QuestionSectionDTO
                     {
-                        CategoryID = category.CategoryID,
-                        CategoryName = category.CategoryName,
-                        Description = category.Description,
-                        Duration = category.Duration,
-                        TotalQuestions = category.TotalQuestions,
-                        TestType = category.TestType,
+                        CategoryID = sectionGroup.Key.CategoryID,
+                        CategoryName = sectionGroup.Key.CategoryName,
+                        Duration = sectionGroup.Key.Duration,
+                        TotalQuestions = sectionGroup
+                            .Select(x => x.QuestionID)
+                            .Distinct()
+                            .Count()
                     };
 
-                    foreach (var question in randomizedQuestions)
+                    // 5️⃣ Group per Question (sudah random & ordered dari SQL)
+                    var questionGroups = sectionGroup
+                        .GroupBy(q => new { q.QuestionID, q.QuestionText, q.QuestionOrder })
+                        .OrderBy(q => q.Key.QuestionOrder);
+
+                    foreach (var questionGroup in questionGroups)
                     {
-                        // Get all answers for this question
-                        var answers = await _context.AnswerOptions
-                            .AsNoTracking()
-                            .Where(x => x.QuestionID == question.QuestionID && x.IsDeleted == false)
-                            .ToListAsync();
-
-                        // Shuffle answers for this question
-                        var shuffledAnswers = answers.OrderBy(x => random.Next()).ToList();
-
-                        var questionDTO = new QuestionWithAnswersDTO
+                        var question = new QuestionWithAnswersDTO
                         {
-                            QuestionID = question.QuestionID,
-                            QuestionText = question.QuestionText,
-                            Answers = shuffledAnswers.Select(x => new AnswerOptionDTO
-                            {
-                                AnswerID = x.AnswerID,
-                                AnswerText = x.AnswerText
-                            }).ToList()
+                            QuestionID = questionGroup.Key.QuestionID,
+                            QuestionText = questionGroup.Key.QuestionText,
+                            Answers = questionGroup
+                                .Select(a => new AnswerOptionDTO
+                                {
+                                    AnswerID = a.AnswerID,
+                                    AnswerText = a.AnswerText
+                                })
+                                .ToList()
                         };
 
-                        sectionDTO.Questions.Add(questionDTO);
-                    }                                       
+                        section.Questions.Add(question);
+                    }
 
-                    response.Sections.Add(sectionDTO);
+                    response.Sections.Add(section);
                 }
 
                 return response;
@@ -135,12 +224,11 @@ namespace sopra_hris_api.src.Services.API
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
+                Trace.WriteLine(ex.StackTrace);
                 throw;
             }
         }
+
 
         public async Task<bool> DeleteAsync(long id, long UserID)
         {

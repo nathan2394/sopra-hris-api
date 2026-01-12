@@ -28,5 +28,7 @@ namespace sopra_hris_api.Entities
         public DateTime? PublicationDate { get; set; }
         public DateTime? ExpirationDate { get; set; }
         public string? PsychotestLink { get; set; }
+        public string? JobUsers { get; set; }
+        public long? LevelID { get; set; }
     }
 }

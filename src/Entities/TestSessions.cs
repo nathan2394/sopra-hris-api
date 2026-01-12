@@ -1,4 +1,5 @@
 
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -65,5 +66,19 @@ namespace sopra_hris_api.Entities
                 return TotalQuestions > 0 ? Math.Round((CorrectAnswers * 100m) / TotalQuestions, 2) : 0;
             }
         }
+    }
+    [Keyless]
+    public class SessionQuestionRaw
+    {
+        public long QuestionID { get; set; }
+        public string QuestionText { get; set; }
+        public long AnswerID { get; set; }
+        public string AnswerText { get; set; }
+        public long CategoryID { get; set; }
+        public string CategoryName { get; set; }
+        public int Duration { get; set; }
+        public long QuestionOrder { get; set; }
+        public string? TestType { get; set; }
+        public string? Description { get; set; }
     }
 }

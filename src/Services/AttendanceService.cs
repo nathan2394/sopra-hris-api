@@ -415,7 +415,7 @@ WHERE a.EmployeeID = @id
                 }
 
                 var query = from ad in _context.AttendanceDetails
-                            where ad.EmployeeID == id && (ad.TransDate >= StartDate && ad.TransDate <= EndDate)
+                            where ad.EmployeeID == id && (ad.TransDate.Date >= StartDate.Date && ad.TransDate.Date <= EndDate.Date)
                             select ad;
                 var data = await query.ToListAsync();
 

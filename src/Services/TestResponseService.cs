@@ -364,17 +364,19 @@ TypeScore AS (
 ),
 FinalScore AS (
     SELECT
-        SessionID,
-        CandidateID,
-        TechnicalScore,
-        CognitiveScore,
-        BehaviourScore,
+        c.SessionID,
+        c.CandidateID,
+        c.TechnicalScore,
+        c.CognitiveScore,
+        c.BehaviourScore,
         CAST(
-            (0.60 * ISNULL(TechnicalScore, 0)) +
-            (0.15 * ISNULL(CognitiveScore,  0)) +
-            (0.25 * ISNULL(BehaviourScore, 0))
+            (b.TechnicalWeight/100 * ISNULL(TechnicalScore, 0)) +
+            (b.CognitiveWeight/100 * ISNULL(CognitiveScore,  0)) +
+            (b.BehaviourWeight/100 * ISNULL(BehaviourScore, 0))
         AS decimal(5,2)) AS TotalScore
-    FROM TypeScore
+    FROM TypeScore c
+    INNER JOIN TestSessions a on c.SessionID=a.SessionID
+    inner join TestTemplates b on a.TemplateID=b.TemplateID
 )
 update c
 set TechnicalTestScore=fs.TechnicalScore,

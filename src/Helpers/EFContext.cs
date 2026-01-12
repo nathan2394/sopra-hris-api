@@ -96,6 +96,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<DashboardDetaillAbsent> DashboardDetaillAbsent { get; set; }
         public virtual DbSet<DashboardDetaillLate> DashboardDetaillLate { get; set; }
         public virtual DbSet<CandidateDTO> CandidateDTO { get; set; }
+        public virtual DbSet<SessionQuestionRaw> SessionQuestionRaw { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

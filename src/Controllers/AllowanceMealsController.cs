@@ -137,15 +137,15 @@ public class AllowanceMealsController : ControllerBase
                     bool isRowValid = true;
                     for (int col = 1; col <= totalColumns; col++)
                     {
+
+                        string columnName = dt.Columns[col - 1].ColumnName;
+
                         string cellValue = worksheet.Cells[row, col].Text.Trim();
-                        if (string.IsNullOrEmpty(cellValue))
+                        if (string.IsNullOrEmpty(cellValue) && columnName == "employeeID")
                         {
                             isRowValid = false;
                             break;
                         }
-
-                        string columnName = dt.Columns[col - 1].ColumnName;
-
                         // Handle "meal" column
                         if (columnName.Equals("meal", StringComparison.OrdinalIgnoreCase))
                         {

@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
-using System.Diagnostics;
-using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
+using System.Diagnostics;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -112,13 +113,9 @@ namespace sopra_hris_api.src.Services.API
             try
             {
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var query = from a in _context.QuestionCategories where a.IsDeleted == false select a;
 
-                // Searching
-                if (!string.IsNullOrEmpty(search))
-                    query = query.Where(x => x.Description.Contains(search) || x.CategoryName.Contains(search)
-                        );
-
+                IEnumerable<QuestionCategories> query;
+                long candidateid = 0;
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
                 {
@@ -130,13 +127,63 @@ namespace sopra_hris_api.src.Services.API
                         {
                             var fieldName = searchList[0].Trim().ToLower();
                             var value = searchList[1].Trim();
-                            query = fieldName switch
-                            {
-                                _ => query
-                            };
+                            if (fieldName.Contains("candidateid"))
+                                candidateid = Convert.ToInt64(value);
                         }
                     }
                 }
+
+                if (candidateid > 0)
+                {
+                    var sql = @"
+DECLARE @JobID BIGINT,
+        @LevelID BIGINT,
+        @TemplateID BIGINT;
+
+SELECT @JobID = JobID
+FROM Candidates
+WHERE CandidateID = @CandidateID
+  AND IsDeleted = 0;
+
+SELECT @LevelID = LevelID
+FROM Jobs
+WHERE JobID = @JobID;
+
+SELECT @TemplateID = TemplateID
+FROM JobTestTemplateOverrides
+WHERE JobID = @JobID;
+
+IF @TemplateID IS NULL
+BEGIN
+    SELECT @TemplateID = TemplateID
+    FROM LevelTestTemplates
+    WHERE LevelID = @LevelID
+      AND IsDefault = 1;
+END
+
+SELECT qc.*
+FROM TemplateCategories tc
+INNER JOIN QuestionCategories qc
+    ON qc.CategoryID = tc.CategoryID
+WHERE tc.TemplateID = @TemplateID
+  AND tc.IsDeleted = 0
+  AND qc.IsDeleted = 0
+";
+
+                    query = await _context.QuestionCategories
+                        .FromSqlRaw(sql, new SqlParameter("@CandidateID", candidateid)).ToListAsync();
+
+                }
+                else
+                {
+                    query = await _context.QuestionCategories.Where(x => x.IsDeleted == false).ToListAsync();
+                }
+
+
+                // Searching
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.Description.Contains(search) || x.CategoryName.Contains(search)
+                        );
 
                 // Sorting
                 if (!string.IsNullOrEmpty(sort))
@@ -167,14 +214,14 @@ namespace sopra_hris_api.src.Services.API
                 }
 
                 // Get Total Before Limit and Page
-                total = await query.CountAsync();
+                total = query.Count();
 
                 // Set Limit and Page
                 if (limit != 0)
                     query = query.Skip(page * limit).Take(limit);
 
                 // Get Data
-                var data = await query.ToListAsync();
+                var data =  query.ToList();
                 if (data.Count <= 0 && page > 0)
                 {
                     page = 0;

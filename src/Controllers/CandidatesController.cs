@@ -344,4 +344,25 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+    [HttpGet("summary/daily-email")]
+    public async Task<IActionResult> GetDailySummaryEmail(string date = "")
+    {
+        try
+        {
+            var result = await _service.GetDailySummaryEmailAsync(date);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "CandidatesController");
+            return BadRequest(new { message });
+        }
+    }
 }

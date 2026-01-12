@@ -100,6 +100,8 @@ namespace sopra_hris_api.src.Services.API
                 obj.PublicationDate = data.PublicationDate;
                 obj.ExpirationDate = data.ExpirationDate;
                 obj.JobDescription_Id = data.JobDescription_Id;
+                obj.JobUsers = data.JobUsers;
+                obj.LevelID = data.LevelID;
 
                 obj.UserUp = data.UserUp;
                 obj.DateUp = DateTime.Now;
@@ -244,6 +246,11 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        public Task<CandidateSummaryEmailListResponse> GetDailySummaryEmailAsync(string date)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<Dictionary<string, object>> GetFilters(string filter)

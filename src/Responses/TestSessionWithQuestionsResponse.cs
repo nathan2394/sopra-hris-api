@@ -45,5 +45,5 @@ namespace sopra_hris_api.Responses
     {
         public long AnswerID { get; set; }
         public string AnswerText { get; set; }
-    }
+    }    
 }

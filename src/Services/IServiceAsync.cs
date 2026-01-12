@@ -42,6 +42,7 @@ namespace sopra_hris_api.src.Services
         Task<string> SaveOTPToDatabase(string Name, string Email);
         Task<bool> VerifyOTP(string email, string inputOtp);
         Task<T> CheckIfCandidateExists(long jobId, string email);
+        Task<CandidateSummaryEmailListResponse> GetDailySummaryEmailAsync(string date);
     }
     public interface IServiceDashboardAsync<T>
     {
