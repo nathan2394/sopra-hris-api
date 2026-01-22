@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using sopra_hris_api.Entities;
 using sopra_hris_api.src.Entities;
+using sopra_hris_api.src.Services.API;
 using static sopra_hris_api.src.Entities.DashboardDTO;
 
 namespace sopra_hris_api.src.Helpers
@@ -97,9 +98,28 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<DashboardDetaillLate> DashboardDetaillLate { get; set; }
         public virtual DbSet<CandidateDTO> CandidateDTO { get; set; }
         public virtual DbSet<SessionQuestionRaw> SessionQuestionRaw { get; set; }
+        public virtual DbSet<PerformanceTemplates> PerformanceTemplates { get; set; }
+        public virtual DbSet<PerformanceEmployeeReviewers> PerformanceEmployeeReviewers { get; set; }
+        public virtual DbSet<PerformanceConditions> PerformanceConditions { get; set; }
+        public virtual DbSet<PerformanceTemplateDetails> PerformanceTemplateDetails { get; set; }
+        public virtual DbSet<PerformanceTrainings> PerformanceTrainings { get; set; }
+        public virtual DbSet<PerformanceCompetencies> PerformanceCompetencies { get; set; }
+        public virtual DbSet<PerformanceCompetencyDetails> PerformanceCompetencyDetails { get; set; }
+        public virtual DbSet<PerformanceTemplateDetailGroups> PerformanceTemplateDetailGroups { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<PerformanceTemplatesDto>();
+            modelBuilder.Entity<PerformanceTemplateDetailsDto>();
+            modelBuilder.Entity<PerformanceTemplateDetailSectionDto>();
+            modelBuilder.Entity<PerformanceConditionsDto>();
+            modelBuilder.Entity<PerformanceTrainingsDto>();
+            modelBuilder.Entity<PerformanceCompetenciesDto>();
+            modelBuilder.Entity<PerformanceCompetencyDetailsDto>();
+
+            modelBuilder.Entity<FormDetailsDto>();
+            modelBuilder.Entity<ToBeReviewedEmployeesDto>();
         }
     }
 }

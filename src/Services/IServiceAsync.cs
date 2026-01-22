@@ -2,6 +2,7 @@
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
+using sopra_hris_api.src.Services.API;
 
 namespace sopra_hris_api.src.Services
 {
@@ -157,5 +158,30 @@ namespace sopra_hris_api.src.Services
         Task<bool> DeleteAsync(long id, long userID);
         Task<ListResponseTemplateShift<EmployeeGroupShiftTemplate>> GetTemplateAsync(string filter);
         Task<ListResponseTemplate<EmployeeShiftsDTO>> SetEmployeeShiftsAsync(DataTable templates, bool isEmployeeBased, long UserID);
+    }
+
+    public interface IServicePerformanceTemplateAsync<T>
+    {
+        Task<ListResponse<PerformanceTemplateListDto>> GetAllAsync(int limit, int page, int total, string search, string sort,
+         string filter, string date);
+        Task<PerformanceTemplatesDto> GetByIdAsync(long id);
+        Task<T> CreateAsync(PerformanceTemplatesDto data, long userID);
+        Task<T> EditAsync(PerformanceTemplatesDto data, long userID);
+        Task<bool> DeleteAsync(long id, long userID);
+    }
+
+    public interface IServicePerformanceEmployeeReviewerAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+         string filter, string date);
+        Task<ReviewerFormsDto> GetEmployeeFormByIdAsync(long userID, long reviewerID);
+        Task<List<ToBeReviewedEmployeesDto>> GetEmployeeListByIdAsync(long userID);
+        Task<ReviewerFormsDto> EditAsync(ReviewerFormsDto data, long userID);
+    }
+
+    public interface IServicePerformanceTemplateDetailGroupAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+         string filter, string date);
     }
 }

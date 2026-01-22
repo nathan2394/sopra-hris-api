@@ -10,7 +10,7 @@ namespace sopra_hris_api.Entities
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long PWKTID { get; set; }
         public long EmployeeID { get; set; }
-        public string? PKWTNo { get; set; }
+    public string? PKWTNo { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string? ContractType { get; set; }
