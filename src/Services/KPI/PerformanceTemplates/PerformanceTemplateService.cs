@@ -327,7 +327,7 @@ namespace sopra_hris_api.src.Services.API
                             DECLARE @ID INT;
                             
                             INSERT INTO PerformanceConditions (PerformanceTemplatesID, AgeMin, AgeMax, ProfessionalBackground, EducationalBackground, CareerYearMin, UserIn, DateIn)
-                            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, GETDATE());
+                            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, GETDATE());
                             
                             SET @ID = SCOPE_IDENTITY();
                             
