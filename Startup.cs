@@ -210,6 +210,9 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<QuestionCategories>, QuestionCategorieService>();
             services.AddScoped<IServiceAsync<Questions>, QuestionService>();
             services.AddScoped<IServiceAsync<AnswerOptions>, AnswerOptionService>();
+            services.AddScoped<IServicePerformanceTemplateAsync<PerformanceTemplates>, PerformanceTemplateService>();
+            services.AddScoped<IServicePerformanceEmployeeReviewerAsync<PerformanceEmployeeReviewers>, PerformanceEmployeeReviewerService>();
+            services.AddScoped<IServicePerformanceTemplateDetailGroupAsync<PerformanceTemplateDetailGroups>, PerformanceTemplateDetailGroupService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
