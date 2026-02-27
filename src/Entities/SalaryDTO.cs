@@ -15,6 +15,7 @@ namespace sopra_hris_api.src.Entities
         public int? HKS { get; set; }
         public int? HKA { get; set; }
         public int? ATT { get; set; }
+        public int? ATTLS { get; set; }
         public int? MEAL { get; set; }
         public long? ABSENT { get; set; }
         public int? Late { get; set; }

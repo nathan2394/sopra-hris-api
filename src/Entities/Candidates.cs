@@ -23,6 +23,8 @@ namespace sopra_hris_api.Entities
         [NotMapped]
         public string? JobTitle { get; set; }
         [NotMapped]
+        public string? JobUsers { get; set; }
+        [NotMapped]
         public string? PsychotestLink { get; set; }
         [NotMapped]
         public string? JobType { get; set; }
@@ -69,6 +71,12 @@ namespace sopra_hris_api.Entities
         public decimal? CognitiveTestScore { get; set; }
         public decimal? BehaviourTestScore { get; set; }
         public decimal? TotalTestScore { get; set; }
+        [NotMapped]
+        public DateTime? ConsentSignedAt { get; set; }
+        [NotMapped]
+        public int? ProfileCompletion { get; set; }
+        public bool? IsScreeningTestEmailSent { get; set; }
+        public DateTime? ScreeningTestEmailSentDate { get; set; }
     }
     public class CandidateDTO
     {

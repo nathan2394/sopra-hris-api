@@ -23,6 +23,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<EmployeeTypes> EmployeeTypes { get; set; }
         public DbSet<EmployeeJobTitles> EmployeeJobTitles { get; set; }
         public DbSet<EmployeeLeaveQuotas> EmployeeLeaveQuotas { get; set; }
+        public DbSet<JobVacancySource> JobVacancySources { get; set; }
         public DbSet<AttendanceIncentive> AttendanceIncentive { get; set; }
         public DbSet<EmployeeMonthlyReward> EmployeeMonthlyReward { get; set; }
         public DbSet<SupervisorBenefit> SupervisorBenefit { get; set; }

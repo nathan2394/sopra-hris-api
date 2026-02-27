@@ -205,6 +205,7 @@ namespace sopra_hris_api.src.Services.API
             table.Columns.Add("HKS", typeof(int));
             table.Columns.Add("HKA", typeof(int));
             table.Columns.Add("ATT", typeof(int));
+            table.Columns.Add("ATTLS", typeof(int));
             table.Columns.Add("MEAL", typeof(int));
             table.Columns.Add("ABSENT", typeof(int));
             table.Columns.Add("Late", typeof(int));
@@ -224,6 +225,7 @@ namespace sopra_hris_api.src.Services.API
                     item.HKS,
                     item.HKA,
                     item.ATT,
+                    item.ATTLS,
                     item.MEAL,
                     item.ABSENT,
                     item.Late,

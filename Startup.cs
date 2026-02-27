@@ -56,6 +56,16 @@ namespace sopra_hris_api
             //context accesscor
             services.AddHttpContextAccessor();
 
+            //add HttpClient with custom timeout for blast email
+            services.AddHttpClient<CandidateService>()
+                .ConfigureHttpClient(client =>
+                {
+                    client.Timeout = TimeSpan.FromMinutes(20);
+                });
+
+            //add HttpClient
+            services.AddHttpClient();
+
             //add memory Caching
             services.AddMemoryCache();
 
@@ -210,6 +220,7 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<QuestionCategories>, QuestionCategorieService>();
             services.AddScoped<IServiceAsync<Questions>, QuestionService>();
             services.AddScoped<IServiceAsync<AnswerOptions>, AnswerOptionService>();
+            services.AddScoped<IServiceAsync<JobVacancySource>, JobVacancySourceService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

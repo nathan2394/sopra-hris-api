@@ -344,25 +344,104 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-    [HttpGet("summary/daily-email")]
-    public async Task<IActionResult> GetDailySummaryEmail(string date = "")
-    {
-        try
-        {
-            var result = await _service.GetDailySummaryEmailAsync(date);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "CandidatesController");
-            return BadRequest(new { message });
-        }
-    }
-}
+     [HttpGet("summary/daily-email")]
+     public async Task<IActionResult> GetDailySummaryEmail(string date = "")
+     {
+         try
+         {
+             var result = await _service.GetDailySummaryEmailAsync(date);
+             return Ok(result);
+         }
+         catch (Exception ex)
+         {
+             var message = ex.Message;
+             var inner = ex.InnerException;
+             while (inner != null)
+             {
+                 message = inner.Message;
+                 inner = inner.InnerException;
+             }
+             Trace.WriteLine(message, "CandidatesController");
+             return BadRequest(new { message });
+         }
+     }
+
+     [HttpPost("blast-assessment-email")]
+      public async Task<IActionResult> BlastAssessmentEmail(long jobId, string dateRange)
+      {
+          try
+          {
+              if (jobId <= 0)
+                  return BadRequest(new { message = "JobID must be greater than 0." });
+
+              if (string.IsNullOrWhiteSpace(dateRange))
+                  return BadRequest(new { message = "Date range is required." });
+
+              if (!dateRange.Contains("|"))
+                  return BadRequest(new { message = "Date range must be in format 'yyyy-MM-dd|yyyy-MM-dd'." });
+
+              var dates = dateRange.Split("|");
+              if (dates.Length != 2 || 
+                  !DateTime.TryParse(dates[0].Trim(), out _) || 
+                  !DateTime.TryParse(dates[1].Trim(), out _))
+                  return BadRequest(new { message = "Invalid date format. Please use 'yyyy-MM-dd|yyyy-MM-dd'." });
+
+              var (successCount, failureCount) = await _service.SendBlastAssessmentEmailAsync(jobId, dateRange);
+
+              return Ok(new
+              {
+                  message = "Blast assessment email processing completed.",
+                  successCount = successCount,
+                  failureCount = failureCount,
+                  totalProcessed = successCount + failureCount
+              });
+          }
+          catch (Exception ex)
+          {
+              var message = ex.Message;
+              var inner = ex.InnerException;
+              while (inner != null)
+              {
+                  message = inner.Message;
+                  inner = inner.InnerException;
+              }
+              Trace.WriteLine(message, "CandidatesController");
+              return BadRequest(new { message });
+          }
+      }
+
+      [HttpPost("update-email-sent-status")]
+      public async Task<IActionResult> UpdateEmailSentStatus([FromBody] List<long> candidateIds)
+      {
+          try
+          {
+              if (candidateIds == null || candidateIds.Count == 0)
+                  return BadRequest(new { message = "Candidate IDs are required." });
+
+              var result = await _service.UpdateCandidatesEmailSentStatusAsync(candidateIds);
+
+              if (result)
+              {
+                  return Ok(new
+                  {
+                      message = "Candidate email sent status updated successfully.",
+                      updatedCount = candidateIds.Count
+                  });
+              }
+
+              return BadRequest(new { message = "Failed to update candidate email sent status." });
+          }
+          catch (Exception ex)
+          {
+              var message = ex.Message;
+              var inner = ex.InnerException;
+              while (inner != null)
+              {
+                  message = inner.Message;
+                  inner = inner.InnerException;
+              }
+              Trace.WriteLine(message, "CandidatesController");
+              return BadRequest(new { message });
+          }
+      }
+  }

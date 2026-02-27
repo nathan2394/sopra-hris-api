@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -17,11 +18,13 @@ namespace sopra_hris_api.src.Services.API
     {
         private readonly EFContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly HttpClient _httpClient;
 
-        public CandidateService(EFContext context, IHttpContextAccessor httpContextAccessor)
+        public CandidateService(EFContext context, IHttpContextAccessor httpContextAccessor, HttpClient httpClient)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _httpClient = httpClient;
         }
         private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
         public async Task<Candidates> CheckIfCandidateExists(long jobId, string email)
@@ -42,11 +45,298 @@ namespace sopra_hris_api.src.Services.API
 
                 await dbTrans.CommitAsync();
 
+                // Send assessment email if applicant conditions are met
+                if (data.ApplicantID > 0)
+                {
+                    var applicant = await _context.Applicants.FirstOrDefaultAsync(x => x.ApplicantID == data.ApplicantID && x.IsDeleted == false);
+                    if (applicant != null && applicant.ProfileCompletion == 10 && applicant.ConsentSignedAt != null)
+                    {
+                        var sql = @"SELECT j.*
+                                FROM Jobs j
+                                INNER JOIN JobTestTemplateOverrides jt on jt.JobID= j.JobID
+                                where j.JobID=@JobID and j.IsDeleted=0 and jt.IsDeleted=0";
+                        var job = await _context.Jobs.FromSqlRaw(sql, new SqlParameter("@JobID", data.JobID)).FirstOrDefaultAsync();
+                        if (job != null)
+                        {
+                            await SendAssessmentEmailAsync(data.CandidateID, data.CandidateName, data.Email, job.JobTitle);
+                        }
+                    }
+                }
+
                 return data;
             }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        private async Task SendAssessmentEmailAsync(long candidateID, string candidateName, string email, string jobTitle)
+        {
+            try
+            {
+                var payload = new[]
+                {
+                    new
+                    {
+                        candidateID = candidateID,
+                        candidateName = candidateName,
+                        email = email,
+                        job = jobTitle
+                    }
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync("https://ai.mixtra.id/webhook/sendAssesment", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Update Candidates record after successful email send
+                    var candidate = await _context.Candidates.FirstOrDefaultAsync(x => x.CandidateID == candidateID && x.IsDeleted == false);
+                    if (candidate != null)
+                    {
+                        candidate.IsScreeningTestEmailSent = true;
+                        candidate.ScreeningTestEmailSentDate = DateTime.Now;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    Trace.WriteLine($"Failed to send assessment email. Status: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error sending assessment email: {ex.Message}");
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+            }
+        }
+
+        public async Task<(int successCount, int failureCount)> SendBlastAssessmentEmailAsync(long jobId, string dateRange)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Parse date range format: "2026-01-01|2026-01-31"
+                DateTime startDate, endDate;
+                
+                if (string.IsNullOrWhiteSpace(dateRange) || !dateRange.Contains("|"))
+                {
+                    throw new ArgumentException("Date range must be in format 'yyyy-MM-dd|yyyy-MM-dd'");
+                }
+
+                var dates = dateRange.Split("|");
+                if (dates.Length != 2 || 
+                    !DateTime.TryParse(dates[0].Trim(), out startDate) || 
+                    !DateTime.TryParse(dates[1].Trim(), out endDate))
+                {
+                    throw new ArgumentException("Invalid date format. Please use 'yyyy-MM-dd|yyyy-MM-dd'");
+                }
+
+                // Ensure end date includes the entire day
+                endDate = endDate.Date.AddDays(1).AddSeconds(-1);
+
+                // Query candidates matching jobId and ApplicationDate criteria
+                // using SQL query as specified
+                var sql = @"SELECT DISTINCT c.* 
+                            FROM Candidates c
+                            INNER JOIN Applicants a ON a.ApplicantID = c.ApplicantID
+                            WHERE c.JobID = @JobID 
+                            AND c.IsDeleted = 0 
+                            AND a.IsDeleted = 0 
+                            AND a.ProfileCompletion = 10 
+                            AND a.ConsentSignedAt IS NOT NULL
+                            AND ISNULL(c.IsScreeningTestEmailSent,0)=0
+                            AND c.ApplicationDate >= @StartDate 
+                            AND c.ApplicationDate <= @EndDate";
+
+                var candidates = await _context.Candidates
+                    .FromSqlRaw(sql, 
+                        new SqlParameter("@JobID", jobId),
+                        new SqlParameter("@StartDate", startDate),
+                        new SqlParameter("@EndDate", endDate))
+                    .Join(_context.Jobs, c => c.JobID, j => j.JobID, (c, j) => new { c, j })
+                    .Select(x => new
+                    {
+                        x.c.CandidateID,
+                        x.c.CandidateName,
+                        x.c.Email,
+                        x.j.JobTitle
+                    })
+                    .ToListAsync();
+
+                if (!candidates.Any())
+                {
+                    await dbTrans.CommitAsync();
+                    return (0, 0);
+                }
+
+                int successCount = 0;
+                int failureCount = 0;
+                
+                // Process candidates in batches to avoid gateway timeout
+                int batchSize = 50; // Send 50 candidates per batch
+                var batches = candidates
+                    .Select((candidate, index) => new { candidate, index })
+                    .GroupBy(x => x.index / batchSize)
+                    .Select(g => g.Select(x => x.candidate).ToList())
+                    .ToList();
+
+                Trace.WriteLine($"Processing {candidates.Count} candidates in {batches.Count} batches of {batchSize} each");
+
+                foreach (var batch in batches)
+                {
+                    // Prepare payload with array of candidates for this batch
+                    var payload = batch.Select(c => new
+                    {
+                        candidateID = c.CandidateID,
+                        candidateName = c.CandidateName,
+                        email = c.Email,
+                        job = c.JobTitle
+                    }).ToList();
+
+                    var json = JsonSerializer.Serialize(payload);
+                    var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    
+                    HttpResponseMessage response = null;
+
+                    try
+                    {
+                        Trace.WriteLine($"Sending batch of {batch.Count} candidates to webhook");
+                        response = await _httpClient.PostAsync("https://ai.mixtra.id/webhook/sendAssesment", content);
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        Trace.WriteLine($"Timeout: Batch request timed out after {_httpClient.Timeout.TotalMinutes} minutes");
+                        if (ex.StackTrace != null)
+                            Trace.WriteLine(ex.StackTrace);
+                        failureCount += batch.Count;
+                        continue;
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        Trace.WriteLine($"HTTP Error in batch: {ex.Message}");
+                        if (ex.StackTrace != null)
+                            Trace.WriteLine(ex.StackTrace);
+                        failureCount += batch.Count;
+                        continue;
+                    }
+
+                    if (response != null && response.IsSuccessStatusCode)
+                    {
+                        try
+                        {
+                            // Parse response to get successful candidates
+                            var responseContent = await response.Content.ReadAsStringAsync();
+                            var successfulCandidates = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(responseContent);
+
+                            if (successfulCandidates != null && successfulCandidates.Count > 0)
+                            {
+                                // Extract CandidateIDs from response
+                                var successfulCandidateIds = new List<long>();
+                                foreach (var item in successfulCandidates)
+                                {
+                                    if (item.TryGetValue("CandidateID", out var idElement) && 
+                                        long.TryParse(idElement.GetString(), out var candidateId))
+                                    {
+                                        successfulCandidateIds.Add(candidateId);
+                                    }
+                                }
+
+                                // Update only the successful candidates
+                                var candidatesToUpdate = await _context.Candidates
+                                    .Where(x => successfulCandidateIds.Contains(x.CandidateID) && x.IsDeleted == false)
+                                    .ToListAsync();
+
+                                foreach (var candidate in candidatesToUpdate)
+                                {
+                                    candidate.IsScreeningTestEmailSent = true;
+                                    candidate.ScreeningTestEmailSentDate = DateTime.Now;
+                                }
+
+                                await _context.SaveChangesAsync();
+                                successCount += candidatesToUpdate.Count;
+                                failureCount += batch.Count - candidatesToUpdate.Count;
+                                
+                                Trace.WriteLine($"Batch processed: {candidatesToUpdate.Count} successful, {batch.Count - candidatesToUpdate.Count} failed");
+                            }
+                            else
+                            {
+                                failureCount += batch.Count;
+                                Trace.WriteLine($"No successful candidates in batch response");
+                            }
+                        }
+                        catch (JsonException jsonEx)
+                        {
+                            Trace.WriteLine($"Error parsing batch response: {jsonEx.Message}");
+                            failureCount += batch.Count;
+                        }
+                    }
+                    else
+                    {
+                        Trace.WriteLine($"Failed to send batch. Status: {response?.StatusCode}");
+                        if (response?.StatusCode == System.Net.HttpStatusCode.GatewayTimeout)
+                        {
+                            Trace.WriteLine("Gateway timeout (504): Consider reducing batch size or optimizing webhook");
+                        }
+                        failureCount += batch.Count;
+                    }
+                }
+
+                await dbTrans.CommitAsync();
+
+                Trace.WriteLine($"Blast email completed: {successCount} successful, {failureCount} failed");
+                return (successCount, failureCount);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error sending blast assessment emails: {ex.Message}");
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateCandidatesEmailSentStatusAsync(List<long> candidateIds)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (candidateIds == null || candidateIds.Count == 0)
+                    return false;
+
+                var candidatesToUpdate = await _context.Candidates
+                    .Where(x => candidateIds.Contains(x.CandidateID) && x.IsDeleted == false)
+                    .ToListAsync();
+
+                if (candidatesToUpdate.Count == 0)
+                    return false;
+
+                foreach (var candidate in candidatesToUpdate)
+                {
+                    candidate.IsScreeningTestEmailSent = true;
+                    candidate.ScreeningTestEmailSentDate = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+                await dbTrans.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error updating candidates email sent status: {ex.Message}");
                 if (ex.StackTrace != null)
                     Trace.WriteLine(ex.StackTrace);
 
@@ -187,6 +477,7 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
                 var offset = page * limit;
                 var sortParts = string.IsNullOrEmpty(sort) ? new string[0] : sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 var sortBy = sortParts.Length > 0 ? sortParts[0].ToLower() : null;
@@ -210,7 +501,8 @@ namespace sopra_hris_api.src.Services.API
                     new SqlParameter("@Limit", SqlDbType.Int) { Value = 1000 },
                     new SqlParameter("@Offset", SqlDbType.Int) { Value = 0 },
                     new SqlParameter("@SortBy", SqlDbType.NVarChar, 50) { Value = DBNull.Value },
-                    new SqlParameter("@SortOrder", SqlDbType.NVarChar, 4) { Value = "ASC" }
+                    new SqlParameter("@SortOrder", SqlDbType.NVarChar, 4) { Value = "ASC" },
+                    new SqlParameter("@UserID", SqlDbType.BigInt) { Value = UserID}
                 };
 
                 // Apply filters from 'filter' string
@@ -280,7 +572,7 @@ namespace sopra_hris_api.src.Services.API
                 }
 
                 var data = await _context.CandidateDTO
-    .FromSqlRaw("EXEC GetCandidateFullProfile @CandidateID, @FullName, @JobTitle, @JobID, @MobilePhoneNumber, @Email, @Status, @Department, @Location, @JobType, @ApplicantID, @StartDate, @EndDate, @Limit, @Offset, @SortBy, @SortOrder", parameters)
+    .FromSqlRaw("EXEC GetCandidateFullProfile @CandidateID, @FullName, @JobTitle, @JobID, @MobilePhoneNumber, @Email, @Status, @Department, @Location, @JobType, @ApplicantID, @StartDate, @EndDate, @Limit, @Offset, @SortBy, @SortOrder, @UserID", parameters)
     .ToListAsync();
 
 
@@ -300,9 +592,13 @@ namespace sopra_hris_api.src.Services.API
         {
             try
             {
+                var UserID = Convert.ToInt64(User.FindFirstValue("id"));
+                var RoleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 var query = from c in _context.Candidates
                             join j in _context.Jobs on c.JobID equals j.JobID
+                            join a in _context.Applicants on c.ApplicantID equals a.ApplicantID into aGroup
+                            from a in aGroup.DefaultIfEmpty()
                             where c.IsDeleted == false
                             select new Candidates
                             {
@@ -350,7 +646,10 @@ namespace sopra_hris_api.src.Services.API
                                 FitScore = c.FitScore,
                                 GradeLevel = c.GradeLevel,
                                 AIRecommendationSummary = c.AIRecommendationSummary,
-                                AssessmentTestLink = c.AssessmentTestLink
+                                AssessmentTestLink = c.AssessmentTestLink,
+                                JobUsers = j.JobUsers,
+                                ConsentSignedAt = a.ConsentSignedAt,
+                                ProfileCompletion = a.ProfileCompletion
                             };
 
                 // Searching 
@@ -386,6 +685,43 @@ namespace sopra_hris_api.src.Services.API
                         }
                     }
                 }
+
+                long effectiveRoleId;
+                if (UserID > 0 && RoleID > 0)
+                {
+                    if (UserID == 266 || UserID == 267)
+                        effectiveRoleId = 1;
+                    else if (RoleID == 3 || RoleID == 4)
+                        effectiveRoleId = 1;
+                    else if (RoleID == 8)
+                        effectiveRoleId = 10;
+                    else
+                        effectiveRoleId = RoleID;
+
+                    if (effectiveRoleId == 1 || effectiveRoleId == 10)
+                    {
+                        if (effectiveRoleId == 10)
+                            query = query.Where(x =>
+                            x.JobUsers != null &&
+                            (
+                                EF.Functions.Like(x.JobUsers, $"{UserID},%") ||
+                                EF.Functions.Like(x.JobUsers, $"%,{UserID},%") ||
+                                EF.Functions.Like(x.JobUsers, $"%,{UserID}") ||
+                                x.JobUsers == UserID.ToString()
+                            )
+                        );
+                    }
+                    else
+                    {
+                        query = query.Where(x => false);
+                    }
+
+                    if (UserID > 0)
+                    {
+                        query = query.Where(x => x.ConsentSignedAt != null && x.ProfileCompletion == 10);
+                    }
+                }
+
 
                 // Date Filtering
                 if (!string.IsNullOrEmpty(date))
@@ -515,7 +851,7 @@ namespace sopra_hris_api.src.Services.API
                                  AIRecommendationSummary = c.AIRecommendationSummary,
                                  AssessmentTestLink = c.AssessmentTestLink
                              };
-                return await result.AsNoTracking().FirstOrDefaultAsync();
+                return await result.AsNoTracking().FirstOrDefaultAsync();                
             }
             catch (Exception ex)
             {
@@ -821,6 +1157,10 @@ namespace sopra_hris_api.src.Services.API
                     {
                         body += @"<p>Silahkan akses link berikut untuk mengikut technical test 1: <a href='https://forms.gle/Quo3SSF9RwsxRJFZ7' target='_blank'>click here</a></p>";
                         body += @"<p>Silahkan akses link berikut untuk mengikut technical test 2: <a href='https://forms.gle/drfGUFPh2zGSwjiW7' target='_blank'>click here</a></p>";
+                    }
+                    if (jobTitle == "Junior AI & Data Engineer")
+                    {
+                        body += @"<p>Silahkan akses link berikut untuk mengikut technical test : <a href='https://drive.google.com/drive/folders/1E_yzZcNHie9YY9GSslRm7MmMn42vXT6Q?usp=sharing' target='_blank'>click here</a></p>";                        
                     }
 
                     if (TaskDate.HasValue)

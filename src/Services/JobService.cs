@@ -323,7 +323,17 @@ namespace sopra_hris_api.src.Services.API
         {
             throw new NotImplementedException();
         }
-        
+
+        public Task<(int successCount, int failureCount)> SendBlastAssessmentEmailAsync(long jobId, string dateRange)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UpdateCandidatesEmailSentStatusAsync(List<long> candidateIds)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<bool> VerifyOTP(string email, string inputOtp)
         {
             throw new NotImplementedException();

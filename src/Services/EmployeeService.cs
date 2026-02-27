@@ -384,7 +384,7 @@ namespace sopra_hris_api.src.Services.API
                                 on a.DepartmentID equals department.DepartmentID into departmentGroup
                             from department in departmentGroup.DefaultIfEmpty()
 
-                            where a.IsDeleted == false
+                            where a.IsDeleted == false && a.EndWorkingDate == null
                             select new Employees
                             {
                                 EmployeeID = a.EmployeeID,

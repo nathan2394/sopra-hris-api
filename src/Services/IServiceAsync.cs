@@ -43,6 +43,8 @@ namespace sopra_hris_api.src.Services
         Task<bool> VerifyOTP(string email, string inputOtp);
         Task<T> CheckIfCandidateExists(long jobId, string email);
         Task<CandidateSummaryEmailListResponse> GetDailySummaryEmailAsync(string date);
+        Task<(int successCount, int failureCount)> SendBlastAssessmentEmailAsync(long jobId, string dateRange);
+        Task<bool> UpdateCandidatesEmailSentStatusAsync(List<long> candidateIds);
     }
     public interface IServiceDashboardAsync<T>
     {
