@@ -12,12 +12,11 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize]
-public class PerformanceTemplatesController : ControllerBase
+public class EventsController : ControllerBase
 {
-    private readonly IServicePerformanceTemplateAsync<PerformanceTemplates> _service;
+    private readonly IServiceEventAsync<Events> _service;
 
-    public PerformanceTemplatesController(IServicePerformanceTemplateAsync<PerformanceTemplates> service)
+    public EventsController(IServiceEventAsync<Events> service)
     {
         _service = service;
     }
@@ -45,13 +44,14 @@ public class PerformanceTemplatesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
         try
         {
             var result = await _service.GetByIdAsync(id);
 
-            var response = new Response<PerformanceTemplatesDto>(result);
+            var response = new Response<EventsDto>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -63,20 +63,21 @@ public class PerformanceTemplatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceTemplatesController: Get By ID");
+            Trace.WriteLine(message, "EventsController: Get By ID");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] PerformanceTemplatesDto obj)
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] EventsDto obj)
     {
         try
         {
             var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.CreateAsync(obj, userID);
-            var response = new Response<PerformanceTemplates>(result);
+            var response = new Response<EventsDto>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -88,21 +89,22 @@ public class PerformanceTemplatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceTemplatesController: Create");
+            Trace.WriteLine(message, "EventsController: Create");
             return BadRequest(new { message });
         }
 
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] PerformanceTemplatesDto obj)
+    [Authorize]
+    public async Task<IActionResult> Edit([FromBody] EventsDto obj)
     {
         try
         {
             var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj, userID);
-            var response = new Response<PerformanceTemplates>(result);
+            var response = new Response<EventsDto>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -114,12 +116,13 @@ public class PerformanceTemplatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceTemplatesController: Edit");
+            Trace.WriteLine(message, "EventsController: Edit");
             return BadRequest(new { message });
         }
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> Delete(int id)
     {
         try
@@ -139,21 +142,21 @@ public class PerformanceTemplatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceTemplatesController: Delete");
+            Trace.WriteLine(message, "EventsController: Delete");
             return BadRequest(new { message });
         }
     }
 
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> Publish(int id)
+    [HttpPost("upload")]
+    [Authorize]
+    public async Task<IActionResult> Upload(IFormFile file)
     {
         try
         {
             var userID = Convert.ToInt64(User.FindFirstValue("id"));
-            var result = await _service.PublishAsync(id, userID);
+            var result = await _service.UploadAsync(file, userID);
 
-            var response = new Response<PerformanceTemplatesDto>(result);
-            return Ok(response);
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -164,8 +167,9 @@ public class PerformanceTemplatesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceTemplatesController: Publish");
+            Trace.WriteLine(message, "EventsController: Upload");
             return BadRequest(new { message });
         }
+
     }
 }

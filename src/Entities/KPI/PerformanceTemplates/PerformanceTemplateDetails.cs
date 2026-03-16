@@ -20,9 +20,12 @@ namespace sopra_hris_api.src.Services.API
         public string? Option3 { get; set; }
         public string? Option4 { get; set; }
         public string? Option5 { get; set; }
-        public string? Approver1 { get; set; }
-        public string? Approver2 { get; set; }
-        public string? Approver3 { get; set; }
+        public long? Approver1 { get; set; }
+        public int? Approver1Weight { get; set; }
+        public long? Approver2 { get; set; }
+        public int? Approver2Weight { get; set; }
+        public long? Approver3 { get; set; }
+        public int? Approver3Weight { get; set; }
     }
 
     [Keyless]
@@ -40,9 +43,12 @@ namespace sopra_hris_api.src.Services.API
         public string? Option3 { get; set; }
         public string? Option4 { get; set; }
         public string? Option5 { get; set; }
-        public string? Approver1 { get; set; }
-        public string? Approver2 { get; set; }
-        public string? Approver3 { get; set; }
+        public long? Approver1 { get; set; }
+        public int? Approver1Weight { get; set; }
+        public long? Approver2 { get; set; }
+        public int? Approver2Weight { get; set; }
+        public long? Approver3 { get; set; }
+        public int? Approver3Weight { get; set; }
     }
 
     [Keyless]
