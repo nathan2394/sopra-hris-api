@@ -224,6 +224,8 @@ namespace sopra_hris_api
             services.AddScoped<IServicePerformanceTemplateAsync<PerformanceTemplates>, PerformanceTemplateService>();
             services.AddScoped<IServicePerformanceEmployeeReviewerAsync<PerformanceEmployeeReviewers>, PerformanceEmployeeReviewerService>();
             services.AddScoped<IServicePerformanceTemplateDetailGroupAsync<PerformanceTemplateDetailGroups>, PerformanceTemplateDetailGroupService>();
+            services.AddScoped<IServicePerformanceApproverCategoryAsync<PerformanceApproverCategories>, PerformanceApproverCategoryService>();
+            services.AddScoped<IServiceEventAsync<Events>, EventService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -280,6 +282,10 @@ namespace sopra_hris_api
             if (!Directory.Exists(attachmentBlogsDirectory))
                 Directory.CreateDirectory(attachmentBlogsDirectory);
 
+            var uploadedFilesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+            if (!Directory.Exists(uploadedFilesDirectory))
+                Directory.CreateDirectory(uploadedFilesDirectory);
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(attachmentDirectory),
@@ -308,6 +314,12 @@ namespace sopra_hris_api
             {
                 FileProvider = new PhysicalFileProvider(attachmentBlogsDirectory),
                 RequestPath = "/BlogsFiles"
+            });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadedFilesDirectory),
+                RequestPath = "/UploadedFiles"
             });
 
             app.UseEndpoints(x => x.MapControllers());

@@ -153,7 +153,7 @@ namespace sopra_hris_api.src.Services.API
             {
                 var template = await _context.Set<PerformanceTemplatesDto>()
                     .FromSqlRaw(@"
-                        SELECT ID, DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, ActiveYear
+                        SELECT ID, DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear
                         FROM PerformanceTemplates
                         WHERE ID = {0} AND (IsDeleted = 0 OR IsDeleted IS NULL)
                     ", id)
@@ -196,7 +196,7 @@ namespace sopra_hris_api.src.Services.API
                 #region Load TemplateDetails (PP, PK, PM)
                 var detailPP = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver2, pt.Approver3
+                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight
                         FROM PerformanceTemplateDetails pt
                             INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
@@ -208,7 +208,7 @@ namespace sopra_hris_api.src.Services.API
 
                 var detailPK = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver2, pt.Approver3
+                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight
                         FROM PerformanceTemplateDetails pt
                             INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
@@ -220,7 +220,7 @@ namespace sopra_hris_api.src.Services.API
 
                 var detailPM = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver2, pt.Approver3
+                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight
                         FROM PerformanceTemplateDetails pt
                             INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
@@ -304,15 +304,15 @@ namespace sopra_hris_api.src.Services.API
                     .FromSqlRaw(@"
                         DECLARE @ID INT;
                         
-                        INSERT INTO PerformanceTemplates (DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, ActiveYear, UserIn, DateIn)
-                        VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, GETDATE());
+                        INSERT INTO PerformanceTemplates (DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear, UserIn, DateIn)
+                        VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, GETDATE());
                         
                         SET @ID = SCOPE_IDENTITY();
                         
                         SELECT *
                         FROM PerformanceTemplates
                         WHERE ID = @ID;
-                    ", data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.ActiveYear, userID)
+                    ", data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.Status, data.ActiveYear, userID)
                     .AsEnumerable()
                     .FirstOrDefault();
 
@@ -359,9 +359,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PP)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
 
@@ -370,9 +370,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PK)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
 
@@ -381,9 +381,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PM)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
                 }
@@ -470,11 +470,11 @@ namespace sopra_hris_api.src.Services.API
                             MainValue = {3},
                             GeneralGoal = {4},
                             ActiveYear = {5},
-                            UserUp = {6},
+                            UserUp = {7},
                             DateUp = GETDATE()
-                        WHERE ID = {7};
+                        WHERE ID = {8};
                         
-                        SET @ID = {8};
+                        SET @ID = {9};
                         
                         SELECT *
                         FROM PerformanceTemplates
@@ -542,9 +542,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PP)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
 
@@ -553,9 +553,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PK)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
 
@@ -564,9 +564,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PM)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver2, Approver3, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? "", detail.Approver2 ?? "", detail.Approver3 ?? "", userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, userID);
                         }
                     }
                 }
@@ -713,6 +713,52 @@ namespace sopra_hris_api.src.Services.API
                     Trace.WriteLine(ex.StackTrace);
 
                 await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        public async Task<PerformanceTemplatesDto> PublishAsync(long id, long userID)
+        {
+            try
+            {
+                var template = await _context.Set<PerformanceTemplates>()
+                    .FromSqlRaw(@"
+                        SELECT *
+                        FROM PerformanceTemplates
+                        WHERE ID = {0}
+                            AND (IsDeleted = 0 OR IsDeleted IS NULL)
+                    ", id)
+                    .FirstOrDefaultAsync();
+
+                if (template == null)
+                    throw new Exception("There is no Performance Template with the given ID");
+
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    UPDATE PerformanceTemplates
+                    SET
+                        Status = 1,
+                        UserUp = {0},
+                        DateUp = GETDATE()
+                    WHERE ID = {1}
+                ", userID, template.ID);
+
+                var publishedTemplate = await _context.Set<PerformanceTemplatesDto>()
+                    .FromSqlRaw(@"
+                        SELECT *
+                        FROM PerformanceTemplates
+                        WHERE ID = {0}
+                            AND (IsDeleted = 0 OR IsDeleted IS NULL)
+                    ", id)
+                    .FirstOrDefaultAsync();
+
+                return publishedTemplate;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
 
                 throw;
             }

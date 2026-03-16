@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using Microsoft.AspNetCore.Http;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
 using sopra_hris_api.src.Entities;
@@ -170,6 +171,7 @@ namespace sopra_hris_api.src.Services
         Task<T> CreateAsync(PerformanceTemplatesDto data, long userID);
         Task<T> EditAsync(PerformanceTemplatesDto data, long userID);
         Task<bool> DeleteAsync(long id, long userID);
+        Task<PerformanceTemplatesDto> PublishAsync(long id, long userID);
     }
 
     public interface IServicePerformanceEmployeeReviewerAsync<T>
@@ -185,5 +187,23 @@ namespace sopra_hris_api.src.Services
     {
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
          string filter, string date);
+    }
+
+    public interface IServicePerformanceApproverCategoryAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+         string filter, string date);
+    }
+
+    public interface IServiceEventAsync<T>
+    {
+        Task<ListResponse<EventListDto>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+
+        Task<EventsDto> GetByIdAsync(long id);
+        Task<EventsDto> CreateAsync(EventsDto data, long userID);
+        Task<EventsDto> EditAsync(EventsDto data, long userID);
+        Task<bool> DeleteAsync(long id, long userID);
+        Task<string> UploadAsync(IFormFile file, long userID);
     }
 }

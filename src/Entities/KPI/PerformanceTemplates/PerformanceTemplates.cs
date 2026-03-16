@@ -13,7 +13,7 @@ namespace sopra_hris_api.src.Services.API
         public long EmployeeJobTitlesID { get; set; }
         public string? MainValue { get; set; }
         public string? GeneralGoal { get; set;}
-        public Boolean Status { get; set; }
+        public bool Status { get; set; }
         public int ActiveYear { get; set; }
     }
 
@@ -26,6 +26,7 @@ namespace sopra_hris_api.src.Services.API
         public long DivisionsID { get; set; }
         public string? MainValue { get; set; }
         public string? GeneralGoal { get; set;}
+        public bool Status { get; set; }
         public int ActiveYear { get; set; }
         [NotMapped]
         public PerformanceConditionsDto? Condition { get; set; }
