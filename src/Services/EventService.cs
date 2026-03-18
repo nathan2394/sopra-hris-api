@@ -49,7 +49,8 @@ namespace sopra_hris_api.src.Services.API
                                 Program = a.Program,
                                 StartDate = a.StartDate,
                                 EndDate = a.EndDate,
-                                Type = a.Type
+                                Type = a.Type,
+                                LocationLink = a.LocationLink
                             };
 
                 // Searching

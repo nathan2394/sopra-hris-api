@@ -206,4 +206,20 @@ namespace sopra_hris_api.src.Services
         Task<bool> DeleteAsync(long id, long userID);
         Task<string> UploadAsync(IFormFile file, long userID);
     }
+
+    public interface IServiceLeadCandidateAsync<T>
+    {
+        Task<ListResponse<LeadCandidatesDto>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+
+        Task<LeadCandidatesDto> CreateAsync(LeadCandidatesDto data, long userID);
+    }
+
+    public interface IServiceEventPartnershipAsync<T>
+    {
+        Task<ListResponse<EventPartnershipsDto>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+
+        Task<EventPartnershipsDto> CreateAsync(EventPartnershipsDto data, long userID);
+    }
 }

@@ -109,6 +109,8 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<PerformanceTemplateDetailGroups> PerformanceTemplateDetailGroups { get; set; }
         public virtual DbSet<PerformanceApproverCategories> PerformanceApproverCategories { get; set; }
         public virtual DbSet<Events> Events { get; set; }
+        public virtual DbSet<LeadCandidates> LeadCandidates { get; set; }
+        public virtual DbSet<EventPartnerships> EventPartnerships { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -123,6 +125,8 @@ namespace sopra_hris_api.src.Helpers
 
             modelBuilder.Entity<EventListDto>();
             modelBuilder.Entity<EventsDto>();
+            modelBuilder.Entity<LeadCandidatesDto>();
+            modelBuilder.Entity<EventPartnershipsDto>();
 
             modelBuilder.Entity<FormDetailsDto>();
             modelBuilder.Entity<ToBeReviewedEmployeesDto>();
