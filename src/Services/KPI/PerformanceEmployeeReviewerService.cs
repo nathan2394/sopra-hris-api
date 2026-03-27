@@ -18,6 +18,12 @@ namespace sopra_hris_api.src.Services.API
             _context = context;
         }
 
+        private sealed class OptionWeightRow
+        {
+            public int Option { get; set; }
+            public int Weight { get; set; }
+        }
+
         private async Task ValidateSave(ReviewerFormsDto data)
         {
             // Employee ID
@@ -151,6 +157,8 @@ namespace sopra_hris_api.src.Services.API
                                 WHEN per.Approvers1ID = {1} THEN 1
                                 WHEN per.Approvers2ID = {1} THEN 2
                                 WHEN per.Approvers3ID = {1} THEN 3
+                                WHEN per.Approvers4ID = {1} THEN 4
+                                WHEN per.Approvers5ID = {1} THEN 5
                             ELSE 0
                             END AS ApproverNo
                         FROM PerformanceEmployeeReviewers per
@@ -158,7 +166,7 @@ namespace sopra_hris_api.src.Services.API
                             ON per.PerformanceTemplateDetailsID = ptd.ID
                                 AND per.PerformanceTemplatesID = ptd.PerformanceTemplatesID
                                 AND per.EmployeesID = {0}
-                                AND (per.Approvers1ID = {1} OR per.Approvers2ID = {1} OR per.Approvers3ID = {1}) 
+                                AND (per.Approvers1ID = {1} OR per.Approvers2ID = {1} OR per.Approvers3ID = {1} OR per.Approvers4ID = {1} OR per.Approvers5ID = {1})
                         WHERE (per.IsDeleted = 0 OR per.IsDeleted IS NULL)
                     ", employee.EmployeeID, reviewerID)
                     .AsNoTracking()
@@ -203,9 +211,11 @@ namespace sopra_hris_api.src.Services.API
                         FROM PerformanceEmployeeReviewers per
                             INNER JOIN Employees e ON per.EmployeesID = e.EmployeeID
                             INNER JOIN EmployeeJobTitles ejt ON e.JobTitleID = ejt.EmployeeJobTitleID
-                        WHERE ((per.Approvers1ID = {0} AND per.selectedOptionWeight1 = 0) 
-                            OR (per.Approvers2ID = {0} AND per.selectedOptionWeight2 = 0) 
-                            OR (per.Approvers3ID = {0} AND per.selectedOptionWeight3 = 0))
+                        WHERE ((per.Approvers1ID = {0} AND (per.selectedOptionWeight1 = 0 OR per.selectedOptionWeight1 IS NULL)) 
+                            OR (per.Approvers2ID = {0} AND (per.selectedOptionWeight2 = 0 OR per.selectedOptionWeight2 IS NULL))
+                            OR (per.Approvers3ID = {0} AND (per.selectedOptionWeight3 = 0 OR per.selectedOptionWeight3 IS NULL))
+                            OR (per.Approvers4ID = {0} AND (per.selectedOptionWeight4 = 0 OR per.selectedOptionWeight4 IS NULL))
+                            OR (per.Approvers5ID = {0} AND (per.selectedOptionWeight5 = 0 OR per.selectedOptionWeight5 IS NULL)))
                     ", employee.EmployeeID)
                     .AsNoTracking()
                     .ToListAsync();
@@ -232,35 +242,78 @@ namespace sopra_hris_api.src.Services.API
                 if(data.FormDetails == null || !data.FormDetails.Any())
                     throw new Exception("Form details cannot be empty");
 
+                var defaultWeights = new Dictionary<int, int>
+                {
+                    { 1, 35 },
+                    { 2, 50 },
+                    { 3, 70 },
+                    { 4, 85 },
+                    { 5, 100 }
+                };
+
+                var configuredWeights = (await _context.Database
+                    .SqlQueryRaw<OptionWeightRow>(@"
+                        SELECT DISTINCT [Option], [Weight]
+                        FROM PerformanceOptionWeights
+                    ")
+                    .AsNoTracking()
+                    .ToListAsync())
+                    .ToDictionary(x => x.Option, x => x.Weight);
+
                 foreach (var detail in data.FormDetails)
                 {
-                    var selectedOptionDescription = detail.SelectedOption switch
+                    var selectedOptionDescription = string.Empty;
+                    var defaultWeight = 0;
+
+                    switch (detail.SelectedOption)
                     {
-                        1 => detail.Option1,
-                        2 => detail.Option2,
-                        3 => detail.Option3,
-                        4 => detail.Option4,
-                        5 => detail.Option5,
-                        _ => null
-                    };
+                        case 1: 
+                            selectedOptionDescription = detail.Option1;
+                            defaultWeight = defaultWeights[1];
+                            break;
+                        case 2:
+                            selectedOptionDescription = detail.Option2;
+                            defaultWeight = defaultWeights[2];
+                            break;
+                        case 3:
+                            selectedOptionDescription = detail.Option3;
+                            defaultWeight = defaultWeights[3];
+                            break;
+                        case 4:
+                            selectedOptionDescription = detail.Option4;
+                            defaultWeight = defaultWeights[4];
+                            break;
+                        case 5:
+                            selectedOptionDescription = detail.Option5;
+                            defaultWeight = defaultWeights[5];
+                            break;
+                    }
+
+                    var netWeight = configuredWeights.TryGetValue(detail.SelectedOption, out var configuredWeight)
+                        ? configuredWeight
+                        : defaultWeight;
 
                     await _context.Database.ExecuteSqlRawAsync($@"
                         UPDATE PerformanceEmployeeReviewers SET 
                             SelectedOptionDescription{detail.ApproverNo} = {{0}},
                             SelectedOptionWeight{detail.ApproverNo} = {{1}},
-                            Remarks{detail.ApproverNo} = {{2}},
-                            UserUp = {{3}},
+                            SelectedOptionNetWeight{detail.ApproverNo} = {{2}},
+                            Remarks{detail.ApproverNo} = {{3}},
+                            UserUp = {{4}},
                             DateUp = GETDATE()
-                        WHERE EmployeesID = {{4}}
-                            AND ID = {{5}}
+                        WHERE EmployeesID = {{5}}
+                            AND ID = {{6}}
                             AND (IsDeleted = 0 OR IsDeleted IS NULL)
                     ", 
-                    selectedOptionDescription ?? "", 
-                    detail.SelectedOption, 
-                    detail.Remarks ?? "", 
-                    userID, 
-                    data.EmployeesID, 
+                    selectedOptionDescription,
+                    detail.SelectedOption,
+                    netWeight,
+                    detail.Remarks ?? "",
+                    userID,
+                    data.EmployeesID,
                     detail.ID);
+
+                    await _context.Database.ExecuteSqlRawAsync("EXEC usp_CalculateKPIScore");
                 }
 
                 await dbTrans.CommitAsync();

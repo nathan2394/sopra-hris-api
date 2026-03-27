@@ -15,21 +15,34 @@ namespace sopra_hris_api.src.Services.API
         public long Approvers1ID { get; set; }
         public long Approvers2ID { get; set; }
         public long Approvers3ID { get; set; }
+        public long Approvers4ID { get; set; }
+        public long Approvers5ID { get; set; }
         public string? Option1 { get; set; }
         public string? Option2 { get; set; }
         public string? Option3 { get; set; }
         public string? Option4 { get; set; }
         public string? Option5 { get; set; }
-        public int TotalWeight { get; set; }
+        public decimal TotalWeight { get; set; }
         public string? SelectedOptionDescription1 { get; set; }
         public int SelectedOptionWeight1 { get; set; }
+        public decimal SelectedOptionNetWeight1 { get; set; }
         public string? SelectedOptionDescription2 { get; set; }
         public int SelectedOptionWeight2 { get; set; }
+        public decimal SelectedOptionNetWeight2 { get; set; }
         public string? SelectedOptionDescription3 { get; set; }
         public int SelectedOptionWeight3 { get; set; }
+        public decimal SelectedOptionNetWeight3 { get; set; }
+        public string? SelectedOptionDescription4 { get; set; }
+        public int SelectedOptionWeight4 { get; set; }
+        public decimal SelectedOptionNetWeight4 { get; set; }
+        public string? SelectedOptionDescription5 { get; set; }
+        public int SelectedOptionWeight5 { get; set; }
+        public decimal SelectedOptionNetWeight5 { get; set; }
         public string? Remarks1 { get; set; }
         public string? Remarks2 { get; set; }
         public string? Remarks3 { get; set; }
+        public string? Remarks4 { get; set; }
+        public string? Remarks5 { get; set; }
     }
 
     [Keyless]

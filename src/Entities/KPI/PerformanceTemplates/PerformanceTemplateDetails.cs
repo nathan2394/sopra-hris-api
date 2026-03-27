@@ -26,6 +26,10 @@ namespace sopra_hris_api.src.Services.API
         public int? Approver2Weight { get; set; }
         public long? Approver3 { get; set; }
         public int? Approver3Weight { get; set; }
+        public long? Approver4 { get; set; }
+        public int? Approver4Weight { get; set; }
+        public long? Approver5 { get; set; }
+        public int? Approver5Weight { get; set; }
     }
 
     [Keyless]
@@ -49,6 +53,11 @@ namespace sopra_hris_api.src.Services.API
         public int? Approver2Weight { get; set; }
         public long? Approver3 { get; set; }
         public int? Approver3Weight { get; set; }
+        public long? Approver4 { get; set; }
+        public int? Approver4Weight { get; set; }
+        public long? Approver5 { get; set; }
+        public int? Approver5Weight { get; set; }
+        public int? CountApprover { get; set; }
     }
 
     [Keyless]
