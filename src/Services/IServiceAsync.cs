@@ -181,6 +181,8 @@ namespace sopra_hris_api.src.Services
         Task<ReviewerFormsDto> GetEmployeeFormByIdAsync(long userID, long reviewerID);
         Task<List<ToBeReviewedEmployeesDto>> GetEmployeeListByIdAsync(long userID);
         Task<ReviewerFormsDto> EditAsync(ReviewerFormsDto data, long userID);
+        Task<List<EmployeeScoresDto>> GetEmployeeScoreAsync();
+        Task<EmployeeScoresDto> GetEmployeeScoreDetailByIdAsync(long userID);
     }
 
     public interface IServicePerformanceTemplateDetailGroupAsync<T>

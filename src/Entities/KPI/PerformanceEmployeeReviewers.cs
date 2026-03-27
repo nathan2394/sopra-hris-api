@@ -82,4 +82,48 @@ namespace sopra_hris_api.src.Services.API
         public int Option { get; set; }
         public int Weight { get; set; }
     }
+
+    [Keyless]
+    public class EmployeeScoresDto
+    {
+        public long EmployeesID { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? JobTitle { get; set; }
+        public string? Department { get; set; }
+        public decimal? PP { get; set; }
+        public decimal? PK { get; set; }
+        public decimal? PM { get; set; }
+        public int? CompletedQuestion { get; set; }
+        public int? TotalQuestion { get; set; }
+        public decimal? TotalScore { get; set; }
+
+        [NotMapped]
+        public EmployeeScoreDetailCategoriesDto? ScoreDetails { get; set; }
+    }
+
+    [Keyless]
+    public class EmployeeScoreDetailCategoriesDto
+    {
+        public List<EmployeeScoreDetailsDto>? PP { get; set; }
+        public List<EmployeeScoreDetailsDto>? PK { get; set; }
+        public List<EmployeeScoreDetailsDto>? PM { get; set; }
+    }
+
+    [Keyless]
+    public class EmployeeScoreDetailsDto
+    {
+        public long ID { get; set; }
+        public string? Question { get; set; }
+        public string? Type { get; set; }
+        public int Weight { get; set; }
+        public decimal Score { get; set; }
+        public int TotalApprover { get; set; }
+        public int Approved { get; set; }
+        public List<string>? Remarks { get; set; }
+        public string? Remarks1 { get; set; }
+        public string? Remarks2 { get; set; }
+        public string? Remarks3 { get; set; }
+        public string? Remarks4 { get; set; }
+        public string? Remarks5 { get; set; }
+    }
 }

@@ -226,6 +226,213 @@ namespace sopra_hris_api.src.Services.API
             }
         }
 
+        public async Task<List<EmployeeScoresDto>> GetEmployeeScoreAsync()
+        {
+            try
+            {
+                var score = await _context.Set<EmployeeScoresDto>()
+                    .FromSqlRaw(@"
+                        SELECT DISTINCT
+                            e.EmployeeID AS EmployeesID, 
+                            e.EmployeeName AS EmployeeName, 
+                            ejt.Name AS JobTitle, 
+                            d.Name AS Department,
+                            ROUND(CAST(scores.PP AS DECIMAL(10,2)), 0) AS PP,
+                            ROUND(CAST(scores.PK AS DECIMAL(10,2)), 0) AS PK,
+                            ROUND(CAST(scores.PM AS DECIMAL(10,2)), 0) AS PM,
+                            SUM(
+                                CASE 
+                                    WHEN per.SelectedOptionWeight1 > 0
+                                    AND (per.SelectedOptionWeight2 IS NULL OR per.SelectedOptionWeight2 > 0)
+                                    AND (per.SelectedOptionWeight3 IS NULL OR per.SelectedOptionWeight3 > 0)
+                                    AND (per.SelectedOptionWeight4 IS NULL OR per.SelectedOptionWeight4 > 0)
+                                    AND (per.SelectedOptionWeight5 IS NULL OR per.SelectedOptionWeight5 > 0)
+                                    THEN 1
+                                    ELSE 0
+                                END
+                            ) AS CompletedQuestion,
+                            COUNT(per.ID) AS TotalQuestion,
+                            ROUND(CAST(scores.PP AS DECIMAL(10,2)) + CAST(scores.PK AS DECIMAL(10,2)) + CAST(scores.PM AS DECIMAL(10,2)), 0) AS TotalScore
+                        FROM PerformanceEmployeeReviewers per
+                            INNER JOIN Employees e ON per.EmployeesID = e.EmployeeID
+                            LEFT JOIN EmployeeJobTitles ejt ON e.JobTitleID = ejt.EmployeeJobTitleID
+                            LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+                            LEFT JOIN (
+                                SELECT 
+                                    review.EmployeesID,
+                                    SUM(CASE WHEN ptdg.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
+                                    SUM(CASE WHEN ptdg.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
+                                    SUM(CASE WHEN ptdg.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
+                                FROM PerformanceEmployeeReviewers review
+                                    INNER JOIN PerformanceTemplateDetails ptd ON review.PerformanceTemplateDetailsID = ptd.ID
+                                    INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
+                                GROUP BY review.EmployeesID
+                            ) AS scores ON e.EmployeeID = scores.EmployeesID
+                        WHERE (e.IsDeleted = 0 OR e.IsDeleted IS NULL)
+                        GROUP BY e.EmployeeID, e.EmployeeName, ejt.Name, d.Name, scores.PP, scores.PK, scores.PM
+                    ")
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if(score == null)
+                    throw new Exception("No employee's score found");
+
+                return score;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<EmployeeScoresDto> GetEmployeeScoreDetailByIdAsync(long userID)
+        {
+            try
+            {
+                var employee = await _context.Set<EmployeeScoresDto>()
+                    .FromSqlRaw(@"
+                        SELECT
+                            e.EmployeeID AS EmployeesID,
+                            e.EmployeeName AS EmployeeName,
+                            ejt.Name AS JobTitle,
+                            d.Name AS Department,
+                            ROUND(CAST(ISNULL(scores.PP, 0) AS DECIMAL(10,2)), 0) AS PP,
+                            ROUND(CAST(ISNULL(scores.PK, 0) AS DECIMAL(10,2)), 0) AS PK,
+                            ROUND(CAST(ISNULL(scores.PM, 0) AS DECIMAL(10,2)), 0) AS PM,
+                            SUM(
+                                CASE 
+                                    WHEN per.SelectedOptionWeight1 > 0
+                                    AND (per.SelectedOptionWeight2 IS NULL OR per.SelectedOptionWeight2 > 0)
+                                    AND (per.SelectedOptionWeight3 IS NULL OR per.SelectedOptionWeight3 > 0)
+                                    AND (per.SelectedOptionWeight4 IS NULL OR per.SelectedOptionWeight4 > 0)
+                                    AND (per.SelectedOptionWeight5 IS NULL OR per.SelectedOptionWeight5 > 0)
+                                    THEN 1
+                                    ELSE 0
+                                END
+                            ) AS CompletedQuestion,
+                            COUNT(per.ID) AS TotalQuestion,
+                            ROUND(CAST(
+                                ISNULL(scores.PP, 0) +
+                                ISNULL(scores.PK, 0) +
+                                ISNULL(scores.PM, 0)
+                            AS DECIMAL(10,2)), 0) AS TotalScore
+                        FROM Employees e
+                            LEFT JOIN PerformanceEmployeeReviewers per ON per.EmployeesID = e.EmployeeID
+                            LEFT JOIN EmployeeJobTitles ejt ON e.JobTitleID = ejt.EmployeeJobTitleID
+                            LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+                            LEFT JOIN (
+                                SELECT
+                                    review.EmployeesID,
+                                    SUM(CASE WHEN ptdg.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
+                                    SUM(CASE WHEN ptdg.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
+                                    SUM(CASE WHEN ptdg.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
+                                FROM PerformanceEmployeeReviewers review
+                                    INNER JOIN PerformanceTemplateDetails ptd ON review.PerformanceTemplateDetailsID = ptd.ID
+                                    INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
+                                GROUP BY review.EmployeesID
+                            ) scores ON e.EmployeeID = scores.EmployeesID
+                        WHERE e.EmployeeID = {0}
+                            AND (e.IsDeleted = 0 OR e.IsDeleted IS NULL)
+                        GROUP BY e.EmployeeID, e.EmployeeName, ejt.Name, d.Name, scores.PP, scores.PK, scores.PM
+                    ", userID)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+
+                if(employee == null)
+                    throw new Exception("Employee not found");
+
+                var scoreData = new EmployeeScoresDto
+                {
+                    EmployeesID = employee.EmployeesID,
+                    EmployeeName = employee.EmployeeName,
+                    JobTitle = employee.JobTitle,
+                    Department = employee.Department,
+                    PP = employee.PP,
+                    PK = employee.PK,
+                    PM = employee.PM,
+                    CompletedQuestion = employee.CompletedQuestion,
+                    TotalQuestion = employee.TotalQuestion,
+                    TotalScore = employee.TotalScore,
+                    ScoreDetails = new EmployeeScoreDetailCategoriesDto()
+                };
+
+                var reviewData = await _context.Set<EmployeeScoreDetailsDto>()
+                    .FromSqlRaw(@"
+                        SELECT 
+                            per.ID, 
+                            ptdg.Type, 
+                            ptd.Description AS Question,
+                            ISNULL(ptd.Weight, 0) AS Weight,
+                            CAST(ISNULL(per.TotalWeight, 0) AS decimal(10,2)) AS Score,
+                            (
+                                CASE WHEN per.Approvers1ID > 0 THEN 1 ELSE 0 END +
+                                CASE WHEN per.Approvers2ID > 0 AND per.Approvers2ID != per.Approvers1ID THEN 1 ELSE 0 END +
+                                CASE WHEN per.Approvers3ID > 0 AND per.Approvers3ID != per.Approvers1ID AND per.Approvers3ID != per.Approvers2ID THEN 1 ELSE 0 END +
+                                CASE WHEN per.Approvers4ID > 0 AND per.Approvers4ID != per.Approvers1ID AND per.Approvers4ID != per.Approvers2ID AND per.Approvers4ID != per.Approvers3ID THEN 1 ELSE 0 END +
+                                CASE WHEN per.Approvers5ID > 0 AND per.Approvers5ID != per.Approvers1ID AND per.Approvers5ID != per.Approvers2ID AND per.Approvers5ID != per.Approvers3ID AND per.Approvers5ID != per.Approvers4ID THEN 1 ELSE 0 END
+                            ) AS TotalApprover,
+                            (
+                                CASE WHEN per.SelectedOptionWeight1 > 0 THEN 1 ELSE 0 END +
+                                CASE WHEN per.SelectedOptionWeight2 > 0 THEN 1 ELSE 0 END +
+                                CASE WHEN per.SelectedOptionWeight3 > 0 THEN 1 ELSE 0 END +
+                                CASE WHEN per.SelectedOptionWeight4 > 0 THEN 1 ELSE 0 END +
+                                CASE WHEN per.SelectedOptionWeight5 > 0 THEN 1 ELSE 0 END
+                            ) AS Approved,
+                            per.Remarks1,
+                            per.Remarks2,
+                            per.Remarks3,
+                            per.Remarks4,
+                            per.Remarks5
+                        FROM PerformanceEmployeeReviewers per
+                            INNER JOIN PerformanceTemplateDetails ptd ON per.PerformanceTemplateDetailsID = ptd.ID
+                                AND per.PerformanceTemplatesID = ptd.PerformanceTemplatesID
+                            INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
+                        WHERE per.EmployeesID = {0} AND (per.IsDeleted = 0 OR per.IsDeleted IS NULL)
+                    ", employee.EmployeesID)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if(reviewData == null || !reviewData.Any())
+                    throw new Exception("No review data found for this employee");
+                
+                var review = reviewData.Select(r => new EmployeeScoreDetailsDto
+                {
+                    ID = r.ID,
+                    Type = r.Type,
+                    Question = r.Question,
+                    Weight = r.Weight,
+                    Score = r.Score,
+                    TotalApprover = r.TotalApprover,
+                    Approved = r.Approved,
+                    Remarks = new[] { r.Remarks1, r.Remarks2, r.Remarks3, r.Remarks4, r.Remarks5 }
+                        .Where(remark => !string.IsNullOrEmpty(remark))
+                        .Select(remark => remark!)
+                        .ToList()
+                }).ToList(); 
+
+                scoreData.TotalQuestion = review.Count;
+                scoreData.CompletedQuestion = review.Count(x => x.Approved == x.TotalApprover && x.TotalApprover > 0);
+
+                scoreData.ScoreDetails.PP = review.Where(x => x.Type == "PP").ToList();
+                scoreData.ScoreDetails.PK = review.Where(x => x.Type == "PK").ToList();
+                scoreData.ScoreDetails.PM = review.Where(x => x.Type == "PM").ToList();
+
+                return scoreData;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
         public async Task<ReviewerFormsDto> EditAsync(ReviewerFormsDto data, long userID)
         {
             await using var dbTrans = await _context.Database.BeginTransactionAsync();

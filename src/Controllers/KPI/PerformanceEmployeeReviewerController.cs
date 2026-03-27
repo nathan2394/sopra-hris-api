@@ -118,4 +118,50 @@ public class PerformanceEmployeeReviewerController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [HttpGet("EmployeeScore")]
+    public async Task<IActionResult> GetEmployeeScore()
+    {
+        try
+        {
+            var result = await _service.GetEmployeeScoreAsync();
+            var response = new Response<List<EmployeeScoresDto>>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get Employee Score");
+            return BadRequest(new { message });
+        }
+    }
+
+    [HttpGet("EmployeeScoreDetail/{id}")]
+    public async Task<IActionResult> GetEmployeeScoreById(long id)
+    {
+        try
+        {
+            var result = await _service.GetEmployeeScoreDetailByIdAsync(id);
+            var response = new Response<EmployeeScoresDto>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get Employee Score Detail By Employee ID");
+            return BadRequest(new { message });
+        }
+    }
 }
