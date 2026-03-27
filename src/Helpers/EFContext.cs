@@ -131,6 +131,8 @@ namespace sopra_hris_api.src.Helpers
             modelBuilder.Entity<FormDetailsDto>();
             modelBuilder.Entity<ToBeReviewedEmployeesDto>();
             modelBuilder.Entity<OptionWeightRow>();
+            modelBuilder.Entity<EmployeeScoresDto>();
+            modelBuilder.Entity<EmployeeScoreDetailsDto>();
         }
     }
 }
