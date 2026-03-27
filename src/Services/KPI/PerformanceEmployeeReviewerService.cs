@@ -18,12 +18,6 @@ namespace sopra_hris_api.src.Services.API
             _context = context;
         }
 
-        private sealed class OptionWeightRow
-        {
-            public int Option { get; set; }
-            public int Weight { get; set; }
-        }
-
         private async Task ValidateSave(ReviewerFormsDto data)
         {
             // Employee ID
@@ -251,8 +245,8 @@ namespace sopra_hris_api.src.Services.API
                     { 5, 100 }
                 };
 
-                var configuredWeights = (await _context.Database
-                    .SqlQueryRaw<OptionWeightRow>(@"
+                var configuredWeights = (await _context.Set<OptionWeightRow>()
+                    .FromSqlRaw(@"
                         SELECT DISTINCT [Option], [Weight]
                         FROM PerformanceOptionWeights
                     ")
@@ -296,8 +290,8 @@ namespace sopra_hris_api.src.Services.API
                     await _context.Database.ExecuteSqlRawAsync($@"
                         UPDATE PerformanceEmployeeReviewers SET 
                             SelectedOptionDescription{detail.ApproverNo} = {{0}},
-                            SelectedOptionWeight{detail.ApproverNo} = {{1}},
-                            SelectedOptionNetWeight{detail.ApproverNo} = {{2}},
+                            SelectedOption{detail.ApproverNo} = {{1}},
+                            SelectedOptionWeight{detail.ApproverNo} = {{2}},
                             Remarks{detail.ApproverNo} = {{3}},
                             UserUp = {{4}},
                             DateUp = GETDATE()

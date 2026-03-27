@@ -75,4 +75,11 @@ namespace sopra_hris_api.src.Services.API
         public string? Name { get; set; }
         public string? JobTitle { get; set; }
     }
+
+    [Keyless]
+    public class OptionWeightRow
+    {
+        public int Option { get; set; }
+        public int Weight { get; set; }
+    }
 }
