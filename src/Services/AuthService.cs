@@ -27,49 +27,6 @@ namespace sopra_hris_api.Services
             this.memoryCache = memoryCache;
             this.config = config;
         }
-        public async Task<Users> AuthenticateEmployee(string PhoneNumber, string Password)
-        {
-            try
-            {
-                var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.PhoneNumber == PhoneNumber && x.IsDeleted == false);
-
-                if (user == null)
-                    return null;
-
-                if (user.EmployeeID > 0)
-                {
-                    var employees = await context.Employees.AsNoTracking().FirstOrDefaultAsync(x => x.EmployeeID == user.EmployeeID && x.IsDeleted == false);
-                    if (employees != null)
-                    {
-                        user.EmployeeName = employees.EmployeeName;
-                        user.DepartmentID = employees.DepartmentID;
-                        user.DivisionID = employees.DivisionID;
-                        user.GroupID = employees.GroupID;
-                        user.CompanyID = employees.CompanyID;
-                        user.Nik = employees.Nik;
-                        user.StartWorkingDate = employees.StartWorkingDate;
-                        user.DepartmentName = await context.Departments.AsNoTracking().Where(x => x.DepartmentID == employees.DepartmentID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
-                        user.DivisionName = await context.Divisions.AsNoTracking().Where(x => x.DivisionID == employees.DivisionID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
-                        user.GroupType = await context.Groups.AsNoTracking().Where(x => x.GroupID == employees.GroupID && x.IsDeleted == false).Select(s => s.Type ?? "").FirstOrDefaultAsync();
-                        user.CompanyName = await context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefaultAsync();
-                    }
-                }
-
-                return user;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                if (ex.StackTrace != null)
-                    Trace.WriteLine(ex.StackTrace);
-
-                return null;
-            }
-            finally
-            {
-                context.Dispose();
-            }
-        }
         public async Task<AuthenticationOTPRequest> AuthenticateOTP(string PhoneNumber)
         {
             try
@@ -162,9 +119,19 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public Users AuthenticateGoogle(string email)
+        public Users AuthenticateByKey(string phoneNumber, string email)
         {
-            var user = context.Users.AsNoTracking().FirstOrDefault(x => x.Email == email && (x.RoleID != 2 && x.RoleID != 5) && x.IsDeleted == false);
+            var userCompanies = context.Set<Users>()
+                .FromSqlRaw(@"
+                    SELECT u.*
+                    FROM UserCompanies u
+                    WHERE (u.PhoneNumber = {0} OR u.Email = {1})
+                        AND u.isDeleted != 1
+                ", phoneNumber, email)
+                .AsNoTracking()
+                .ToList();
+
+            var user = userCompanies.FirstOrDefault();
 
             try
             {
@@ -222,9 +189,17 @@ namespace sopra_hris_api.Services
                                        IsDelete = rd.IsDelete,
                                        IconImg = m.IconImg
                                    }).ToList();
-                user.Password = "";
+
                 user.OTP = "";
                 user.OtpExpiration = null;
+
+                user.Companies = userCompanies.Select(u => new CompanyDto
+                {
+                    Code = u.Code ?? "",
+                    Company = u.Company ?? "",
+                    ApiLink = u.ApiLink ?? "",
+                    LogoPath = u.LogoPath ?? ""
+                }).ToList();
 
                 return user;
             }
@@ -249,6 +224,7 @@ namespace sopra_hris_api.Services
             var claims = new ClaimsIdentity(new[]
             {
                 new Claim("id", user.UserID.ToString()),
+                new Claim("email", user.Email.ToString()),
 				//new Claim("name", user.Name),
 				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
                 new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),

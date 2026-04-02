@@ -5,11 +5,13 @@ namespace sopra_hris_api.Responses
     public class AuthResponse : Response<Users>
     {
         public string Token { get; set; }
+        public string Message { get; set; }
 
-        public AuthResponse(Users user, string token)
+        public AuthResponse(Users user, string token, string message = "")
         {
             Token = token;
             Data = user;
+            Message = message;
         }
     }
     public class AuthResponseCandidate : Response<ApplicantUsers>
