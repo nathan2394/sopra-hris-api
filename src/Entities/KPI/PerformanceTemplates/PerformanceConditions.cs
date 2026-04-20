@@ -21,11 +21,11 @@ namespace sopra_hris_api.src.Services.API
     {
         public long ID { get; set; }
         public long PerformanceTemplatesID { get; set; }
-        public int AgeMin { get; set; }
-        public int AgeMax { get; set; }
+        public int? AgeMin { get; set; }
+        public int? AgeMax { get; set; }
         public string? ProfessionalBackground { get; set; }
         public string? EducationalBackground { get; set; }
-        public decimal CareerYearMin { get; set; }
+        public decimal? CareerYearMin { get; set; }
         [NotMapped]
         public List<PerformanceTrainingsDto>? Training { get; set; }
     }

@@ -349,7 +349,7 @@ namespace sopra_hris_api.src.Services.API
                             SELECT *
                             FROM PerformanceConditions
                             WHERE ID = @ID;
-                        ", template.ID, data.Condition.AgeMin, data.Condition.AgeMax, data.Condition.ProfessionalBackground ?? "", data.Condition.EducationalBackground ?? "", data.Condition.CareerYearMin, userID)
+                        ", template.ID, data.Condition.AgeMin ?? 0, data.Condition.AgeMax ?? 0, data.Condition.ProfessionalBackground ?? "", data.Condition.EducationalBackground ?? "", data.Condition.CareerYearMin ?? 0, userID)
                         .AsEnumerable()
                         .FirstOrDefault();
 
@@ -479,22 +479,22 @@ namespace sopra_hris_api.src.Services.API
                         DECLARE @ID INT;
                         
                         UPDATE PerformanceTemplates SET
-                            DepartmentsID = {0},
-                            DivisionsID = {1},
-                            EmployeeJobTitlesID = {2},
-                            MainValue = {3},
-                            GeneralGoal = {4},
-                            ActiveYear = {5},
+                            DepartmentsID = {1},
+                            DivisionsID = {2},
+                            EmployeeJobTitlesID = {3},
+                            MainValue = {4},
+                            GeneralGoal = {5},
+                            ActiveYear = {6},
                             UserUp = {7},
                             DateUp = GETDATE()
-                        WHERE ID = {8};
+                        WHERE ID = {0};
                         
-                        SET @ID = {9};
+                        SET @ID = {0};
                         
                         SELECT *
                         FROM PerformanceTemplates
                         WHERE ID = @ID;
-                    ", data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.ActiveYear, userID, data.ID, data.ID)
+                    ", data.ID, data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.ActiveYear, userID)
                     .AsEnumerable()
                     .FirstOrDefault();
 
@@ -519,7 +519,7 @@ namespace sopra_hris_api.src.Services.API
                             SELECT *
                             FROM PerformanceConditions
                             WHERE PerformanceTemplatesID = {0};
-                        ", updatedTemplate.ID, data.Condition.AgeMin, data.Condition.AgeMax, data.Condition.ProfessionalBackground ?? "", data.Condition.EducationalBackground ?? "", data.Condition.CareerYearMin, userID)
+                        ", updatedTemplate.ID, data.Condition.AgeMin ?? 0, data.Condition.AgeMax ?? 0, data.Condition.ProfessionalBackground ?? "", data.Condition.EducationalBackground ?? "", data.Condition.CareerYearMin ?? 0, userID)
                         .AsEnumerable()
                         .FirstOrDefault();
                     
