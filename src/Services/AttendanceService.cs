@@ -463,6 +463,40 @@ WHERE a.EmployeeID = @id
 
                 throw;
             }
-        }        
+        }
+        
+        public async Task<ListResponseTemplate<AttendanceLogReports>> GetAttendanceLogsAsync(DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                var queryParameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@StartDate", SqlDbType.DateTime)
+                    {
+                        Value = startDate.HasValue ? startDate.Value : DBNull.Value
+                    },
+                    new SqlParameter("@EndDate", SqlDbType.DateTime)
+                    {
+                        Value = endDate.HasValue ? endDate.Value : DBNull.Value
+                    }
+                };
+
+                var data = await _context.Set<AttendanceLogReports>()
+                    .FromSqlRaw("EXEC usp_GetAttendanceLogs @StartDate, @EndDate", queryParameters.ToArray())
+                    .ToListAsync();
+
+                return new ListResponseTemplate<AttendanceLogReports>(data);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
     }
 }

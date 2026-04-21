@@ -135,6 +135,29 @@ public class AttendancesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [HttpGet("AttendanceLogs")]
+    public async Task<IActionResult> GetAttendanceLogs([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        try
+        {
+            var result = await _service.GetAttendanceLogsAsync(startDate, endDate);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AttendancesController");
+            return BadRequest(new { message });
+        }
+    }
+
     [HttpPost("SaveAttendances")]
     public async Task<IActionResult> SaveAttendances([FromBody] AttendanceDTO attendance)
     {

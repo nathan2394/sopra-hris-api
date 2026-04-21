@@ -88,6 +88,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<AttendanceSummary> AttendanceSummary { get; set; }
         public virtual DbSet<AttendanceShift> AttendanceShift { get; set; }
         public virtual DbSet<AttendanceCheck> AttendanceCheck { get; set; }
+        public virtual DbSet<AttendanceLogReports> AttendanceLogReports { get; set; }
         public virtual DbSet<DashboardAttendanceSummary> DashboardAttendanceSummary { get; set; }
         public virtual DbSet<DashboardBudgetOvertimes> DashboardBudgetOvertimes { get; set; }
         public virtual DbSet<DashboardAttendanceNormalAbnormal> DashboardAttendanceNormalAbnormal { get; set; }
