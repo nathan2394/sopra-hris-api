@@ -138,6 +138,7 @@ namespace sopra_hris_api.src.Entities
     public class AttendanceLogReports
     {
         public DateTime ScanDate { get; set; }
+        public string? Nik { get; set; }
         public string? EmployeeName { get; set; }
         public int Pin { get; set; }
         public int? VerifyMode { get; set; }
