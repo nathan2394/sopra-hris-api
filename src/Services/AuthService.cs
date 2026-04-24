@@ -137,7 +137,7 @@ namespace sopra_hris_api.Services
             {
                 user = context.Users
                     .AsNoTracking()
-                    .FirstOrDefault(x => x.Email == email && x.IsDeleted == false);
+                    .FirstOrDefault(x => (string.IsNullOrEmpty(phoneNumber) || x.PhoneNumber == phoneNumber) && (!string.IsNullOrEmpty(email) && x.Email == email) && x.IsDeleted == false);
             }
             else
             {
