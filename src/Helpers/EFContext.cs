@@ -39,6 +39,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<TunjanganMasaKerja> TunjanganMasaKerja { get; set; }
         public DbSet<UserLogs> UserLogs { get; set; }
         public DbSet<Users> Users { get; set; }
+        public DbSet<UserCompany> UserCompanies { get; set; }
         public DbSet<Salary> Salary { get; set; }
         public DbSet<SalaryDetails> SalaryDetails { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
@@ -114,6 +115,8 @@ namespace sopra_hris_api.src.Helpers
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<UserCompany>().HasNoKey().ToView("UserCompanies");
 
             modelBuilder.Entity<PerformanceTemplatesDto>();
             modelBuilder.Entity<PerformanceTemplateDetailsDto>();

@@ -8,7 +8,7 @@ namespace sopra_hris_api.src.Services
     {
         Task<AuthenticationOTPRequest> AuthenticateOTP(string PhoneNumber);
         Users AuthenticateVerifyOTP(string PhoneNumber, string Code);
-        Users AuthenticateByKey(string phoneNumber, string email);
+        Users AuthenticateByKey(string phoneNumber, string email, bool isSelfUser = false);
         Task<ApplicantUsers> AuthenticateCandidate(string Email, string Password);
         string GenerateToken(Users user, int Duration);
         string GenerateTokenCandidate(ApplicantUsers user, int Duration);

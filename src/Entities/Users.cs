@@ -46,10 +46,6 @@ namespace sopra_hris_api.Entities
         public List<ParentMenu>? ParentMenus { get; set; }
         [NotMapped]
         public List<ChildMenu>? ChildMenus { get; set; }
-        public string? Code { get; set; }
-        public string? Company { get; set; }
-        public string? ApiLink { get; set; }   
-        public string? LogoPath { get; set; }
         [NotMapped]
         public List<CompanyDto>? Companies { get; set; }
     }

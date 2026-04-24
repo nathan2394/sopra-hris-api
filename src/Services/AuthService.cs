@@ -119,11 +119,11 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public Users AuthenticateByKey(string phoneNumber, string email)
+        public Users AuthenticateByKey(string phoneNumber, string email, bool isSelfUser = false)
         {
-            var userCompanies = context.Set<Users>()
+            var userCompanies = context.Set<UserCompany>()
                 .FromSqlRaw(@"
-                    SELECT u.*
+                    SELECT u.UserID, u.Code, u.Company, u.ApiLink, u.LogoPath
                     FROM UserCompanies u
                     WHERE (u.PhoneNumber = {0} OR u.Email = {1})
                         AND u.isDeleted != 1
@@ -131,7 +131,24 @@ namespace sopra_hris_api.Services
                 .AsNoTracking()
                 .ToList();
 
-            var user = userCompanies.FirstOrDefault();
+            Users? user;
+
+            if (isSelfUser)
+            {
+                user = context.Users
+                    .AsNoTracking()
+                    .FirstOrDefault(x => x.Email == email && x.IsDeleted == false);
+            }
+            else
+            {
+                var selectedCompany = userCompanies.FirstOrDefault();
+                if (selectedCompany == null)
+                    return null;
+
+                user = context.Users
+                    .AsNoTracking()
+                    .FirstOrDefault(x => x.UserID == selectedCompany.UserID && x.IsDeleted == false);
+            }
 
             try
             {

@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = _service.AuthenticateByKey(PhoneNumber, null);
+            var user = _service.AuthenticateByKey(PhoneNumber, null, false);
             if (user == null)
                 return NotFound(new { message = "User not found" });
 
@@ -157,7 +157,7 @@ public class AuthController : ControllerBase
 
             // You can add custom logic here, like creating a user in your database
 
-            var user = _service.AuthenticateByKey(null, email);
+            var user = _service.AuthenticateByKey(null, email, false);
             if (user == null)
                 return BadRequest(new { message = "Email is not registered" });
             
@@ -193,7 +193,7 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "User email not found in claims" });
             }
 
-            var user = _service.AuthenticateByKey(null, userEmail.ToString());
+            var user = _service.AuthenticateByKey(null, userEmail.ToString(), true);
             if (user == null)
             {
                 return BadRequest(new { message = "User not found" });
