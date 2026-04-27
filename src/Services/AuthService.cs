@@ -119,36 +119,26 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public Users AuthenticateByKey(string phoneNumber, string email, bool isSelfUser = false)
+        public Users AuthenticateByKey(string phoneNumber, string email, bool validateBothKey = false)
         {
-            var userCompanies = context.Set<UserCompany>()
+            var sqlOperator = validateBothKey ? "AND" : "OR";
+
+            var userCompanies = context.UserCompanies
                 .FromSqlRaw(@"
                     SELECT u.UserID, u.Code, u.Company, u.ApiLink, u.LogoPath
                     FROM UserCompanies u
-                    WHERE (u.PhoneNumber = {0} OR u.Email = {1})
+                    WHERE (u.PhoneNumber = {0} " + sqlOperator + @" u.Email = {1})
                         AND u.isDeleted != 1
                 ", phoneNumber, email)
                 .AsNoTracking()
                 .ToList();
 
-            Users? user;
-
-            if (isSelfUser)
-            {
-                user = context.Users
-                    .AsNoTracking()
-                    .FirstOrDefault(x => (string.IsNullOrEmpty(phoneNumber) || x.PhoneNumber == phoneNumber) && (!string.IsNullOrEmpty(email) && x.Email == email) && x.IsDeleted == false);
-            }
-            else
-            {
-                var selectedCompany = userCompanies.FirstOrDefault();
-                if (selectedCompany == null)
-                    return null;
-
-                user = context.Users
-                    .AsNoTracking()
-                    .FirstOrDefault(x => x.UserID == selectedCompany.UserID && x.IsDeleted == false);
-            }
+            var user = context.Users
+                .AsNoTracking()
+                .FirstOrDefault(x => (validateBothKey
+                    ? (x.PhoneNumber == phoneNumber && x.Email == email)
+                    : (x.PhoneNumber == phoneNumber || x.Email == email))
+                    && x.IsDeleted == false);
 
             try
             {
@@ -242,7 +232,7 @@ namespace sopra_hris_api.Services
             {
                 new Claim("id", user.UserID.ToString()),
                 new Claim("email", user.Email.ToString()),
-				//new Claim("name", user.Name),
+                new Claim("phonenumber", user.PhoneNumber.ToString()),
 				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
                 new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
                 new Claim("groupid", (user?.GroupID ?? 0).ToString()),

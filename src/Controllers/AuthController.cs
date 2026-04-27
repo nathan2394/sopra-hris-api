@@ -186,14 +186,15 @@ public class AuthController : ControllerBase
     {
         try
         {
-           var userEmail = User.FindFirstValue("email");
-
-            if (string.IsNullOrEmpty(userEmail.ToString()))
+            var userEmail = User.FindFirstValue("email");
+            var userPhone = User.FindFirstValue("phonenumber");
+            
+            if (string.IsNullOrEmpty(userEmail.ToString()) && string.IsNullOrEmpty(userPhone.ToString()))
             {
-                return BadRequest(new { message = "User email not found in claims" });
+                return BadRequest(new { message = "User email and phone number not found in claims" });
             }
 
-            var user = _service.AuthenticateByKey(null, userEmail.ToString(), true);
+            var user = _service.AuthenticateByKey(userPhone.ToString(), userEmail.ToString(), true);
             if (user == null)
             {
                 return BadRequest(new { message = "User not found" });
