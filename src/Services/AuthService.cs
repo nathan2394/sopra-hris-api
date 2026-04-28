@@ -119,26 +119,32 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public Users AuthenticateByKey(string phoneNumber, string email, bool validateBothKey = false)
+        public Users AuthenticateByKey(string phoneNumber, string email, string key = "email")
         {
-            var sqlOperator = validateBothKey ? "AND" : "OR";
-
+            var whereCondition = "u.Email = {0}";
+            var value = email;
+            
+            if(key == "phone")
+            {
+                whereCondition = "u.PhoneNumber = {0}";
+                value = phoneNumber;
+            }
+            
             var userCompanies = context.UserCompanies
                 .FromSqlRaw(@"
                     SELECT u.UserID, u.Code, u.Company, u.ApiLink, u.LogoPath
                     FROM UserCompanies u
-                    WHERE (u.PhoneNumber = {0} " + sqlOperator + @" u.Email = {1})
+                    WHERE " + whereCondition + @"
                         AND u.isDeleted != 1
-                ", phoneNumber, email)
+                ", value)
                 .AsNoTracking()
                 .ToList();
 
             var user = context.Users
                 .AsNoTracking()
-                .FirstOrDefault(x => (validateBothKey
-                    ? (x.PhoneNumber == phoneNumber && x.Email == email)
-                    : (x.PhoneNumber == phoneNumber || x.Email == email))
-                    && x.IsDeleted == false);
+                .FirstOrDefault(x => (key == "phone"
+                    ? x.PhoneNumber == phoneNumber
+                    : x.Email == email) && x.IsDeleted == false);
 
             try
             {
@@ -232,7 +238,7 @@ namespace sopra_hris_api.Services
             {
                 new Claim("id", user.UserID.ToString()),
                 new Claim("email", user.Email.ToString()),
-                new Claim("phonenumber", user.PhoneNumber.ToString()),
+                new Claim("phonenumber", (user.PhoneNumber ?? "").ToString()),
 				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
                 new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
                 new Claim("groupid", (user?.GroupID ?? 0).ToString()),

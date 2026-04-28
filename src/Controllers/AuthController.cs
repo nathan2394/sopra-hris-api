@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = _service.AuthenticateByKey(PhoneNumber, null, false);
+            var user = _service.AuthenticateByKey(PhoneNumber, null, "phone");
             if (user == null)
                 return NotFound(new { message = "User not found" });
 
@@ -157,7 +157,7 @@ public class AuthController : ControllerBase
 
             // You can add custom logic here, like creating a user in your database
 
-            var user = _service.AuthenticateByKey(null, email, false);
+            var user = _service.AuthenticateByKey(null, email, "email");
             if (user == null)
                 return BadRequest(new { message = "Email is not registered" });
             
@@ -194,11 +194,13 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "User email and phone number not found in claims" });
             }
 
-            var user = _service.AuthenticateByKey(userPhone.ToString(), userEmail.ToString(), true);
+            var user = _service.AuthenticateByKey(userPhone.ToString(), userEmail.ToString(), string.IsNullOrEmpty(userPhone.ToString()) ? "email" : "phone");
             if (user == null)
             {
                 return BadRequest(new { message = "User not found" });
             }
+
+            user.Password = "";
 
             // Generate JWT token using existing UserService
             var token = _service.GenerateToken(user, 1);
