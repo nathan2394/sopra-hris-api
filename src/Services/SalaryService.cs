@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Helpers;
 using sopra_hris_api.Responses;
@@ -11,6 +12,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace sopra_hris_api.src.Services.API
 {
@@ -774,6 +777,103 @@ namespace sopra_hris_api.src.Services.API
                     Trace.WriteLine(ex.StackTrace);
 
                 await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        public byte[] GeneratePayrollExcelFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, int company, int startSequenceNumber = 1)
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Template", "Template Payroll MBB - BCA 3.1.xlsm");
+
+                if (!System.IO.File.Exists(templatePath))
+                    throw new FileNotFoundException($"Template file not found at: {templatePath}");
+
+                using (var package = new ExcelPackage(new FileInfo(templatePath)))
+                {
+                    var worksheet = package.Workbook.Worksheets[0];
+
+                    int sequenceNumber = 1;
+                    int currentRow = 14; // Starting row for data
+
+                    foreach (var salary in salaryData)
+                    {
+                        if (company == 2 && salary.Department == "MOLD SHOP")
+                        {
+                            continue;
+                        }
+                        else if (company == 3 && salary.Department != "MOLD SHOP")
+                        {
+                            continue;
+                        }
+                        // Generate TransactionID: yyyyMMddXXX format (4 digit year, 2 digit Month, 2 digit Date, 3 digit sequence Number)
+                        var transactionDate = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+                        string transactionID = $"{year}{month:D2}{transactionDate.Day:D2}{startSequenceNumber:000}";
+
+                        // Populate columns: A=1, B=2, C=3, K=11, L=12, M=13
+                        worksheet.Cells[currentRow, 1].Value = sequenceNumber;          // Column A: No.
+                        worksheet.Cells[currentRow, 2].Value = transactionID;          // Column B: Transaction ID
+                        worksheet.Cells[currentRow, 3].Value = "BCA";        // Column C: Layanan Transfer (Service description)
+                        worksheet.Cells[currentRow, 11].Value = salary.AccountNo;      // Column K: No. Rekening Tujuan (Account Number)
+                        worksheet.Cells[currentRow, 12].Value = Regex.Replace(salary.EmployeeName, @"[^A-Za-z\s]", "");   // Column L: Nama Penerima (Beneficiary Name)
+                        worksheet.Cells[currentRow, 13].Value = salary.Netto ?? 0;     // Column M: Nominal (Amount)
+
+                        currentRow++;
+                        sequenceNumber++;
+                        startSequenceNumber++;
+                    }
+
+                    return package.GetAsByteArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public byte[] GeneratePayrollTextFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, string CorporateID, string RekeningDebet, string RekeningBiaya)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+
+                // Generate header line
+                // Format: 0|PY|SD|B|[BankCode]|||[Date in YYYYMMDD]||[Reference]|OUR|[OurAccount]|||
+                var headerDate = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+                string headerLine = $"0|PY|SD|B|{CorporateID}|||{year}{month:D2}{headerDate.Day:D2}||{RekeningDebet}|OUR|{RekeningBiaya}|||";
+                sb.AppendLine(headerLine);
+
+                // Generate data lines
+                int sequenceNumber = 1;
+                foreach (var salary in salaryData)
+                {
+                    // Generate TransactionID: YYYYMMDDSeq format
+                    string transactionID = $"{year}{month:D2}{headerDate.Day:D2}{sequenceNumber:000}";
+
+                    // Format: 1|TransactionID|BCA||||IDR||||[AccountNumber]|[EmployeeName]|[Amount]|||||||||
+                    // Each row has 21 pipe-delimited fields
+                    string dataLine = $"1|{transactionID}|BCA||||IDR||||{salary.AccountNo}|{Regex.Replace(salary.EmployeeName ?? "", @"[^A-Za-z\s]", "")}|{salary.Netto:F2}|||||||||";
+                    sb.AppendLine(dataLine);
+
+                    sequenceNumber++;
+                }
+
+                byte[] fileBytes = Encoding.UTF8.GetBytes(sb.ToString());
+                return fileBytes;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
 
                 throw;
             }

@@ -143,6 +143,8 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, long UserID);
         Task<ListResponseTemplate<SalaryCalculatorModel>> SetCalculator(SalaryCalculatorTemplate request);
         Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> SetCalculateEmployeeSalary(CalculateEmployeeSalary request, long UserID);
+        byte[] GeneratePayrollExcelFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, int company, int startSequenceNumber = 1);
+        byte[] GeneratePayrollTextFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, string CorporateID, string RekeningDebet, string RekeningBiaya);
     }
     public interface IServiceSalaryDetailsAsync<T>
     {
