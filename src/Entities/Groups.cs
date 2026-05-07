@@ -12,5 +12,11 @@ namespace sopra_hris_api.Entities
         public string Type { get; set; }
         public string Name { get; set; }
         public int Level { get; set; }
+        public int? TransportAllowance { get; set; }
+        public int? MealAllowance { get; set; }
+        public int? PositionalAllowance { get; set; }
+        public int? OperationalAllowance { get; set; }
+        public int? ProbationMonth { get; set; }
+        public string? OtherBenefit { get; set; }
     }
 }
