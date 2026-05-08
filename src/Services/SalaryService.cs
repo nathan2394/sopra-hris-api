@@ -565,10 +565,10 @@ namespace sopra_hris_api.src.Services.API
                                  Name = employee.EmployeeName,
                                  AccountNo = employee.AccountNo ?? "",
                                  Netto = salary.Netto,
-                                 DepartmentCode = department.Code,
+                                 DepartmentCode = department.Code ?? "",
                                  TransDate = new DateTime(Convert.ToInt32(salary.Year), Convert.ToInt32(salary.Month), 1).AddMonths(1).AddDays(-1)
                              });
-
+ 
                 // Sorting
                 query = query.OrderByDescending(x => x.SalaryID);
 
