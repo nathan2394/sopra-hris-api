@@ -13,7 +13,7 @@ namespace sopra_hris_api.src.Services.API
         public string? Description { get; set; }
         public long PerformanceTemplatesID { get; set; }
         public long PerformanceTemplateDetailGroupsID { get; set; }
-        public int Weight { get; set; }
+        public decimal Weight { get; set; }
         public string? MediaDescription { get; set; }
         public string? Option1 { get; set; }
         public string? Option2 { get; set; }
