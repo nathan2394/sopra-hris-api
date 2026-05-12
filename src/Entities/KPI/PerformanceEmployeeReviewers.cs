@@ -115,7 +115,7 @@ namespace sopra_hris_api.src.Services.API
         public long ID { get; set; }
         public string? Question { get; set; }
         public string? Type { get; set; }
-        public int Weight { get; set; }
+        public decimal Weight { get; set; }
         public decimal Score { get; set; }
         public int TotalApprover { get; set; }
         public int Approved { get; set; }
