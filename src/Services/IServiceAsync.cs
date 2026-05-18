@@ -185,11 +185,6 @@ namespace sopra_hris_api.src.Services
         Task<EmployeeScoresDto> GetEmployeeScoreDetailByIdAsync(long userID);
     }
 
-    public interface IServicePerformanceTemplateDetailGroupAsync<T>
-    {
-        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
-         string filter, string date);
-    }
 
     public interface IServicePerformanceApproverCategoryAsync<T>
     {
@@ -207,6 +202,17 @@ namespace sopra_hris_api.src.Services
         Task<EventsDto> EditAsync(EventsDto data, long userID);
         Task<bool> DeleteAsync(long id, long userID);
         Task<string> UploadAsync(IFormFile file, long userID);
+    }
+
+    public interface IServiceNotificationAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data, long userID);
+        Task<T> EditAsync(T data, long userID);
+        Task<bool> DeleteAsync(long id, long userID);
     }
 
     public interface IServiceLeadCandidateAsync<T>

@@ -260,12 +260,11 @@ namespace sopra_hris_api.src.Services.API
                             LEFT JOIN (
                                 SELECT 
                                     review.EmployeesID,
-                                    SUM(CASE WHEN ptdg.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
-                                    SUM(CASE WHEN ptdg.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
-                                    SUM(CASE WHEN ptdg.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
+                                    SUM(CASE WHEN ptd.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
+                                    SUM(CASE WHEN ptd.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
+                                    SUM(CASE WHEN ptd.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
                                 FROM PerformanceEmployeeReviewers review
                                     INNER JOIN PerformanceTemplateDetails ptd ON review.PerformanceTemplateDetailsID = ptd.ID
-                                    INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
                                 GROUP BY review.EmployeesID
                             ) AS scores ON e.EmployeeID = scores.EmployeesID
                         WHERE (e.IsDeleted = 0 OR e.IsDeleted IS NULL)
@@ -327,12 +326,11 @@ namespace sopra_hris_api.src.Services.API
                             LEFT JOIN (
                                 SELECT
                                     review.EmployeesID,
-                                    SUM(CASE WHEN ptdg.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
-                                    SUM(CASE WHEN ptdg.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
-                                    SUM(CASE WHEN ptdg.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
+                                    SUM(CASE WHEN ptd.Type = 'PP' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PP,
+                                    SUM(CASE WHEN ptd.Type = 'PK' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PK,
+                                    SUM(CASE WHEN ptd.Type = 'PM' THEN ISNULL(review.TotalWeight, 0) ELSE 0 END) AS PM
                                 FROM PerformanceEmployeeReviewers review
                                     INNER JOIN PerformanceTemplateDetails ptd ON review.PerformanceTemplateDetailsID = ptd.ID
-                                    INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
                                 GROUP BY review.EmployeesID
                             ) scores ON e.EmployeeID = scores.EmployeesID
                         WHERE e.EmployeeID = {0}
@@ -364,7 +362,7 @@ namespace sopra_hris_api.src.Services.API
                     .FromSqlRaw(@"
                         SELECT 
                             per.ID, 
-                            ptdg.Type, 
+                            ptd.Type AS Type, 
                             ptd.Description AS Question,
                             ISNULL(ptd.Weight, 0) AS Weight,
                             CAST(ISNULL(per.TotalWeight, 0) AS decimal(10,2)) AS Score,
@@ -390,7 +388,6 @@ namespace sopra_hris_api.src.Services.API
                         FROM PerformanceEmployeeReviewers per
                             INNER JOIN PerformanceTemplateDetails ptd ON per.PerformanceTemplateDetailsID = ptd.ID
                                 AND per.PerformanceTemplatesID = ptd.PerformanceTemplatesID
-                            INNER JOIN PerformanceTemplateDetailGroups ptdg ON ptd.PerformanceTemplateDetailGroupsID = ptdg.ID
                         WHERE per.EmployeesID = {0} AND (per.IsDeleted = 0 OR per.IsDeleted IS NULL)
                     ", employee.EmployeesID)
                     .AsNoTracking()
