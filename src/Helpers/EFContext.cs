@@ -107,9 +107,9 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<PerformanceTrainings> PerformanceTrainings { get; set; }
         public virtual DbSet<PerformanceCompetencies> PerformanceCompetencies { get; set; }
         public virtual DbSet<PerformanceCompetencyDetails> PerformanceCompetencyDetails { get; set; }
-        public virtual DbSet<PerformanceTemplateDetailGroups> PerformanceTemplateDetailGroups { get; set; }
         public virtual DbSet<PerformanceApproverCategories> PerformanceApproverCategories { get; set; }
         public virtual DbSet<Events> Events { get; set; }
+        public virtual DbSet<Notifications> Notifications { get; set; }
         public virtual DbSet<LeadCandidates> LeadCandidates { get; set; }
         public virtual DbSet<EventPartnerships> EventPartnerships { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)

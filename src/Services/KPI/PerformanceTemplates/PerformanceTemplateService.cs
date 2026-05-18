@@ -196,16 +196,15 @@ namespace sopra_hris_api.src.Services.API
                 #region Load TemplateDetails (PP, PK, PM)
                 var detailPP = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
+                        SELECT pt.ID, pt.Name, pt.Description, pt.CoreName, pt.Type, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
                             (CASE WHEN ISNULL(pt.Approver1, 0) > 0 OR ISNULL(pt.Approver1Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver2, 0) > 0 OR ISNULL(pt.Approver2Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver3, 0) > 0 OR ISNULL(pt.Approver3Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver4, 0) > 0 OR ISNULL(pt.Approver4Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver5, 0) > 0 OR ISNULL(pt.Approver5Weight, 0) > 0 THEN 1 ELSE 0 END) AS CountApprover
                         FROM PerformanceTemplateDetails pt
-                            INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
-                            AND ptg.Type = 'PP'
+                            AND pt.Type = 'PP'
                             AND (pt.IsDeleted = 0 OR pt.IsDeleted IS NULL)
                     ", template.ID)
                     .AsNoTracking()
@@ -213,16 +212,15 @@ namespace sopra_hris_api.src.Services.API
 
                 var detailPK = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
+                        SELECT pt.ID, pt.Name, pt.Description, pt.CoreName, pt.Type, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
                             (CASE WHEN ISNULL(pt.Approver1, 0) > 0 OR ISNULL(pt.Approver1Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver2, 0) > 0 OR ISNULL(pt.Approver2Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver3, 0) > 0 OR ISNULL(pt.Approver3Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver4, 0) > 0 OR ISNULL(pt.Approver4Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver5, 0) > 0 OR ISNULL(pt.Approver5Weight, 0) > 0 THEN 1 ELSE 0 END) AS CountApprover
                         FROM PerformanceTemplateDetails pt
-                            INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
-                            AND ptg.Type = 'PK'
+                            AND pt.Type = 'PK'
                             AND (pt.IsDeleted = 0 OR pt.IsDeleted IS NULL)
                     ", template.ID)
                     .AsNoTracking()
@@ -230,16 +228,15 @@ namespace sopra_hris_api.src.Services.API
 
                 var detailPM = await _context.Set<PerformanceTemplateDetailsDto>()
                     .FromSqlRaw(@"
-                        SELECT pt.ID, pt.Name, pt.Description, pt.PerformanceTemplateDetailGroupsID, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
+                        SELECT pt.ID, pt.Name, pt.Description, pt.CoreName, pt.Type, pt.PerformanceTemplatesID, pt.Weight, pt.MediaDescription, pt.Option1, pt.Option2, pt.Option3, pt.Option4, pt.Option5, pt.Approver1, pt.Approver1Weight, pt.Approver2, pt.Approver2Weight, pt.Approver3, pt.Approver3Weight, pt.Approver4, pt.Approver4Weight, pt.Approver5, pt.Approver5Weight,
                             (CASE WHEN ISNULL(pt.Approver1, 0) > 0 OR ISNULL(pt.Approver1Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver2, 0) > 0 OR ISNULL(pt.Approver2Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver3, 0) > 0 OR ISNULL(pt.Approver3Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver4, 0) > 0 OR ISNULL(pt.Approver4Weight, 0) > 0 THEN 1 ELSE 0 END
                             + CASE WHEN ISNULL(pt.Approver5, 0) > 0 OR ISNULL(pt.Approver5Weight, 0) > 0 THEN 1 ELSE 0 END) AS CountApprover
                         FROM PerformanceTemplateDetails pt
-                            INNER JOIN PerformanceTemplateDetailGroups ptg ON pt.PerformanceTemplateDetailGroupsID = ptg.ID
                         WHERE pt.PerformanceTemplatesID = {0}
-                            AND ptg.Type = 'PM'
+                            AND pt.Type = 'PM'
                             AND (pt.IsDeleted = 0 OR pt.IsDeleted IS NULL)
                     ", template.ID)
                     .AsNoTracking()
@@ -374,9 +371,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PP)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PP', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
 
@@ -385,9 +382,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PK)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PK', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
 
@@ -396,9 +393,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PM)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserIn, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PM', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
                 }
@@ -557,9 +554,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PP)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PP', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
 
@@ -568,9 +565,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PK)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PK', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
 
@@ -579,9 +576,9 @@ namespace sopra_hris_api.src.Services.API
                         foreach(var detail in data.TemplateDetails.PM)
                         {
                             _context.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, PerformanceTemplateDetailGroupsID, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, UserUp, DateIn)
-                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.PerformanceTemplateDetailGroupsID, detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                                INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
+                                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PM', {21}, GETDATE());
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
                         }
                     }
                 }
