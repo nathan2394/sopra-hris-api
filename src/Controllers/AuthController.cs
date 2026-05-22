@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
 using sopra_hris_api.Responses;
@@ -34,27 +35,25 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = await _service.AuthenticateEmployee(PhoneNumber, Password);
+            var user = _service.AuthenticateByKey(PhoneNumber, null, "phone");
             if (user == null)
                 return NotFound(new { message = "User not found" });
 
             if (!Utility.VerifyHashedPassword(user.Password, Password))
                 return Unauthorized(new { message = "Incorrect password" });
 
+            var message = "";
             if (!user.IsVerified.HasValue || !user.IsVerified.Value)
-            {
-                var result = await _service.AuthenticateOTP(PhoneNumber);
-                if (result.Success)
-                    return Ok(new { message = "OTP sent successfully" });
-                else
-                    return BadRequest(new { message = result.Message });
-            }
+                message = "Not verified";
+
             user.Password = "";
             user.OTP = "";
             user.OtpExpiration = null;
 
-            var token = _service.GenerateToken(user, 1);
-            var response = new AuthResponse(user, token);
+            message = "Login successful";
+
+            var token = message == "Not verified" ? null : _service.GenerateToken(user, 1);
+            var response = new AuthResponse(user, token, message);
 
             return Ok(response);
         }
@@ -71,6 +70,32 @@ public class AuthController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromQuery] string PhoneNumber)
+    {
+        try
+        {
+            var result = await _service.AuthenticateOTP(PhoneNumber);
+            if (result.Success)
+                return Ok(new { message = "OTP sent successfully" });
+            else
+                return BadRequest(new { message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AuthController");
+            return BadRequest(new { message });
+        }
+    }
+
     [HttpPost("validate-otp")]
     public IActionResult ValidateOtp([FromQuery] AuthenticationVerifyOTPRequest request)
     {
@@ -111,7 +136,6 @@ public class AuthController : ControllerBase
     {
         try
         {
-
             if (string.IsNullOrEmpty(request.Token))
                 return BadRequest("Token is required.");
 
@@ -133,7 +157,7 @@ public class AuthController : ControllerBase
 
             // You can add custom logic here, like creating a user in your database
 
-            var user = _service.AuthenticateGoogle(email);
+            var user = _service.AuthenticateByKey(null, email, "email");
             if (user == null)
                 return BadRequest(new { message = "Email is not registered" });
             
@@ -155,6 +179,49 @@ public class AuthController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [Authorize]
+    [HttpGet("refresh-user")]
+    public async Task<IActionResult> RefreshUser()
+    {
+        try
+        {
+            var userEmail = User.FindFirstValue("email");
+            var userPhone = User.FindFirstValue("phonenumber");
+            
+            if (string.IsNullOrEmpty(userEmail.ToString()) && string.IsNullOrEmpty(userPhone.ToString()))
+            {
+                return BadRequest(new { message = "User email and phone number not found in claims" });
+            }
+
+            var user = _service.AuthenticateByKey(userPhone.ToString(), userEmail.ToString(), string.IsNullOrEmpty(userPhone.ToString()) ? "email" : "phone");
+            if (user == null)
+            {
+                return BadRequest(new { message = "User not found" });
+            }
+
+            user.Password = "";
+
+            // Generate JWT token using existing UserService
+            var token = _service.GenerateToken(user, 1);
+            var response = new AuthResponse(user, token);
+
+            return Ok(response); 
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "AuthController: RefreshUser");
+            return BadRequest(new { message });
+        }
+    }
+
     [HttpPost("loginCandidate")]
     public async Task<IActionResult> AuthenticateCandidate([FromQuery] string Email, [FromQuery] string Password)
     {

@@ -223,7 +223,6 @@ namespace sopra_hris_api
             services.AddScoped<IServiceAsync<JobVacancySource>, JobVacancySourceService>();
             services.AddScoped<IServicePerformanceTemplateAsync<PerformanceTemplates>, PerformanceTemplateService>();
             services.AddScoped<IServicePerformanceEmployeeReviewerAsync<PerformanceEmployeeReviewers>, PerformanceEmployeeReviewerService>();
-            services.AddScoped<IServicePerformanceTemplateDetailGroupAsync<PerformanceTemplateDetailGroups>, PerformanceTemplateDetailGroupService>();
             services.AddScoped<IServicePerformanceApproverCategoryAsync<PerformanceApproverCategories>, PerformanceApproverCategoryService>();
             services.AddScoped<IServiceEventAsync<Events>, EventService>();
             services.AddScoped<IServiceLeadCandidateAsync<LeadCandidatesDto>, LeadCandidateService>();

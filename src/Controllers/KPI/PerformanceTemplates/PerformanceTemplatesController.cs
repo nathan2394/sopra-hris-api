@@ -168,4 +168,74 @@ public class PerformanceTemplatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [HttpGet("reviewer")]
+    public async Task<IActionResult> GetReviewerAssignList(int limit = 0, int page = 0)
+    {
+        try
+        {
+            var result = await _service.GetReviewerAssignListAsync(limit, page);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceTemplatesController: Get Reviewer Assign List");
+            return BadRequest(new { message });
+        }
+    }
+
+    [HttpGet("reviewer/{templateId}")]
+    public async Task<IActionResult> GetReviewerAssignDetail(long templateId)
+    {
+        try
+        {
+            var result = await _service.GetReviewerAssignDetailAsync(templateId);
+            var response = new Response<object>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceTemplatesController: Get Reviewer Assign Detail");
+            return BadRequest(new { message });
+        }
+    }
+
+    [HttpPost("assign-reviewer")]
+    public async Task<IActionResult> AssignReviewer([FromBody] AssignReviewerPayloadDto obj)
+    {
+        try
+        {
+            var userID = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.AssignReviewerAsync(obj, userID);
+
+            var response = new Response<object>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceTemplatesController: Assign Reviewer");
+            return BadRequest(new { message });
+        }
+    }
 }

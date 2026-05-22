@@ -12,8 +12,11 @@ namespace sopra_hris_api.src.Services.API
         public string? Name { get; set; }
         public string? Description { get; set; }
         public long PerformanceTemplatesID { get; set; }
-        public long PerformanceTemplateDetailGroupsID { get; set; }
-        public int Weight { get; set; }
+        // descriptive name for the detail (e.g. "Kedisiplinan", "GMP")
+        public string? CoreName { get; set; }
+        // core type that groups details into PP, PK, PM
+        public string? Type { get; set; }
+        public decimal Weight { get; set; }
         public string? MediaDescription { get; set; }
         public string? Option1 { get; set; }
         public string? Option2 { get; set; }
@@ -39,8 +42,9 @@ namespace sopra_hris_api.src.Services.API
         public string? Name { get; set; }
         public string? Description { get; set; }
         public long PerformanceTemplatesID { get; set; }
-        public long PerformanceTemplateDetailGroupsID { get; set; }
-        public int Weight { get; set; }
+        public string? CoreName { get; set; }
+        public string? Type { get; set; }
+        public decimal Weight { get; set; }
         public string? MediaDescription { get; set; }
         public string? Option1 { get; set; }
         public string? Option2 { get; set; }

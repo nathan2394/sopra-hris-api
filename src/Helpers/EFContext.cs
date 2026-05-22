@@ -39,6 +39,7 @@ namespace sopra_hris_api.src.Helpers
         public DbSet<TunjanganMasaKerja> TunjanganMasaKerja { get; set; }
         public DbSet<UserLogs> UserLogs { get; set; }
         public DbSet<Users> Users { get; set; }
+        public DbSet<UserCompany> UserCompanies { get; set; }
         public DbSet<Salary> Salary { get; set; }
         public DbSet<SalaryDetails> SalaryDetails { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
@@ -101,20 +102,23 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<CandidateDTO> CandidateDTO { get; set; }
         public virtual DbSet<SessionQuestionRaw> SessionQuestionRaw { get; set; }
         public virtual DbSet<PerformanceTemplates> PerformanceTemplates { get; set; }
+        public virtual DbSet<PerformanceEmployeeApprovals> PerformanceEmployeeApprovals { get; set; }
         public virtual DbSet<PerformanceEmployeeReviewers> PerformanceEmployeeReviewers { get; set; }
         public virtual DbSet<PerformanceConditions> PerformanceConditions { get; set; }
         public virtual DbSet<PerformanceTemplateDetails> PerformanceTemplateDetails { get; set; }
         public virtual DbSet<PerformanceTrainings> PerformanceTrainings { get; set; }
         public virtual DbSet<PerformanceCompetencies> PerformanceCompetencies { get; set; }
         public virtual DbSet<PerformanceCompetencyDetails> PerformanceCompetencyDetails { get; set; }
-        public virtual DbSet<PerformanceTemplateDetailGroups> PerformanceTemplateDetailGroups { get; set; }
         public virtual DbSet<PerformanceApproverCategories> PerformanceApproverCategories { get; set; }
         public virtual DbSet<Events> Events { get; set; }
+        public virtual DbSet<Notifications> Notifications { get; set; }
         public virtual DbSet<LeadCandidates> LeadCandidates { get; set; }
         public virtual DbSet<EventPartnerships> EventPartnerships { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<UserCompany>().HasNoKey().ToView("UserCompanies");
 
             modelBuilder.Entity<PerformanceTemplatesDto>();
             modelBuilder.Entity<PerformanceTemplateDetailsDto>();
@@ -131,6 +135,10 @@ namespace sopra_hris_api.src.Helpers
 
             modelBuilder.Entity<FormDetailsDto>();
             modelBuilder.Entity<ToBeReviewedEmployeesDto>();
+            modelBuilder.Entity<SubcoreApprovalDetailDto>();
+            modelBuilder.Entity<OptionWeightRow>();
+            modelBuilder.Entity<EmployeeScoresDto>();
+            modelBuilder.Entity<EmployeeScoreDetailsDto>();
         }
     }
 }

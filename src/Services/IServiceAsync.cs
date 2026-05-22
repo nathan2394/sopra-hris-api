@@ -175,6 +175,9 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(PerformanceTemplatesDto data, long userID);
         Task<bool> DeleteAsync(long id, long userID);
         Task<PerformanceTemplatesDto> PublishAsync(long id, long userID);
+        Task<ListResponse<PerformanceEmployeeApprovalsListDto>> GetReviewerAssignListAsync(int limit, int page);
+        Task<PerformanceEmployeeApprovalsDetailDto> GetReviewerAssignDetailAsync(long templateId);
+        Task<PerformanceEmployeeApprovalsDetailDto> AssignReviewerAsync(AssignReviewerPayloadDto data, long userID);
     }
 
     public interface IServicePerformanceEmployeeReviewerAsync<T>
@@ -184,13 +187,10 @@ namespace sopra_hris_api.src.Services
         Task<ReviewerFormsDto> GetEmployeeFormByIdAsync(long userID, long reviewerID);
         Task<List<ToBeReviewedEmployeesDto>> GetEmployeeListByIdAsync(long userID);
         Task<ReviewerFormsDto> EditAsync(ReviewerFormsDto data, long userID);
+        Task<List<EmployeeScoresDto>> GetEmployeeScoreAsync();
+        Task<EmployeeScoresDto> GetEmployeeScoreDetailByIdAsync(long userID);
     }
 
-    public interface IServicePerformanceTemplateDetailGroupAsync<T>
-    {
-        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
-         string filter, string date);
-    }
 
     public interface IServicePerformanceApproverCategoryAsync<T>
     {
@@ -208,6 +208,17 @@ namespace sopra_hris_api.src.Services
         Task<EventsDto> EditAsync(EventsDto data, long userID);
         Task<bool> DeleteAsync(long id, long userID);
         Task<string> UploadAsync(IFormFile file, long userID);
+    }
+
+    public interface IServiceNotificationAsync<T>
+    {
+        Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, string search, string sort,
+        string filter, string date);
+
+        Task<T> GetByIdAsync(long id);
+        Task<T> CreateAsync(T data, long userID);
+        Task<T> EditAsync(T data, long userID);
+        Task<bool> DeleteAsync(long id, long userID);
     }
 
     public interface IServiceLeadCandidateAsync<T>

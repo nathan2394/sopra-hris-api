@@ -12,12 +12,11 @@ namespace sopra_hris_api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize]
-public class PerformanceEmployeeReviewerController : ControllerBase
+public class NotificationsController : ControllerBase
 {
-    private readonly IServicePerformanceEmployeeReviewerAsync<PerformanceEmployeeReviewers> _service;
+    private readonly IServiceNotificationAsync<Notifications> _service;
 
-    public PerformanceEmployeeReviewerController(IServicePerformanceEmployeeReviewerAsync<PerformanceEmployeeReviewers> service)
+    public NotificationsController(IServiceNotificationAsync<Notifications> service)
     {
         _service = service;
     }
@@ -44,15 +43,15 @@ public class PerformanceEmployeeReviewerController : ControllerBase
         }
     }
 
-    [HttpGet("EmployeeForm/{id}")]
-    public async Task<IActionResult> GetEmployeeFormById(long id)
+    [HttpGet("{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetById(int id)
     {
         try
         {
-            var reviewerID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+            var result = await _service.GetByIdAsync(id);
 
-            var result = await _service.GetEmployeeFormByIdAsync(id, reviewerID);
-            var response = new Response<ReviewerFormsDto>(result);
+            var response = new Response<Notifications>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -64,20 +63,21 @@ public class PerformanceEmployeeReviewerController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get By Employee ID");
+            Trace.WriteLine(message, "EventsController: Get By ID");
             return BadRequest(new { message });
         }
     }
 
-    [HttpGet("EmployeeList")]
-    public async Task<IActionResult> GetEmployeeListById()
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] Notifications obj)
     {
         try
         {
-            var userID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+            var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
-            var result = await _service.GetEmployeeListByIdAsync(userID);
-            var response = new Response<List<ToBeReviewedEmployeesDto>>(result);
+            var result = await _service.CreateAsync(obj, userID);
+            var response = new Response<Notifications>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -89,20 +89,22 @@ public class PerformanceEmployeeReviewerController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get By Employee ID");
+            Trace.WriteLine(message, "NotificationsController: Create");
             return BadRequest(new { message });
         }
+
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] ReviewerFormsDto obj)
+    [Authorize]
+    public async Task<IActionResult> Edit([FromBody] Notifications obj)
     {
         try
         {
             var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
             var result = await _service.EditAsync(obj, userID);
-            var response = new Response<ReviewerFormsDto>(result);
+            var response = new Response<Notifications>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -114,41 +116,21 @@ public class PerformanceEmployeeReviewerController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Edit");
+            Trace.WriteLine(message, "NotificationsController: Edit");
             return BadRequest(new { message });
         }
     }
 
-    [HttpGet("EmployeeScore")]
-    public async Task<IActionResult> GetEmployeeScore()
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            var result = await _service.GetEmployeeScoreAsync();
-            var response = new Response<List<EmployeeScoresDto>>(result);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get Employee Score");
-            return BadRequest(new { message });
-        }
-    }
+            var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
-    [HttpGet("EmployeeScoreDetail/{id}")]
-    public async Task<IActionResult> GetEmployeeScoreById(long id)
-    {
-        try
-        {
-            var result = await _service.GetEmployeeScoreDetailByIdAsync(id);
-            var response = new Response<EmployeeScoresDto>(result);
+            var result = await _service.DeleteAsync(id, userID);
+            var response = new Response<object>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -160,7 +142,7 @@ public class PerformanceEmployeeReviewerController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "PerformanceEmployeeReviewerController: Get Employee Score Detail By Employee ID");
+            Trace.WriteLine(message, "NotificationsController: Delete");
             return BadRequest(new { message });
         }
     }
