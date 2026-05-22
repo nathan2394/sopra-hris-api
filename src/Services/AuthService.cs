@@ -206,6 +206,13 @@ namespace sopra_hris_api.Services
                 user.OTP = "";
                 user.OtpExpiration = null;
 
+                var companyCode = config.GetSection("CompanyCode").Value;
+                var currentCompany = context.Companies
+                    .AsNoTracking()
+                    .FirstOrDefault(x => x.Code == companyCode);
+                
+                user.CompanyID = currentCompany?.CompanyID;
+
                 user.Companies = userCompanies.Select(u => new CompanyDto
                 {
                     Code = u.Code ?? "",

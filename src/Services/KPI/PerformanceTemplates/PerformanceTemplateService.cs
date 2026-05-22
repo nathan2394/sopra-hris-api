@@ -435,6 +435,9 @@ namespace sopra_hris_api.src.Services.API
                     }
                 }
                 #endregion
+                
+                if (data.Status == true)
+                    await PublishAsync(template.ID, userID);
 
                 await dbTrans.CommitAsync();
 
@@ -732,6 +735,7 @@ namespace sopra_hris_api.src.Services.API
 
         public async Task<PerformanceTemplatesDto> PublishAsync(long id, long userID)
         {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
                 var template = await _context.Set<PerformanceTemplates>()
@@ -756,26 +760,37 @@ namespace sopra_hris_api.src.Services.API
                 ", userID, template.ID);
 
                 await _context.Database.ExecuteSqlRawAsync(@"
+                    WITH ApprovalTemplate AS (
+                        SELECT
+                            A.ID, A.DepartmentsID, A.EmployeeJobTitlesID, B.ID AS TemplateID, B.Name,
+                            MAX(CASE WHEN V.ApproverNum = 1 THEN C.Name END) AS Approvers1Category,
+                            MAX(CASE WHEN V.ApproverNum = 2 THEN C.Name END) AS Approvers2Category,
+                            MAX(CASE WHEN V.ApproverNum = 3 THEN C.Name END) AS Approvers3Category,
+                            MAX(CASE WHEN V.ApproverNum = 4 THEN C.Name END) AS Approvers4Category,
+                            MAX(CASE WHEN V.ApproverNum = 5 THEN C.Name END) AS Approvers5Category
+                        FROM PerformanceTemplates A
+                            INNER JOIN PerformanceTemplateDetails B ON A.ID = B.PerformanceTemplatesID
+                            CROSS APPLY (VALUES 
+                                (1, B.Approver1), (2, B.Approver2), (3, B.Approver3),
+                                (4, B.Approver4), (5, B.Approver5)
+                            ) AS V(ApproverNum, ApproverID)
+                            LEFT JOIN PerformanceApproverCategories C ON V.ApproverID = C.ID
+                        WHERE A.Status = 1
+                            AND A.ID = {0}
+                        GROUP BY A.ID, A.DepartmentsID, A.EmployeeJobTitlesID, B.ID, B.Name
+                    )
+
                     INSERT INTO PerformanceEmployeeApprovals
-                        (PerformanceTemplatesID, PerformanceTemplateDetailsID, SubCore, Approvers1Category, Approvers2Category, Approvers3Category, Approvers4Category, Approvers5Category, UserIn, DateIn)
+                        (PerformanceTemplatesID, PerformanceTemplateDetailsID, SubCore, EmployeeID, Approvers1Category, Approvers2Category, Approvers3Category, Approvers4Category, Approvers5Category, UserIn, DateIn)
                     SELECT
-                        A.ID, B.ID, B.Name,
-                        MAX(CASE WHEN V.ApproverNum = 1 THEN C.Name END) AS Approvers1Category,
-                        MAX(CASE WHEN V.ApproverNum = 2 THEN C.Name END) AS Approvers2Category,
-                        MAX(CASE WHEN V.ApproverNum = 3 THEN C.Name END) AS Approvers3Category,
-                        MAX(CASE WHEN V.ApproverNum = 4 THEN C.Name END) AS Approvers4Category,
-                        MAX(CASE WHEN V.ApproverNum = 5 THEN C.Name END) AS Approvers5Category,
-                        {1}, GETDATE()
-                    FROM PerformanceTemplates A
-                        INNER JOIN PerformanceTemplateDetails B ON A.ID = B.PerformanceTemplatesID
-                        CROSS APPLY (VALUES 
-                            (1, B.Approver1), (2, B.Approver2), (3, B.Approver3),
-                            (4, B.Approver4), (5, B.Approver5)
-                        ) AS V(ApproverNum, ApproverID)
-                        LEFT JOIN PerformanceApproverCategories C ON V.ApproverID = C.ID
-                    WHERE A.Status = 1
-                        AND A.ID = {0}
-                    GROUP BY A.ID, B.ID, B.Name
+                        at.ID, at.TemplateID, at.Name, e.EmployeeID,
+                        at.Approvers1Category, at.Approvers2Category, at.Approvers3Category, at.Approvers4Category, at.Approvers5Category,
+                        {0}, GETDATE()
+                    FROM ApprovalTemplate at
+                        CROSS JOIN Employees e
+                    WHERE e.DepartmentID = at.DepartmentsID
+                        AND e.JobTitleID = at.EmployeeJobTitlesID
+                        AND (e.IsDeleted = 0 OR e.IsDeleted IS NULL)
                 ", template.ID, userID);
 
                 var publishedTemplate = await _context.Set<PerformanceTemplatesDto>()
@@ -787,7 +802,73 @@ namespace sopra_hris_api.src.Services.API
                     ", id)
                     .FirstOrDefaultAsync();
 
+                await dbTrans.CommitAsync();
+
                 return publishedTemplate;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        public async Task<ListResponse<PerformanceEmployeeApprovalsListDto>> GetReviewerAssignListAsync(int limit, int page)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
+                var query = from pt in _context.PerformanceTemplates
+                            join ejt in _context.EmployeeJobTitles on pt.EmployeeJobTitlesID equals ejt.EmployeeJobTitleID
+                            where pt.Status == true && (pt.IsDeleted == false || pt.IsDeleted == null)
+                            select new
+                            {
+                                pt.ID,
+                                TemplateName = ejt.Name,
+                                pt.ActiveYear
+                            };
+
+                var result = new List<PerformanceEmployeeApprovalsListDto>();
+                
+                foreach (var template in await query.ToListAsync())
+                {
+                    var totalEmp = await _context.Set<PerformanceEmployeeApprovals>()
+                        .Where(x => x.PerformanceTemplatesID == template.ID && (x.IsDeleted == false || x.IsDeleted == null))
+                        .Select(x => x.EmployeeID)
+                        .Distinct()
+                        .CountAsync();
+
+                    var assignedEmp = await _context.Set<PerformanceEmployeeApprovals>()
+                        .Where(x => x.PerformanceTemplatesID == template.ID 
+                            && (x.IsDeleted == false || x.IsDeleted == null)
+                            && ((x.Approvers1ID ?? 0) > 0 || (x.Approvers2ID ?? 0) > 0 || (x.Approvers3ID ?? 0) > 0 || (x.Approvers4ID ?? 0) > 0 || (x.Approvers5ID ?? 0) > 0))
+                        .Select(x => x.EmployeeID)
+                        .Distinct()
+                        .CountAsync();
+
+                    result.Add(new PerformanceEmployeeApprovalsListDto
+                    {
+                        TemplateID = template.ID,
+                        TemplateName = template.TemplateName,
+                        ActiveYear = template.ActiveYear,
+                        TotalEmployees = totalEmp,
+                        AssignedEmployees = assignedEmp,
+                        UnassignedEmployees = totalEmp - assignedEmp
+                    });
+                }
+
+                var total = result.Count;
+
+                if (limit != 0)
+                    result = result.Skip(page * limit).Take(limit).ToList();
+
+                return new ListResponse<PerformanceEmployeeApprovalsListDto>(result, total, page);
             }
             catch (Exception ex)
             {
@@ -797,6 +878,191 @@ namespace sopra_hris_api.src.Services.API
 
                 throw;
             }
+        }
+
+        public async Task<PerformanceEmployeeApprovalsDetailDto> GetReviewerAssignDetailAsync(long templateId)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                var template = await (from pt in _context.PerformanceTemplates
+                                      join ejt in _context.EmployeeJobTitles on pt.EmployeeJobTitlesID equals ejt.EmployeeJobTitleID
+                                      where pt.ID == templateId && (pt.IsDeleted == false || pt.IsDeleted == null)
+                                      select new
+                                      {
+                                          pt.ID,
+                                          TemplateName = ejt.Name
+                                      }).FirstOrDefaultAsync();
+
+                if (template == null)
+                    throw new Exception("Performance template not found");
+
+                var employeeIds = await _context.Set<PerformanceEmployeeApprovals>()
+                    .Where(x => x.PerformanceTemplatesID == templateId && (x.IsDeleted == false || x.IsDeleted == null))
+                    .Select(x => x.EmployeeID)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToListAsync();
+
+                var employees = new List<PerformanceEmployeeApprovalsEmployeeDetailDto>();
+                foreach (var employeeId in employeeIds)
+                {
+                    employees.Add(await GetEmployeeReviewerDetailAsync(templateId, employeeId));
+                }
+
+                return new PerformanceEmployeeApprovalsDetailDto
+                {
+                    TemplateID = templateId,
+                    TemplateName = template.TemplateName,
+                    Employees = employees
+                };
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
+
+        public async Task<PerformanceEmployeeApprovalsDetailDto> AssignReviewerAsync(AssignReviewerPayloadDto data, long userID)
+        {
+            await using var dbTrans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (data.Employees == null || data.Employees.Count == 0)
+                    throw new Exception("No employee assignments provided");
+
+                foreach (var employee in data.Employees)
+                {
+                    if (employee.DetailAssignments == null || employee.DetailAssignments.Count == 0)
+                        throw new Exception($"No detail assignments provided for employee {employee.EmployeeID}");
+
+                    foreach (var detail in employee.DetailAssignments)
+                    {
+                        var approval = await _context.Set<PerformanceEmployeeApprovals>()
+                            .FromSqlRaw(@"
+                                SELECT *
+                                FROM PerformanceEmployeeApprovals
+                                WHERE PerformanceTemplatesID = {0}
+                                    AND PerformanceTemplateDetailsID = {1}
+                                    AND EmployeeID = {2}
+                                    AND (IsDeleted = 0 OR IsDeleted IS NULL)
+                            ", data.TemplateID, detail.DetailID, employee.EmployeeID)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync();
+
+                        if (approval == null)
+                            throw new Exception($"Performance Employee Approval record not found for detail {detail.DetailID} and employee {employee.EmployeeID}");
+
+                        await _context.Database.ExecuteSqlRawAsync(@"
+                            UPDATE PerformanceEmployeeApprovals
+                            SET
+                                Approvers1ID = {3},
+                                Approvers2ID = {4},
+                                Approvers3ID = {5},
+                                Approvers4ID = {6},
+                                Approvers5ID = {7},
+                                UserUp = {8},
+                                DateUp = GETDATE()
+                            WHERE PerformanceTemplatesID = {0}
+                                AND PerformanceTemplateDetailsID = {1}
+                                AND EmployeeID = {2}
+                        ", data.TemplateID, detail.DetailID, employee.EmployeeID,
+                        detail.Approvers1ID ?? 0, detail.Approvers2ID ?? 0, detail.Approvers3ID ?? 0,
+                        detail.Approvers4ID ?? 0, detail.Approvers5ID ?? 0, userID);
+
+                        await _context.Database.ExecuteSqlRawAsync(@"
+                            DELETE FROM PerformanceEmployeeReviewers
+                            WHERE PerformanceTemplatesID = {0}
+                                AND PerformanceTemplateDetailsID = {1}
+                                AND EmployeesID = {2}
+                        ", data.TemplateID, detail.DetailID, employee.EmployeeID);
+
+                        await _context.Database.ExecuteSqlRawAsync(@"
+                            INSERT INTO PerformanceEmployeeReviewers 
+                                (PerformanceTemplatesID, PerformanceTemplateDetailsID, EmployeesID, Approvers1ID, Approvers2ID, Approvers3ID, Approvers4ID, Approvers5ID, UserIn, DateIn)
+                            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, GETDATE())
+                        ", data.TemplateID, detail.DetailID, employee.EmployeeID,
+                        detail.Approvers1ID ?? 0, detail.Approvers2ID ?? 0, detail.Approvers3ID ?? 0,
+                        detail.Approvers4ID ?? 0, detail.Approvers5ID ?? 0, userID);
+                    }
+                }
+
+                var result = await GetReviewerAssignDetailAsync(data.TemplateID);
+
+                await dbTrans.CommitAsync();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        private async Task<PerformanceEmployeeApprovalsEmployeeDetailDto> GetEmployeeReviewerDetailAsync(long templateId, long employeeId)
+        {
+            var employee = await _context.Employees
+                .Where(e => e.EmployeeID == employeeId)
+                .Select(e => new { e.EmployeeID, e.EmployeeName, e.JobTitleID, e.DepartmentID })
+                .FirstOrDefaultAsync();
+
+            if (employee == null)
+                throw new Exception("Employee not found");
+
+            var jobTitle = await _context.EmployeeJobTitles.Where(jt => jt.EmployeeJobTitleID == employee.JobTitleID).Select(jt => jt.Name).FirstOrDefaultAsync();
+            var department = await _context.Departments.Where(d => d.DepartmentID == employee.DepartmentID).Select(d => d.Name).FirstOrDefaultAsync();
+
+            var subcores = await _context.Set<SubcoreApprovalDetailDto>()
+                .FromSqlRaw(@"
+                    SELECT 
+                        ptd.ID as DetailID,
+                        ptd.Name as SubcoreName,
+                        ISNULL(pea.Approvers1ID, 0) as Approvers1ID,
+                        pea.Approvers1Category as Approvers1Category,
+                        ptd.Approver1Weight as Approvers1Weight,
+                        ISNULL((SELECT EmployeeName FROM Employees WHERE EmployeeID = pea.Approvers1ID), '') as Approvers1Name,
+                        ISNULL(pea.Approvers2ID, 0) as Approvers2ID,
+                        pea.Approvers2Category as Approvers2Category,
+                        ptd.Approver2Weight as Approvers2Weight,
+                        ISNULL((SELECT EmployeeName FROM Employees WHERE EmployeeID = pea.Approvers2ID), '') as Approvers2Name,
+                        ISNULL(pea.Approvers3ID, 0) as Approvers3ID,
+                        pea.Approvers3Category as Approvers3Category,
+                        ptd.Approver3Weight as Approvers3Weight,
+                        ISNULL((SELECT EmployeeName FROM Employees WHERE EmployeeID = pea.Approvers3ID), '') as Approvers3Name,
+                        ISNULL(pea.Approvers4ID, 0) as Approvers4ID,
+                        pea.Approvers4Category as Approvers4Category,
+                        ptd.Approver4Weight as Approvers4Weight,
+                        ISNULL((SELECT EmployeeName FROM Employees WHERE EmployeeID = pea.Approvers4ID), '') as Approvers4Name,
+                        ISNULL(pea.Approvers5ID, 0) as Approvers5ID,
+                        pea.Approvers5Category as Approvers5Category,
+                        ptd.Approver5Weight as Approvers5Weight,
+                        ISNULL((SELECT EmployeeName FROM Employees WHERE EmployeeID = pea.Approvers5ID), '') as Approvers5Name
+                    FROM PerformanceTemplateDetails ptd
+                    LEFT JOIN PerformanceEmployeeApprovals pea ON ptd.ID = pea.PerformanceTemplateDetailsID AND pea.EmployeeID = {1}
+                    WHERE ptd.PerformanceTemplatesID = {0} AND (ptd.IsDeleted = 0 OR ptd.IsDeleted IS NULL)
+                ", templateId, employeeId)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return new PerformanceEmployeeApprovalsEmployeeDetailDto
+            {
+                EmployeeID = employee.EmployeeID,
+                EmployeeName = employee.EmployeeName,
+                JobTitle = jobTitle,
+                Department = department,
+                SubcoreDetails = subcores
+            };
         }
     }
 }
