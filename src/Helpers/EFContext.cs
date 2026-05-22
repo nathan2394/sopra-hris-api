@@ -101,6 +101,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<CandidateDTO> CandidateDTO { get; set; }
         public virtual DbSet<SessionQuestionRaw> SessionQuestionRaw { get; set; }
         public virtual DbSet<PerformanceTemplates> PerformanceTemplates { get; set; }
+        public virtual DbSet<PerformanceEmployeeApprovals> PerformanceEmployeeApprovals { get; set; }
         public virtual DbSet<PerformanceEmployeeReviewers> PerformanceEmployeeReviewers { get; set; }
         public virtual DbSet<PerformanceConditions> PerformanceConditions { get; set; }
         public virtual DbSet<PerformanceTemplateDetails> PerformanceTemplateDetails { get; set; }
@@ -133,6 +134,7 @@ namespace sopra_hris_api.src.Helpers
 
             modelBuilder.Entity<FormDetailsDto>();
             modelBuilder.Entity<ToBeReviewedEmployeesDto>();
+            modelBuilder.Entity<SubcoreApprovalDetailDto>();
             modelBuilder.Entity<OptionWeightRow>();
             modelBuilder.Entity<EmployeeScoresDto>();
             modelBuilder.Entity<EmployeeScoreDetailsDto>();

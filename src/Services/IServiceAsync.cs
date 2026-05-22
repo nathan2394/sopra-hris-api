@@ -172,6 +172,9 @@ namespace sopra_hris_api.src.Services
         Task<T> EditAsync(PerformanceTemplatesDto data, long userID);
         Task<bool> DeleteAsync(long id, long userID);
         Task<PerformanceTemplatesDto> PublishAsync(long id, long userID);
+        Task<ListResponse<PerformanceEmployeeApprovalsListDto>> GetReviewerAssignListAsync(int limit, int page);
+        Task<PerformanceEmployeeApprovalsDetailDto> GetReviewerAssignDetailAsync(long templateId);
+        Task<PerformanceEmployeeApprovalsDetailDto> AssignReviewerAsync(AssignReviewerPayloadDto data, long userID);
     }
 
     public interface IServicePerformanceEmployeeReviewerAsync<T>
