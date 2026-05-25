@@ -132,7 +132,20 @@ namespace sopra_hris_api.Services
             
             var userCompanies = context.UserCompanies
                 .FromSqlRaw(@"
-                    SELECT u.UserID, u.Code, u.Company, u.ApiLink, u.LogoPath
+                    SELECT
+                        u.UserID,
+                        u.EmployeeID,
+                        u.RoleID,
+                        u.Name,
+                        u.Email,
+                        u.Password,
+                        u.PhoneNumber,
+                        u.OtpExpiration,
+                        u.IsVerified,
+                        u.Code,
+                        u.Company,
+                        u.ApiLink, 
+                        u.LogoPath
                     FROM UserCompanies u
                     WHERE " + whereCondition + @"
                         AND u.isDeleted != 1
@@ -140,11 +153,24 @@ namespace sopra_hris_api.Services
                 .AsNoTracking()
                 .ToList();
 
-            var user = context.Users
-                .AsNoTracking()
-                .FirstOrDefault(x => (key == "phone"
-                    ? x.PhoneNumber == phoneNumber
-                    : x.Email == email) && x.IsDeleted == false);
+            if (!userCompanies.Any())
+                return null;
+
+            var user = userCompanies
+                .Select(u => new Users
+                {
+                    UserID = u.UserID,
+                    EmployeeID = u.EmployeeID,
+                    RoleID = u.RoleID,
+                    Name = u.Name,
+                    Email = u.Email ?? email,
+                    Password = u.Password,
+                    PhoneNumber = u.PhoneNumber ?? phoneNumber,
+                    OtpExpiration = u.OtpExpiration,
+                    IsVerified = u.IsVerified,
+                    IsDeleted = false
+                })
+                .FirstOrDefault();
 
             try
             {
@@ -244,7 +270,7 @@ namespace sopra_hris_api.Services
             var claims = new ClaimsIdentity(new[]
             {
                 new Claim("id", user.UserID.ToString()),
-                new Claim("email", user.Email.ToString()),
+                new Claim("email", (user.Email ?? "").ToString()),
                 new Claim("phonenumber", (user.PhoneNumber ?? "").ToString()),
 				new Claim("roleid",(user?.RoleID ?? 0).ToString()),
                 new Claim("employeeid",(user?.EmployeeID ?? 0).ToString()),
