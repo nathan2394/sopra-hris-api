@@ -102,6 +102,7 @@ namespace sopra_hris_api.src.Helpers
         public virtual DbSet<SessionQuestionRaw> SessionQuestionRaw { get; set; }
         public virtual DbSet<PerformanceTemplates> PerformanceTemplates { get; set; }
         public virtual DbSet<PerformanceEmployeeApprovals> PerformanceEmployeeApprovals { get; set; }
+        public virtual DbSet<PerformanceEmployeeReviewerMatrix> PerformanceEmployeeReviewerMatrix { get; set; }
         public virtual DbSet<PerformanceEmployeeReviewers> PerformanceEmployeeReviewers { get; set; }
         public virtual DbSet<PerformanceConditions> PerformanceConditions { get; set; }
         public virtual DbSet<PerformanceTemplateDetails> PerformanceTemplateDetails { get; set; }
