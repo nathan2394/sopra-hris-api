@@ -238,4 +238,27 @@ public class PerformanceTemplatesController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    [HttpGet("default-reviewer/{employeeJobTitleId}")]
+    public async Task<IActionResult> GetDefaultReviewerMatrix(long employeeJobTitleId)
+    {
+        try
+        {
+            var result = await _service.GetDefaultReviewerMatrixAsync(employeeJobTitleId);
+            var response = new Response<PerformanceEmployeeReviewerMatrix>(result);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "PerformanceTemplatesController: Get Default Reviewer Matrix");
+            return BadRequest(new { message });
+        }
+    }
 }

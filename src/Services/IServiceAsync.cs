@@ -175,6 +175,7 @@ namespace sopra_hris_api.src.Services
         Task<ListResponse<PerformanceEmployeeApprovalsListDto>> GetReviewerAssignListAsync(int limit, int page);
         Task<PerformanceEmployeeApprovalsDetailDto> GetReviewerAssignDetailAsync(long templateId);
         Task<PerformanceEmployeeApprovalsDetailDto> AssignReviewerAsync(AssignReviewerPayloadDto data, long userID);
+        Task<PerformanceEmployeeReviewerMatrix> GetDefaultReviewerMatrixAsync(long employeeJobTitleId);
     }
 
     public interface IServicePerformanceEmployeeReviewerAsync<T>
