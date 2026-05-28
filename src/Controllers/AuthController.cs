@@ -42,17 +42,14 @@ public class AuthController : ControllerBase
             if (!Utility.VerifyHashedPassword(user.Password, Password))
                 return Unauthorized(new { message = "Incorrect password" });
 
-            var message = "";
-            if (!user.IsVerified.HasValue || !user.IsVerified.Value)
-                message = "Not verified";
+            var isVerified = user.IsVerified.GetValueOrDefault();
+            var message = isVerified ? "Login successful" : "Not verified";
 
             user.Password = "";
             user.OTP = "";
             user.OtpExpiration = null;
 
-            message = "Login successful";
-
-            var token = message == "Not verified" ? null : _service.GenerateToken(user, 1);
+            var token = isVerified ? _service.GenerateToken(user, 1) : null;
             var response = new AuthResponse(user, token, message);
 
             return Ok(response);
@@ -102,6 +99,9 @@ public class AuthController : ControllerBase
         try
         {
             // Validate inputs
+            if (request == null)
+                return BadRequest(new { message = "Invalid request" });
+
             if (string.IsNullOrEmpty(request.Code))
                 return BadRequest(new { message = "Code cannot be empty" });
 
@@ -136,6 +136,9 @@ public class AuthController : ControllerBase
     {
         try
         {
+            if (request == null)
+                return BadRequest("Invalid request.");
+
             if (string.IsNullOrEmpty(request.Token))
                 return BadRequest("Token is required.");
 
@@ -189,12 +192,12 @@ public class AuthController : ControllerBase
             var userEmail = User.FindFirstValue("email");
             var userPhone = User.FindFirstValue("phonenumber");
             
-            if (string.IsNullOrEmpty(userEmail.ToString()) && string.IsNullOrEmpty(userPhone.ToString()))
+            if (string.IsNullOrEmpty(userEmail) && string.IsNullOrEmpty(userPhone))
             {
                 return BadRequest(new { message = "User email and phone number not found in claims" });
             }
 
-            var user = _service.AuthenticateByKey(userPhone.ToString(), userEmail.ToString(), string.IsNullOrEmpty(userPhone.ToString()) ? "email" : "phone");
+            var user = _service.AuthenticateByKey(userPhone, userEmail, string.IsNullOrEmpty(userPhone) ? "email" : "phone");
             if (user == null)
             {
                 return BadRequest(new { message = "User not found" });

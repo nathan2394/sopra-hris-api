@@ -46,6 +46,8 @@ namespace sopra_hris_api.src.Services.API
     {
         public long TemplateID { get; set; }
         public string? TemplateName { get; set; }
+        public long EmployeeJobTitleID { get; set; }
+        public bool IsReviewed { get; set; }
         public List<PerformanceEmployeeApprovalsEmployeeDetailDto>? Employees { get; set; }
     }
 

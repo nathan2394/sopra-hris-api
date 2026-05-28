@@ -891,8 +891,9 @@ namespace sopra_hris_api.src.Services.API
                                       where pt.ID == templateId && (pt.IsDeleted == false || pt.IsDeleted == null)
                                       select new
                                       {
-                                          pt.ID,
-                                          TemplateName = ejt.Name
+                                            pt.ID,
+                                            TemplateName = ejt.Name,
+                                            EmployeeJobTitleID = pt.EmployeeJobTitlesID
                                       }).FirstOrDefaultAsync();
 
                 if (template == null)
@@ -905,6 +906,12 @@ namespace sopra_hris_api.src.Services.API
                     .OrderBy(x => x)
                     .ToListAsync();
 
+                var isReviewed = await _context.Set<PerformanceEmployeeReviewers>()
+                    .Where(x => x.PerformanceTemplatesID == templateId
+                        && (x.IsDeleted == false || x.IsDeleted == null)
+                        && x.TotalWeight > 0)
+                    .AnyAsync();
+
                 var employees = new List<PerformanceEmployeeApprovalsEmployeeDetailDto>();
                 foreach (var employeeId in employeeIds)
                 {
@@ -915,6 +922,8 @@ namespace sopra_hris_api.src.Services.API
                 {
                     TemplateID = templateId,
                     TemplateName = template.TemplateName,
+                    EmployeeJobTitleID = template.EmployeeJobTitleID,
+                    IsReviewed = isReviewed,
                     Employees = employees
                 };
             }
@@ -982,13 +991,23 @@ namespace sopra_hris_api.src.Services.API
                                 AND EmployeesID = {2}
                         ", data.TemplateID, detail.DetailID, employee.EmployeeID);
 
+                        var templateDetails = await _context.Set<PerformanceTemplateDetails>()
+                            .FromSqlRaw(@"
+                                SELECT *
+                                FROM PerformanceTemplateDetails
+                                WHERE ID = {0}
+                                    AND (IsDeleted = 0 OR IsDeleted IS NULL)
+                            ", detail.DetailID)
+                            .FirstOrDefaultAsync();
+
                         await _context.Database.ExecuteSqlRawAsync(@"
                             INSERT INTO PerformanceEmployeeReviewers 
-                                (PerformanceTemplatesID, PerformanceTemplateDetailsID, EmployeesID, Approvers1ID, Approvers2ID, Approvers3ID, Approvers4ID, Approvers5ID, UserIn, DateIn)
-                            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, GETDATE())
+                                (PerformanceTemplatesID, PerformanceTemplateDetailsID, EmployeesID, Approvers1ID, Approvers2ID, Approvers3ID, Approvers4ID, Approvers5ID, Option1, Option2, Option3, Option4, Option5, TotalWeight, UserIn, DateIn)
+                            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, GETDATE())
                         ", data.TemplateID, detail.DetailID, employee.EmployeeID,
                         detail.Approvers1ID ?? 0, detail.Approvers2ID ?? 0, detail.Approvers3ID ?? 0,
-                        detail.Approvers4ID ?? 0, detail.Approvers5ID ?? 0, userID);
+                        detail.Approvers4ID ?? 0, detail.Approvers5ID ?? 0,
+                        templateDetails.Option1 ?? "", templateDetails.Option2 ?? "", templateDetails.Option3 ?? "", templateDetails.Option4 ?? "", templateDetails.Option5 ?? "", 0, userID);
                     }
                 }
 
@@ -1063,6 +1082,23 @@ namespace sopra_hris_api.src.Services.API
                 Department = department,
                 SubcoreDetails = subcores
             };
+        }
+
+        public async Task<PerformanceEmployeeReviewerMatrix> GetDefaultReviewerMatrixAsync(long employeeJobTitleId)
+        {
+            var matrix = await _context.Set<PerformanceEmployeeReviewerMatrix>()
+                .FromSqlRaw(@"
+                    SELECT *
+                    FROM PerformanceEmployeeReviewerMatrix
+                    WHERE EmployeeJobTitleID = {0}
+                ", employeeJobTitleId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (matrix == null)
+                throw new Exception("Employee Reviewer Matrix not found for the given Job Title ID");
+
+            return matrix;
         }
     }
 }
