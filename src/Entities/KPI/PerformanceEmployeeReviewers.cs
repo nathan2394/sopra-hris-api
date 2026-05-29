@@ -117,8 +117,8 @@ namespace sopra_hris_api.src.Services.API
         public string? Type { get; set; }
         public decimal Weight { get; set; }
         public decimal Score { get; set; }
-        public int TotalApprover { get; set; }
-        public int Approved { get; set; }
+        public List<string>? TotalApprover { get; set; }
+        public List<string>? Approved { get; set; }
         public List<string>? Remarks { get; set; }
         public string? Remarks1 { get; set; }
         public string? Remarks2 { get; set; }

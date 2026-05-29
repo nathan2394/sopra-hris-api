@@ -998,6 +998,7 @@ namespace sopra_hris_api.src.Services.API
                                 WHERE ID = {0}
                                     AND (IsDeleted = 0 OR IsDeleted IS NULL)
                             ", detail.DetailID)
+                            .AsNoTracking()
                             .FirstOrDefaultAsync();
 
                         await _context.Database.ExecuteSqlRawAsync(@"

@@ -94,7 +94,7 @@ namespace sopra_hris_api
                             IssuerSigningKey = keyx,
                             ValidateIssuer = false,
                             ValidateAudience = false,
-                            ValidateLifetime = false,
+                            ValidateLifetime = true,
                             // set clockskew to zero so tokens expire exactly at token expiration time (instead of 5 minutes later)
                             ClockSkew = TimeSpan.Zero
                         };
