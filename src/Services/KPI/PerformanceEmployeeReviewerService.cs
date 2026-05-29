@@ -366,28 +366,35 @@ namespace sopra_hris_api.src.Services.API
                             ptd.Description AS Question,
                             ISNULL(ptd.Weight, 0) AS Weight,
                             CAST(ISNULL(per.TotalWeight, 0) AS decimal(10,2)) AS Score,
-                            (
-                                CASE WHEN per.Approvers1ID > 0 THEN 1 ELSE 0 END +
-                                CASE WHEN per.Approvers2ID > 0 AND per.Approvers2ID != per.Approvers1ID THEN 1 ELSE 0 END +
-                                CASE WHEN per.Approvers3ID > 0 AND per.Approvers3ID != per.Approvers1ID AND per.Approvers3ID != per.Approvers2ID THEN 1 ELSE 0 END +
-                                CASE WHEN per.Approvers4ID > 0 AND per.Approvers4ID != per.Approvers1ID AND per.Approvers4ID != per.Approvers2ID AND per.Approvers4ID != per.Approvers3ID THEN 1 ELSE 0 END +
-                                CASE WHEN per.Approvers5ID > 0 AND per.Approvers5ID != per.Approvers1ID AND per.Approvers5ID != per.Approvers2ID AND per.Approvers5ID != per.Approvers3ID AND per.Approvers5ID != per.Approvers4ID THEN 1 ELSE 0 END
-                            ) AS TotalApprover,
-                            (
-                                CASE WHEN per.SelectedOptionWeight1 > 0 THEN 1 ELSE 0 END +
-                                CASE WHEN per.SelectedOptionWeight2 > 0 THEN 1 ELSE 0 END +
-                                CASE WHEN per.SelectedOptionWeight3 > 0 THEN 1 ELSE 0 END +
-                                CASE WHEN per.SelectedOptionWeight4 > 0 THEN 1 ELSE 0 END +
-                                CASE WHEN per.SelectedOptionWeight5 > 0 THEN 1 ELSE 0 END
-                            ) AS Approved,
-                            per.Remarks1,
-                            per.Remarks2,
+                            LTRIM(RTRIM(
+                                CONCAT(
+                                    CASE WHEN per.Approvers1ID > 0 AND e1.EmployeeID IS NOT NULL THEN e1.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.Approvers2ID > 0 AND per.Approvers2ID != per.Approvers1ID AND e2.EmployeeID IS NOT NULL THEN e2.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.Approvers3ID > 0 AND per.Approvers3ID != per.Approvers1ID AND per.Approvers3ID != per.Approvers2ID AND e3.EmployeeID IS NOT NULL THEN e3.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.Approvers4ID > 0 AND per.Approvers4ID != per.Approvers1ID AND per.Approvers4ID != per.Approvers2ID AND per.Approvers4ID != per.Approvers3ID AND e4.EmployeeID IS NOT NULL THEN e4.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.Approvers5ID > 0 AND per.Approvers5ID != per.Approvers1ID AND per.Approvers5ID != per.Approvers2ID AND per.Approvers5ID != per.Approvers3ID AND per.Approvers5ID != per.Approvers4ID AND e5.EmployeeID IS NOT NULL THEN e5.EmployeeName ELSE '' END
+                                )
+                            ), '|') AS Remarks1,
+                            LTRIM(RTRIM(
+                                CONCAT(
+                                    CASE WHEN per.SelectedOptionWeight1 > 0 AND e1.EmployeeID IS NOT NULL THEN e1.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.SelectedOptionWeight2 > 0 AND e2.EmployeeID IS NOT NULL THEN e2.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.SelectedOptionWeight3 > 0 AND e3.EmployeeID IS NOT NULL THEN e3.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.SelectedOptionWeight4 > 0 AND e4.EmployeeID IS NOT NULL THEN e4.EmployeeName + '|' ELSE '' END,
+                                    CASE WHEN per.SelectedOptionWeight5 > 0 AND e5.EmployeeID IS NOT NULL THEN e5.EmployeeName ELSE '' END
+                                )
+                            ), '|') AS Remarks2,
                             per.Remarks3,
                             per.Remarks4,
                             per.Remarks5
                         FROM PerformanceEmployeeReviewers per
                             INNER JOIN PerformanceTemplateDetails ptd ON per.PerformanceTemplateDetailsID = ptd.ID
                                 AND per.PerformanceTemplatesID = ptd.PerformanceTemplatesID
+                            LEFT JOIN Employees e1 ON per.Approvers1ID = e1.EmployeeID
+                            LEFT JOIN Employees e2 ON per.Approvers2ID = e2.EmployeeID
+                            LEFT JOIN Employees e3 ON per.Approvers3ID = e3.EmployeeID
+                            LEFT JOIN Employees e4 ON per.Approvers4ID = e4.EmployeeID
+                            LEFT JOIN Employees e5 ON per.Approvers5ID = e5.EmployeeID
                         WHERE per.EmployeesID = {0} AND (per.IsDeleted = 0 OR per.IsDeleted IS NULL)
                     ", employee.EmployeesID)
                     .AsNoTracking()
@@ -403,16 +410,16 @@ namespace sopra_hris_api.src.Services.API
                     Question = r.Question,
                     Weight = r.Weight,
                     Score = r.Score,
-                    TotalApprover = r.TotalApprover,
-                    Approved = r.Approved,
-                    Remarks = new[] { r.Remarks1, r.Remarks2, r.Remarks3, r.Remarks4, r.Remarks5 }
+                    TotalApprover = string.IsNullOrEmpty(r.Remarks1) ? new List<string>() : r.Remarks1.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                    Approved = string.IsNullOrEmpty(r.Remarks2) ? new List<string>() : r.Remarks2.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                    Remarks = new[] { r.Remarks3, r.Remarks4, r.Remarks5 }
                         .Where(remark => !string.IsNullOrEmpty(remark))
                         .Select(remark => remark!)
                         .ToList()
                 }).ToList(); 
 
                 scoreData.TotalQuestion = review.Count;
-                scoreData.CompletedQuestion = review.Count(x => x.Approved == x.TotalApprover && x.TotalApprover > 0);
+                scoreData.CompletedQuestion = review.Count(x => x.Approved?.Count > 0 && x.Approved.Count == x.TotalApprover?.Count);
 
                 scoreData.ScoreDetails.PP = review.Where(x => x.Type == "PP").ToList();
                 scoreData.ScoreDetails.PK = review.Where(x => x.Type == "PK").ToList();
