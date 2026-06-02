@@ -195,6 +195,30 @@ namespace sopra_hris_api.Services
                         user.CompanyName = context.Companies.AsNoTracking().Where(x => x.CompanyID == employees.CompanyID && x.IsDeleted == false).Select(s => s.Name ?? "").FirstOrDefault();
                     }
                 }
+
+                if (key == "email" && user.RoleID == 11)
+                {
+                    var minLevel = context.Groups
+                        .Where(x => x.Name.ToLower() == "assistant manager"
+                            && x.IsDeleted == false
+                        )
+                        .Select(x => x.Level)
+                        .FirstOrDefault();
+
+                    if (user.GroupID != null && user.GroupID != 0 && minLevel != null)
+                    {
+                        var currentLevel = context.Groups
+                            .Where(x => x.GroupID == user.GroupID
+                                && x.IsDeleted == false
+                            )
+                            .Select(x => x.Level)
+                            .FirstOrDefault();
+                        
+                        if (currentLevel < minLevel)
+                            throw new Exception("User does not have access to login with Google.");
+                    }
+                }
+
                 user.RoleName = context.Roles.Where(y => y.RoleID == user.RoleID).Select(x => x.Name ?? "").FirstOrDefault();
 
                 user.ParentMenus = (from rd in context.RoleDetails
