@@ -196,7 +196,7 @@ namespace sopra_hris_api.Services
                     }
                 }
 
-                if (key == "email" && user.RoleID == 12)
+                if (key == "email" && user.RoleID == 11)
                 {
                     var minLevel = context.Groups
                         .Where(x => x.Name.ToLower() == "assistant manager"
