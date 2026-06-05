@@ -750,19 +750,17 @@ namespace sopra_hris_api.src.Services.API
                 if (template == null)
                     throw new Exception("There is no Performance Template with the given ID");
 
-                var certainEmployees = await _context.Set<List<long>>()
-                    .FromSqlRaw(@"
-                        SELECT
-                            CAST(EmployeeID AS BIGINT) AS Value
+                var certainEmployees = await _context.Database
+                    .SqlQuery<long>($@"
+                        SELECT CAST(EmployeeID AS BIGINT) AS Value
                         FROM Employees
-                        WHERE DepartmentID = {0}
-                            AND JobTitleID = {1}
+                        WHERE DepartmentID = {template.DepartmentsID}
+                            AND JobTitleID = {template.EmployeeJobTitlesID}
                             AND (IsDeleted = 0 OR IsDeleted IS NULL)
-                    ", template.DepartmentsID, template.EmployeeJobTitlesID)
-                    .AsNoTracking()
+                    ")
                     .ToListAsync();
 
-                if (certainEmployees.Count > 0)
+                if (certainEmployees.Count == 0)
                     throw new Exception("At least one employee must match the Department and Job Title of the Performance Template.");
 
                 await _context.Database.ExecuteSqlRawAsync(@"
