@@ -94,7 +94,7 @@ namespace sopra_hris_api.src.Services.API
 
                 var json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("https://ai.mixtra.id/webhook/sendAssesment", content);
+                var response = await _httpClient.PostAsync("https://ai.sopra.services/webhook/sendAssesment", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -211,7 +211,7 @@ namespace sopra_hris_api.src.Services.API
                     try
                     {
                         Trace.WriteLine($"Sending batch of {batch.Count} candidates to webhook");
-                        response = await _httpClient.PostAsync("https://ai.mixtra.id/webhook/sendAssesment", content);
+                        response = await _httpClient.PostAsync("https://ai.sopra.services/webhook/sendAssesment", content);
                     }
                     catch (TaskCanceledException ex)
                     {

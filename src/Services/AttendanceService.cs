@@ -193,42 +193,8 @@ namespace sopra_hris_api.src.Services.API
 
                 var query = _context.Attendances.FromSqlRaw(@"SELECT a.*
 FROM Attendances a
-LEFT JOIN EmployeeShifts b 
-    ON b.EmployeeID = a.EmployeeID 
-    AND b.IsDeleted = 0 
-    AND CONVERT(DATE, b.TransDate) = @queryDate
-LEFT JOIN EmployeeTransferShifts c
-	ON c.EmployeeID= a.EmployeeID
-	AND c.IsDeleted=0 AND c.IsApproved1 = 1 AND c.IsApproved2 = 1
-	AND CONVERT(date,c.TransDate) = @queryDate
 WHERE a.EmployeeID = @id 
-  AND (
-    -- If there is a shift record
-    (b.EmployeeShiftID IS NOT NULL AND (
-        -- For night shift (ID = 3), handle overnight shift times
-        (b.ShiftID in (3,12) AND (
-            (CAST(a.ClockIn AS TIME) >= '18:00:00' AND CONVERT(DATE, a.ClockIn) = @queryDate)
-            OR
-            (CAST(a.ClockIn AS TIME) < '10:00:00' AND CONVERT(DATE, a.ClockIn) = DATEADD(DAY, 1, @queryDate))
-        ))
-        -- For other shifts, match normal day
-        OR (b.ShiftID not in (3,12) AND CONVERT(DATE, a.ClockIn) = @queryDate)
-    ))
-    OR
-    -- If there is a transfer shift record
-    (c.EmployeeTransferShiftID IS NOT NULL AND (
-        -- For night shift (ID = 3), handle overnight shift times
-        (c.ShiftToID in (3,12) AND (
-            (CAST(a.ClockIn AS TIME) >= '18:00:00' AND CONVERT(DATE, a.ClockIn) = @queryDate)
-            OR
-            (CAST(a.ClockIn AS TIME) < '10:00:00' AND CONVERT(DATE, a.ClockIn) = DATEADD(DAY, 1, @queryDate))
-        ))
-        -- For other shifts, match normal day
-        OR (c.ShiftToID not in (3,12) AND CONVERT(DATE, a.ClockIn) = @queryDate)
-    ))
-    -- If there is no shift record, just use the date
-    OR (b.EmployeeShiftID IS NULL AND CONVERT(DATE, a.ClockIn) = @queryDate)
-  )", new SqlParameter("id", id), new SqlParameter("queryDate", queryDate));
+  AND CONVERT(DATE, a.ClockIn) = @queryDate", new SqlParameter("id", id), new SqlParameter("queryDate", queryDate));
 
                 // Get Total Before Limit and Page
                 total = await query.CountAsync();
@@ -463,6 +429,40 @@ WHERE a.EmployeeID = @id
 
                 throw;
             }
-        }        
+        }
+        
+        public async Task<ListResponseTemplate<AttendanceLogReports>> GetAttendanceLogsAsync(DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                var queryParameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@StartDate", SqlDbType.DateTime)
+                    {
+                        Value = startDate.HasValue ? startDate.Value : DBNull.Value
+                    },
+                    new SqlParameter("@EndDate", SqlDbType.DateTime)
+                    {
+                        Value = endDate.HasValue ? endDate.Value : DBNull.Value
+                    }
+                };
+
+                var data = await _context.Set<AttendanceLogReports>()
+                    .FromSqlRaw("EXEC usp_GetAttendanceLogs @StartDate, @EndDate", queryParameters.ToArray())
+                    .ToListAsync();
+
+                return new ListResponseTemplate<AttendanceLogReports>(data);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
+
+                throw;
+            }
+        }
     }
 }

@@ -110,6 +110,7 @@ namespace sopra_hris_api.src.Services
     {
         Task<ListResponseTemplate<AttendanceSummary>> GetAllAsync(string filter, string date);
         Task<ListResponseTemplate<AttendanceCheck>> GetListCheckAsync(string filter, string date);
+        Task<ListResponseTemplate<AttendanceLogReports>> GetAttendanceLogsAsync(DateTime? startDate, DateTime? endDate);
         Task<ListResponse<T>> GetAllAsync(int limit, int page, int total, long id, string date);
         Task<ListResponseTemplate<AttendanceDetails>> GetDetailAsync(long id, string date);
         Task<ListResponseTemplate<AttendanceShift>> GetDetailShiftsAsync(long id, string date);
@@ -126,6 +127,10 @@ namespace sopra_hris_api.src.Services
         string filter, string date);
         Task<T> GetByIdAsync(long id);
         Task<T> CreateAsync(T data);
+        Task<CreateEmployeeFromPortalResponse> CreateEmployeeAsync(
+            CreateEmployeeFromPortalRequest data,
+            long userId
+        );
         Task<T> EditAsync(T data);
         Task<bool> DeleteAsync(long id, long userID);
     }
@@ -142,6 +147,8 @@ namespace sopra_hris_api.src.Services
         Task<ListResponseTemplate<SalaryDetailReportsDTO>> GetGeneratePayrollResultAsync(string filter, long UserID);
         Task<ListResponseTemplate<SalaryCalculatorModel>> SetCalculator(SalaryCalculatorTemplate request);
         Task<ListResponseUploadTemplate<SalaryDetailReportsDTO>> SetCalculateEmployeeSalary(CalculateEmployeeSalary request, long UserID);
+        byte[] GeneratePayrollExcelFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, int company, int startSequenceNumber = 1);
+        byte[] GeneratePayrollTextFile(List<SalaryDetailReportsDTO> salaryData, int month, int year, string CorporateID, string RekeningDebet, string RekeningBiaya);
     }
     public interface IServiceSalaryDetailsAsync<T>
     {

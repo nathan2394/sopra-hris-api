@@ -134,4 +134,14 @@ namespace sopra_hris_api.src.Entities
         public string? Remarks { get; set; }
         public List<long> EmployeeIDs { get; set; }
     }
+    [Keyless]
+    public class AttendanceLogReports
+    {
+        public DateTime ScanDate { get; set; }
+        public string? Nik { get; set; }
+        public string? EmployeeName { get; set; }
+        public int Pin { get; set; }
+        public int? VerifyMode { get; set; }
+        public int? InOutMode { get; set; }
+    }
 }

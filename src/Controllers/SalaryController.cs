@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.IO.Compression;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -336,6 +337,45 @@ public class SalaryController : ControllerBase
         {
             long userID = Convert.ToInt64(User.FindFirstValue("id"));
             var result = await _service.SetCalculateEmployeeSalary(request, userID);
+
+            // Generate Excel and Text files with payroll data
+            if (result?.Data != null && result.Data.Any())
+            {
+                var salaryDataList = result.Data.ToList();
+
+                byte[] excelBytesTrass = _service.GeneratePayrollExcelFile(salaryDataList, (int)request.Month, (int)request.Year, 2);
+
+                int company2Count = salaryDataList.Count(x => x.Department != "MOLD SHOP");
+                int startSequenceForCompany3 = company2Count + 1;
+
+                byte[] excelBytesTrassMi = _service.GeneratePayrollExcelFile(salaryDataList, (int)request.Month, (int)request.Year, 3, startSequenceForCompany3);
+                
+                // Create ZIP archive containing both files
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                    {
+                        // Add Excel file to zip
+                        string excelFileNameTrass = $"Payroll_MBB_BCA_{request.Year}_{request.Month:D2}_Trass.xlsm";
+                        var excelEntryTrass = archive.CreateEntry(excelFileNameTrass);
+                        using (var entryStream = excelEntryTrass.Open())
+                        {
+                            entryStream.Write(excelBytesTrass, 0, excelBytesTrass.Length);
+                        }
+                        string excelFileNameTrassMi = $"Payroll_MBB_BCA_{request.Year}_{request.Month:D2}_TrassMI.xlsm";
+                        var excelEntryTrassMi = archive.CreateEntry(excelFileNameTrassMi);
+                        using (var entryStream = excelEntryTrassMi.Open())
+                        {
+                            entryStream.Write(excelBytesTrassMi, 0, excelBytesTrassMi.Length);
+                        }
+                    }
+
+                    byte[] zipBytes = memoryStream.ToArray();
+                    string zipFileName = $"Payroll_MBB_BCA_{request.Year}_{request.Month:D2}.zip";
+                    return File(zipBytes, "application/zip", zipFileName);
+                }
+            }
+
             return Ok(result);
         }
         catch (Exception ex)

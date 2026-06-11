@@ -115,6 +115,35 @@ public class EmployeesController : ControllerBase
 
     }
 
+    [HttpPost("CreateEmployee")]
+    public async Task<IActionResult> CreateEmployee(
+        [FromBody] CreateEmployeeFromPortalRequest obj
+    )
+    {
+        try
+        {
+            var userId = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.CreateEmployeeAsync(obj, userId);
+            var response = new Response<CreateEmployeeFromPortalResponse>(result);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+
+            Trace.WriteLine(message, "EmployeesController: CreateEmployee");
+            return BadRequest(new { message });
+        }
+    }
+
     [HttpPut]
     public async Task<IActionResult> Edit([FromBody] Employees obj)
     {
