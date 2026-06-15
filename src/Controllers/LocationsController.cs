@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sopra_hris_api.Entities;
@@ -12,11 +11,11 @@ namespace sopra_hris_api.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Authorize]
-public class EmployeesController : ControllerBase
+public class LocationsController : ControllerBase
 {
-    private readonly IServiceEmployeeAsync<Employees> _service;
+    private readonly IServiceAsync<Locations> _service;
 
-    public EmployeesController(IServiceEmployeeAsync<Employees> service)
+    public LocationsController(IServiceAsync<Locations> service)
     {
         _service = service;
     }
@@ -42,27 +41,6 @@ public class EmployeesController : ControllerBase
             return BadRequest(new { message });
         }
     }
-    [HttpGet("listemployee")]
-    public async Task<IActionResult> GetList(int limit = 0, int page = 0, string search = "", string sort = "", string filter = "", string date = "")
-    {
-        try
-        {
-            var total = 0;
-            var result = await _service.GetList(limit, page, total, search, sort, filter, date);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-            return BadRequest(new { message });
-        }
-    }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
@@ -73,7 +51,7 @@ public class EmployeesController : ControllerBase
             if (result == null)
                 return BadRequest(new { message = "Invalid ID" });
 
-            var response = new Response<Employees>(result);
+            var response = new Response<Locations>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -85,19 +63,20 @@ public class EmployeesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeesController");
+            Trace.WriteLine(message, "LocationsController");
             return BadRequest(new { message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Employees obj)
+    public async Task<IActionResult> Create([FromBody] Locations obj)
     {
         try
         {
             obj.UserIn = Convert.ToInt64(User.FindFirstValue("id"));
+
             var result = await _service.CreateAsync(obj);
-            var response = new Response<Employees>(result);
+            var response = new Response<Locations>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -109,49 +88,21 @@ public class EmployeesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeesController");
+            Trace.WriteLine(message, "LocationsController");
             return BadRequest(new { message });
         }
 
-    }
-
-    [HttpPost("CreateEmployee")]
-    public async Task<IActionResult> CreateEmployee(
-        [FromBody] CreateEmployeeFromPortalRequest obj
-    )
-    {
-        try
-        {
-            var userId = Convert.ToInt64(User.FindFirstValue("id"));
-            var result = await _service.CreateEmployeeAsync(obj, userId);
-            var response = new Response<CreateEmployeeFromPortalResponse>(result);
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            var message = ex.Message;
-            var inner = ex.InnerException;
-
-            while (inner != null)
-            {
-                message = inner.Message;
-                inner = inner.InnerException;
-            }
-
-            Trace.WriteLine(message, "EmployeesController: CreateEmployee");
-            return BadRequest(new { message });
-        }
     }
 
     [HttpPut]
-    public async Task<IActionResult> Edit([FromBody] Employees obj)
+    public async Task<IActionResult> Edit([FromBody] Locations obj)
     {
         try
         {
             obj.UserUp = Convert.ToInt64(User.FindFirstValue("id"));
+
             var result = await _service.EditAsync(obj);
-            var response = new Response<Employees>(result);
+            var response = new Response<Locations>(result);
             return Ok(response);
         }
         catch (Exception ex)
@@ -163,7 +114,7 @@ public class EmployeesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeesController");
+            Trace.WriteLine(message, "LocationsController");
             return BadRequest(new { message });
         }
     }
@@ -187,7 +138,7 @@ public class EmployeesController : ControllerBase
                 message = inner.Message;
                 inner = inner.InnerException;
             }
-            Trace.WriteLine(message, "EmployeesController");
+            Trace.WriteLine(message, "LocationsController");
             return BadRequest(new { message });
         }
     }
