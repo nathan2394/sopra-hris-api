@@ -6,17 +6,22 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using Microsoft.VisualBasic;
 using CsvHelper;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class PerformanceTemplateService : IServicePerformanceTemplateAsync<PerformanceTemplates>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PerformanceTemplateService(EFContext context)
+        public PerformanceTemplateService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         private async Task ValidateSave(PerformanceTemplatesDto data)
         {
@@ -59,6 +64,7 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 ID = a.ID,
                                 Name = b.Name,
+                                DepartmentID = a.DepartmentsID,
                                 Department = c != null ? c.Name : "",
                                 Periode = a.ActiveYear,
                                 TransDate = a.DateIn,
@@ -69,6 +75,18 @@ namespace sopra_hris_api.src.Services.API
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.Name.Equals(search)
                 );
+
+                var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+
+                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                {
+                    var currentEmployee = await _context.Employees
+                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
+
+                    if (currentEmployee != null)
+                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                }
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -844,8 +862,21 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 pt.ID,
                                 TemplateName = ejt.Name,
-                                pt.ActiveYear
+                                pt.ActiveYear,
+                                DepartmentID = pt.DepartmentsID
                             };
+
+                var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+
+                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                {
+                    var currentEmployee = await _context.Employees
+                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
+
+                    if (currentEmployee != null)
+                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                }
 
                 var result = new List<PerformanceEmployeeApprovalsListDto>();
                 

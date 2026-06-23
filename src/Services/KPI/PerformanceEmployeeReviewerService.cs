@@ -242,11 +242,11 @@ namespace sopra_hris_api.src.Services.API
                             ROUND(CAST(scores.PM AS DECIMAL(10,2)), 0) AS PM,
                             SUM(
                                 CASE 
-                                    WHEN per.SelectedOptionWeight1 > 0
-                                    AND (per.SelectedOptionWeight2 IS NULL OR per.SelectedOptionWeight2 > 0)
-                                    AND (per.SelectedOptionWeight3 IS NULL OR per.SelectedOptionWeight3 > 0)
-                                    AND (per.SelectedOptionWeight4 IS NULL OR per.SelectedOptionWeight4 > 0)
-                                    AND (per.SelectedOptionWeight5 IS NULL OR per.SelectedOptionWeight5 > 0)
+                                    WHEN (per.Approvers1ID = 0 OR (per.SelectedOptionWeight1 IS NOT NULL AND per.SelectedOptionWeight1 > 0))
+                                        AND (per.Approvers2ID = 0 OR (per.SelectedOptionWeight2 IS NOT NULL AND per.SelectedOptionWeight2 > 0))
+                                        AND (per.Approvers3ID = 0 OR (per.SelectedOptionWeight3 IS NOT NULL AND per.SelectedOptionWeight3 > 0))
+                                        AND (per.Approvers4ID = 0 OR (per.SelectedOptionWeight4 IS NOT NULL AND per.SelectedOptionWeight4 > 0))
+                                        AND (per.Approvers5ID = 0 OR (per.SelectedOptionWeight5 IS NOT NULL AND per.SelectedOptionWeight5 > 0))
                                     THEN 1
                                     ELSE 0
                                 END
