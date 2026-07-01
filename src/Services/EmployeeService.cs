@@ -25,6 +25,17 @@ namespace sopra_hris_api.src.Services.API
             await using var dbTrans = await _context.Database.BeginTransactionAsync();
             try
             {
+                if (data == null)
+                    throw new Exception("Employee is empty");
+
+                var employeeExists = await _context.Employees
+                    .AnyAsync(x => x.IsDeleted == false
+                        && (x.KTP == data.KTP || x.EmployeeName == data.EmployeeName)
+                    );
+
+                if (employeeExists)
+                    throw new Exception("Employee already exists");
+
                 var sequence = await _context.Employees.Where(x => x.StartWorkingDate.Month == data.StartWorkingDate.Month && x.StartWorkingDate.Year == data.StartWorkingDate.Year && x.IsDeleted == false).CountAsync();
                 data.Nik = string.Concat(data.CompanyID, data.StartWorkingDate.ToString("yyyyMM"), (sequence + 1).ToString("D3"));
                 
@@ -57,6 +68,202 @@ namespace sopra_hris_api.src.Services.API
                     Trace.WriteLine(ex.StackTrace);
 
                 await dbTrans.RollbackAsync();
+
+                throw;
+            }
+        }
+
+        public async Task<bool> ImportAsync(List<Employees> data, long userID)
+        {
+            try
+            {
+                if (data == null || data.Count <= 0)
+                    throw new Exception("Imported data is empty.");
+
+                var employeeTypes = await _context.EmployeeTypes
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var departments = await _context.Departments
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var divisions = await _context.Divisions
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var employeeJobTitles = await _context.EmployeeJobTitles
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var groups = await _context.Groups
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var functions = await _context.Functions
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var shifts = await _context.Shifts
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var groupShifts = await _context.GroupShifts
+                    .Where(x => x.IsDeleted == false)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                foreach (var employee in data)
+                {
+                    employee.UserIn = userID;
+
+                    // Required
+                    if (!string.IsNullOrWhiteSpace(employee.EmployeeTypeName))
+                    {
+                        var employeeType = employeeTypes
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.EmployeeTypeName.Trim().ToLower()
+                        );
+
+                        if (employeeType != null)
+                            employee.EmployeeTypeID = employeeType.EmployeeTypeID;
+                        else
+                            throw new Exception($"Employee Type is required for employee {employee.EmployeeName}");
+                    } else
+                    {
+                        throw new Exception($"Employee Type is required for employee {employee.EmployeeName}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.DepartmentName))
+                    {
+                        var department = departments
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.DepartmentName.Trim().ToLower()
+                        );
+
+                        if (department != null)
+                            employee.DepartmentID = department.DepartmentID;
+                        else
+                            employee.DepartmentID = 0;
+                    } else
+                    {
+                        employee.DepartmentID = 0;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.DivisionName))
+                    {
+                        var division = divisions
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.DivisionName.Trim().ToLower()
+                        );
+
+                        if (division != null)
+                            employee.DivisionID = division.DivisionID;
+                        else 
+                            employee.DivisionID = 0;
+                    } else
+                    {
+                        employee.DivisionID = 0;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.EmployeeJobTitleName))
+                    {
+                        var jobTitle = employeeJobTitles
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.EmployeeJobTitleName.Trim().ToLower()
+                        );
+
+                        if (jobTitle != null)
+                            employee.JobTitleID = jobTitle.EmployeeJobTitleID;
+                        else
+                            employee.JobTitleID = 0;
+                    } else
+                    {
+                        employee.JobTitleID = 0;
+                    }
+
+                    // Required
+                    if (!string.IsNullOrWhiteSpace(employee.GroupType))
+                    {
+                        var group = groups
+                            .FirstOrDefault(x => x.Type != null
+                                && x.Type.Trim().ToLower() == employee.GroupType.Trim().ToLower()
+                        );
+
+                        if (group != null)
+                            employee.GroupID = group.GroupID;
+                        else
+                            throw new Exception($"Group is required for employee {employee.EmployeeName}");
+                    } else
+                    {
+                        throw new Exception($"Group is required for employee {employee.EmployeeName}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.FunctionName))
+                    {
+                        var function = functions
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.FunctionName.Trim().ToLower()
+                        );
+
+                        if (function != null)
+                            employee.FunctionID = function.FunctionID;
+                        else
+                            employee.FunctionID = 0;
+                    } else
+                    {
+                        employee.FunctionID = 0;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.ShiftName))
+                    {
+                        var shift = shifts
+                            .FirstOrDefault(x => x.Code != null
+                                && x.Name.Trim().ToLower() == employee.ShiftName.Trim().ToLower()
+                        );
+
+                        if (shift != null)
+                            employee.ShiftID = shift.ShiftID;
+                        else
+                            employee.ShiftID = 0;
+                    } else
+                    {
+                        employee.ShiftID = 0;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(employee.GroupShiftName))
+                    {
+                        var groupShift = groupShifts
+                            .FirstOrDefault(x => x.Name != null
+                                && x.Name.Trim().ToLower() == employee.GroupShiftName.Trim().ToLower()
+                        );
+
+                        if (groupShift != null)
+                            employee.GroupShiftID = groupShift.GroupShiftID;
+                        else
+                            employee.GroupShiftID = 0;
+                    } else
+                    {
+                        employee.GroupShiftID = 0;
+                    }
+
+                    await CreateAsync(employee);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                if (ex.StackTrace != null)
+                    Trace.WriteLine(ex.StackTrace);
 
                 throw;
             }
