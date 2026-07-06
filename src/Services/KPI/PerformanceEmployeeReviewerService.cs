@@ -201,7 +201,7 @@ namespace sopra_hris_api.src.Services.API
 
                 var listData = await _context.Set<ToBeReviewedEmployeesDto>()
                     .FromSqlRaw(@"
-                        SELECT DISTINCT e.EmployeeID AS ID, e.EmployeeName AS Name, ejt.Name as JobTitle
+                        SELECT DISTINCT e.EmployeeID AS ID, e.EmployeeName AS Name, ejt.Name as Position
                         FROM PerformanceEmployeeReviewers per
                             INNER JOIN Employees e ON per.EmployeesID = e.EmployeeID
                             INNER JOIN EmployeeJobTitles ejt ON e.JobTitleID = ejt.EmployeeJobTitleID
