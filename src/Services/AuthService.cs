@@ -119,7 +119,7 @@ namespace sopra_hris_api.Services
                 context.Dispose();
             }
         }
-        public Users AuthenticateByKey(string phoneNumber, string email, string key = "email")
+        public Users AuthenticateByKey(string phoneNumber, string email, string key = "email", long? roleId = null)
         {
             var whereCondition = "u.Email = {0}";
             var value = email;
@@ -136,6 +136,7 @@ namespace sopra_hris_api.Services
                         u.UserID,
                         u.EmployeeID,
                         u.RoleID,
+                        u.RoleName,
                         u.Name,
                         u.Email,
                         u.Password,
@@ -149,7 +150,8 @@ namespace sopra_hris_api.Services
                     FROM UserCompanies u
                     WHERE " + whereCondition + @"
                         AND u.isDeleted != 1
-                ", value)
+                        AND ({1} IS NULL OR u.RoleID = {1})
+                ", value, roleId)
                 .AsNoTracking()
                 .ToList();
 
@@ -162,6 +164,7 @@ namespace sopra_hris_api.Services
                     UserID = u.UserID,
                     EmployeeID = u.EmployeeID,
                     RoleID = u.RoleID,
+                    RoleName = u.RoleName,
                     Name = u.Name,
                     Email = u.Email ?? email,
                     Password = u.Password,
@@ -223,7 +226,7 @@ namespace sopra_hris_api.Services
 
                 user.ParentMenus = (from rd in context.RoleDetails
                                     join m in context.Modules on rd.ModuleID equals m.ModuleID
-                                    where rd.RoleID == user.RoleID && m.ParentID == 0
+                                    where rd.RoleID == user.RoleID && m.ParentID == 0 && m.IsChild == false
                                     select new ParentMenu
                                     {
                                         ModuleID = rd.ModuleID,
@@ -238,7 +241,7 @@ namespace sopra_hris_api.Services
                                     }).ToList();
                 user.ChildMenus = (from rd in context.RoleDetails
                                    join m in context.Modules on rd.ModuleID equals m.ModuleID
-                                   where rd.RoleID == user.RoleID && m.ParentID != 0
+                                   where rd.RoleID == user.RoleID && m.ParentID != 0 && m.IsChild == true
                                    select new ChildMenu
                                    {
                                        ParentID = m.ParentID,
@@ -268,7 +271,9 @@ namespace sopra_hris_api.Services
                     Code = u.Code ?? "",
                     Company = u.Company ?? "",
                     ApiLink = u.ApiLink ?? "",
-                    LogoPath = u.LogoPath ?? ""
+                    LogoPath = u.LogoPath ?? "",
+                    RoleID = u.RoleID,
+                    RoleName = u.RoleName ?? ""
                 }).ToList();
 
                 return user;

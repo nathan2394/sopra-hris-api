@@ -185,7 +185,7 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpGet("refresh-user")]
-    public async Task<IActionResult> RefreshUser()
+    public async Task<IActionResult> RefreshUser([FromQuery] long? roleId = null)
     {
         try
         {
@@ -197,7 +197,7 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "User email and phone number not found in claims" });
             }
 
-            var user = _service.AuthenticateByKey(userPhone, userEmail, string.IsNullOrEmpty(userPhone) ? "email" : "phone");
+            var user = _service.AuthenticateByKey(userPhone, userEmail, string.IsNullOrEmpty(userPhone) ? "email" : "phone", roleId);
             if (user == null)
             {
                 return BadRequest(new { message = "User not found" });

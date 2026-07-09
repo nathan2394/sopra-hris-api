@@ -22,5 +22,7 @@ namespace sopra_hris_api.Entities
         public string? Company { get; set; }
         public string? ApiLink { get; set; }
         public string? LogoPath { get; set; }
+        public long RoleID { get; set; }
+        public string? RoleName { get; set; }
     }
 }
