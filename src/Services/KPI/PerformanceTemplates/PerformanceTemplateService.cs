@@ -869,7 +869,7 @@ namespace sopra_hris_api.src.Services.API
                 var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
 
-                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                if (roleID != 0 && !new long[] { 1, 3, 4, 13 }.Contains(roleID)) // Administrator, HC & KPI Admin
                 {
                     var currentEmployee = await _context.Employees
                         .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
