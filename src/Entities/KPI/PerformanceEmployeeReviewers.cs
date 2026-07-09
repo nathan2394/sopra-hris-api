@@ -73,7 +73,7 @@ namespace sopra_hris_api.src.Services.API
     {
         public long ID { get; set; }
         public string? Name { get; set; }
-        public string? JobTitle { get; set; }
+        public string? Position { get; set; }
     }
 
     [Keyless]

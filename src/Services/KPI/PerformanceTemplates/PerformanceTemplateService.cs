@@ -6,17 +6,22 @@ using sopra_hris_api.Entities;
 using sopra_hris_api.src.Helpers;
 using Microsoft.VisualBasic;
 using CsvHelper;
+using System.Security.Claims;
 
 namespace sopra_hris_api.src.Services.API
 {
     public class PerformanceTemplateService : IServicePerformanceTemplateAsync<PerformanceTemplates>
     {
         private readonly EFContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PerformanceTemplateService(EFContext context)
+        public PerformanceTemplateService(EFContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
+
+        private ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User;
 
         private async Task ValidateSave(PerformanceTemplatesDto data)
         {
@@ -59,6 +64,7 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 ID = a.ID,
                                 Name = b.Name,
+                                DepartmentID = a.DepartmentsID,
                                 Department = c != null ? c.Name : "",
                                 Periode = a.ActiveYear,
                                 TransDate = a.DateIn,
@@ -69,6 +75,18 @@ namespace sopra_hris_api.src.Services.API
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(x => x.Name.Equals(search)
                 );
+
+                var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+
+                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                {
+                    var currentEmployee = await _context.Employees
+                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
+
+                    if (currentEmployee != null)
+                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                }
 
                 // Filtering
                 if (!string.IsNullOrEmpty(filter))
@@ -373,7 +391,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PP', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
 
@@ -384,7 +402,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PK', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
 
@@ -395,7 +413,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserIn, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PM', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
                 }
@@ -559,7 +577,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PP', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
 
@@ -570,7 +588,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PK', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
 
@@ -581,7 +599,7 @@ namespace sopra_hris_api.src.Services.API
                             _context.Database.ExecuteSqlRaw(@"
                                 INSERT INTO PerformanceTemplateDetails (Name, Description, PerformanceTemplatesID, CoreName, Weight, MediaDescription, Option1, Option2, Option3, Option4, Option5, Approver1, Approver1Weight, Approver2, Approver2Weight, Approver3, Approver3Weight, Approver4, Approver4Weight, Approver5, Approver5Weight, Type, UserUp, DateIn)
                                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, 'PM', {21}, GETDATE());
-                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1 ?? 0, detail.Approver1Weight, detail.Approver2 ?? 0, detail.Approver2Weight, detail.Approver3 ?? 0, detail.Approver3Weight, detail.Approver4 ?? 0, detail.Approver4Weight, detail.Approver5 ?? 0, detail.Approver5Weight, userID);
+                            ", detail.Name ?? "", detail.Description ?? "", template.ID, detail.CoreName ?? "", detail.Weight, detail.MediaDescription ?? "", detail.Option1 ?? "", detail.Option2 ?? "", detail.Option3 ?? "", detail.Option4 ?? "", detail.Option5 ?? "", detail.Approver1Weight == 0 ? 0 : (detail.Approver1 ?? 0), detail.Approver1Weight, detail.Approver2Weight == 0 ? 0 : (detail.Approver2 ?? 0), detail.Approver2Weight, detail.Approver3Weight == 0 ? 0 : (detail.Approver3 ?? 0), detail.Approver3Weight, detail.Approver4Weight == 0 ? 0 : (detail.Approver4 ?? 0), detail.Approver4Weight, detail.Approver5Weight == 0 ? 0 : (detail.Approver5 ?? 0), detail.Approver5Weight, userID);
                         }
                     }
                 }
@@ -844,8 +862,21 @@ namespace sopra_hris_api.src.Services.API
                             {
                                 pt.ID,
                                 TemplateName = ejt.Name,
-                                pt.ActiveYear
+                                pt.ActiveYear,
+                                DepartmentID = pt.DepartmentsID
                             };
+
+                var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
+                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+
+                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                {
+                    var currentEmployee = await _context.Employees
+                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
+
+                    if (currentEmployee != null)
+                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                }
 
                 var result = new List<PerformanceEmployeeApprovalsListDto>();
                 

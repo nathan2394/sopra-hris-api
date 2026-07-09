@@ -45,5 +45,8 @@ namespace sopra_hris_api.src.Services.API
         public int Periode { get; set; }
         public DateTime? TransDate { get; set; }
         public Boolean Status { get; set; }
+
+        [NotMapped]
+        public long? DepartmentID { get; set; }
     }
 }

@@ -112,7 +112,30 @@ public class EmployeesController : ControllerBase
             Trace.WriteLine(message, "EmployeesController");
             return BadRequest(new { message });
         }
+    }
 
+    [HttpPost("Import")]
+    public async Task<IActionResult> Import([FromBody] List<Employees> obj)
+    {
+        try
+        {
+            var userId = Convert.ToInt64(User.FindFirstValue("id"));
+            var result = await _service.ImportAsync(obj, userId);
+
+            return Ok(true);
+        }
+        catch (Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message = inner.Message;
+                inner = inner.InnerException;
+            }
+            Trace.WriteLine(message, "EmployeesController");
+            return BadRequest(new { message });
+        }
     }
 
     [HttpPost("CreateEmployee")]

@@ -127,6 +127,7 @@ namespace sopra_hris_api.src.Services
         string filter, string date);
         Task<T> GetByIdAsync(long id);
         Task<T> CreateAsync(T data);
+        Task<bool> ImportAsync(List<Employees> data, long userID);
         Task<CreateEmployeeFromPortalResponse> CreateEmployeeAsync(
             CreateEmployeeFromPortalRequest data,
             long userId
