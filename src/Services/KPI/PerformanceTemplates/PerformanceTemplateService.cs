@@ -68,7 +68,8 @@ namespace sopra_hris_api.src.Services.API
                                 Department = c != null ? c.Name : "",
                                 Periode = a.ActiveYear,
                                 TransDate = a.DateIn,
-                                Status = a.Status
+                                Status = a.Status,
+                                TemplateUsers = a.TemplateUsers
                             };
 
                 // Searching
@@ -77,15 +78,11 @@ namespace sopra_hris_api.src.Services.API
                 );
 
                 var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
-                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
                 if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
                 {
-                    var currentEmployee = await _context.Employees
-                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
-
-                    if (currentEmployee != null)
-                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                    query = query.Where(x => ("," + (x.TemplateUsers ?? "") + ",").Contains("," + userID + ","));
                 }
 
                 // Filtering
@@ -171,7 +168,7 @@ namespace sopra_hris_api.src.Services.API
             {
                 var template = await _context.Set<PerformanceTemplatesDto>()
                     .FromSqlRaw(@"
-                        SELECT ID, DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear
+                        SELECT ID, DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear, TemplateUsers
                         FROM PerformanceTemplates
                         WHERE ID = {0} AND (IsDeleted = 0 OR IsDeleted IS NULL)
                     ", id)
@@ -334,15 +331,15 @@ namespace sopra_hris_api.src.Services.API
                     .FromSqlRaw(@"
                         DECLARE @ID INT;
                         
-                        INSERT INTO PerformanceTemplates (DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear, UserIn, DateIn)
-                        VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, GETDATE());
+                        INSERT INTO PerformanceTemplates (DepartmentsID, DivisionsID, EmployeeJobTitlesID, MainValue, GeneralGoal, Status, ActiveYear, TemplateUsers, UserIn, DateIn)
+                        VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, GETDATE());
                         
                         SET @ID = SCOPE_IDENTITY();
                         
                         SELECT *
                         FROM PerformanceTemplates
                         WHERE ID = @ID;
-                    ", data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.Status, data.ActiveYear, userID)
+                    ", data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.Status, data.ActiveYear, data.TemplateUsers ?? "", userID)
                     .AsEnumerable()
                     .FirstOrDefault();
 
@@ -503,7 +500,8 @@ namespace sopra_hris_api.src.Services.API
                             MainValue = {4},
                             GeneralGoal = {5},
                             ActiveYear = {6},
-                            UserUp = {7},
+                            TemplateUsers = {7},
+                            UserUp = {8},
                             DateUp = GETDATE()
                         WHERE ID = {0};
                         
@@ -512,7 +510,7 @@ namespace sopra_hris_api.src.Services.API
                         SELECT *
                         FROM PerformanceTemplates
                         WHERE ID = @ID;
-                    ", data.ID, data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.ActiveYear, userID)
+                    ", data.ID, data.DepartmentsID, data.DivisionsID, data.EmployeeJobTitlesID, data.MainValue ?? "", data.GeneralGoal ?? "", data.ActiveYear, data.TemplateUsers ?? "", userID)
                     .AsEnumerable()
                     .FirstOrDefault();
 
