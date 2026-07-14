@@ -80,7 +80,7 @@ namespace sopra_hris_api.src.Services.API
                 var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
                 var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
-                if (roleID != 0 && !new long[] { 1, 3, 4 }.Contains(roleID)) // Administrator & HC
+                if (roleID != 0 && !new long[] { 1, 3, 4, 13 }.Contains(roleID)) // Administrator, HC & KPI Admin
                 {
                     query = query.Where(x => ("," + (x.TemplateUsers ?? "") + ",").Contains("," + userID + ","));
                 }
@@ -861,19 +861,16 @@ namespace sopra_hris_api.src.Services.API
                                 pt.ID,
                                 TemplateName = ejt.Name,
                                 pt.ActiveYear,
-                                DepartmentID = pt.DepartmentsID
+                                DepartmentID = pt.DepartmentsID,
+                                pt.TemplateUsers
                             };
 
                 var roleID = Convert.ToInt64(User.FindFirstValue("roleid"));
-                var employeeID = Convert.ToInt64(User.FindFirstValue("employeeid"));
+                var userID = Convert.ToInt64(User.FindFirstValue("id"));
 
                 if (roleID != 0 && !new long[] { 1, 3, 4, 13 }.Contains(roleID)) // Administrator, HC & KPI Admin
                 {
-                    var currentEmployee = await _context.Employees
-                        .FirstOrDefaultAsync(x => x.EmployeeID == employeeID);
-
-                    if (currentEmployee != null)
-                        query = query.Where(x => x.DepartmentID == currentEmployee.DepartmentID);
+                    query = query.Where(x => ("," + (x.TemplateUsers ?? "") + ",").Contains("," + userID + ","));
                 }
 
                 var result = new List<PerformanceEmployeeApprovalsListDto>();
