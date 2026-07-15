@@ -121,12 +121,13 @@ namespace sopra_hris_api.Services
         }
         public Users AuthenticateByKey(string phoneNumber, string email, string key = "email", long? roleId = null)
         {
-            var whereCondition = "u.Email = {0} AND u.RoleID != 2";
+            // 2, 5 => Employee & Sales
+            var whereCondition = "u.Email = {0} AND u.RoleID NOT IN (2, 5)";
             var value = email;
             
             if(key == "phone")
             {
-                whereCondition = "u.PhoneNumber = {0} AND u.RoleID = 2";
+                whereCondition = "u.PhoneNumber = {0} AND u.RoleID IN (2, 5)";
                 value = phoneNumber;
             }
             
