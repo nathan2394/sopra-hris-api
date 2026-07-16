@@ -197,10 +197,14 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "User email and phone number not found in claims" });
             }
 
-            var validation = "phone";
+            var roleIdClaim = User.FindFirstValue("roleid");
+            long? tempRoleID = string.IsNullOrEmpty(roleIdClaim)
+                ? null
+                : long.Parse(roleIdClaim);
 
-            if (roleId != null && roleId != 2)
-                validation = "email";
+            var validation = ((tempRoleID == 2 || tempRoleID == 5) && roleId == null)
+                ? "phone"
+                : "email";
 
             var user = _service.AuthenticateByKey(userPhone, userEmail, validation, roleId);
             if (user == null)
